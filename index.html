@@ -503,7 +503,8 @@ async function startApp(){
   if(!currentUser)return;
   document.getElementById('onlineLogin').style.display='none';
   document.getElementById('mainApp').style.display='flex';
-  await loadData();
+  const ok=await loadData();
+  if(!ok)return;
   renderAll();
 }
 
@@ -513,21 +514,33 @@ async function logout(){
 }
 
 async function loadData(){
+  // Data utama wajib dimuat terlebih dahulu agar form pembayaran tetap bisa
+  // menampilkan daftar jamaah walaupun salah satu modul tambahan bermasalah.
   const j=await sb.from('jamaah').select('*').order('created_at',{ascending:false});
   const p=await sb.from('payments').select('*').order('payment_date',{ascending:false});
-  const d=await sb.from('documents').select('*');
-  const e=await sb.from('equipment').select('*');
-  const dep=await sb.from('departures').select('*').order('start_date',{ascending:false});
-  if(j.error){notice('Gagal membaca tabel jamaah: '+j.error.message,'error');return}
-  if(p.error){notice('Gagal membaca tabel pembayaran: '+p.error.message,'error');return}
-  if(d.error){notice('Tabel dokumen belum siap: '+d.error.message,'error');return}
-  if(e.error){notice('Tabel perlengkapan belum siap: '+e.error.message,'error');return}
-  if(dep.error){notice('Tabel keberangkatan belum siap: '+dep.error.message,'error');return}
+  if(j.error){notice('Gagal membaca tabel jamaah: '+j.error.message,'error');return false}
+  if(p.error){notice('Gagal membaca tabel pembayaran: '+p.error.message,'error');return false}
+
   data=j.data||[];
   payments=p.data||[];
-  documents=d.data||[];
-  equipment=e.data||[];
-  departures=dep.data||[];
+  documents=[];
+  equipment=[];
+  departures=[];
+
+  // Modul tambahan tidak boleh mengosongkan data jamaah/pembayaran.
+  const d=await sb.from('documents').select('*');
+  if(d.error){notice('Modul dokumen belum siap: '+d.error.message,'error');}
+  else documents=d.data||[];
+
+  const e=await sb.from('equipment').select('*');
+  if(e.error){notice('Modul perlengkapan belum siap: '+e.error.message,'error');}
+  else equipment=e.data||[];
+
+  const dep=await sb.from('departures').select('*').order('start_date',{ascending:false});
+  if(dep.error){notice('Modul keberangkatan belum siap: '+dep.error.message,'error');}
+  else departures=dep.data||[];
+
+  return true;
 }
 
 function show(id,btn){
