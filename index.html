@@ -252,7 +252,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;p
   <div class="panel">
     <div class="panel-head"><h2>Input Pembayaran</h2></div>
     <form id="paymentForm" class="form">
-      <div><label>Nama Jamaah</label><select id="paymentJamaah" required onchange="syncPaymentJamaahName()" onfocus="fillPaymentJamaah(true)"><option value="">-- Memuat daftar jamaah... --</option></select></div>
+      <div><label>Nama Jamaah</label><select id="paymentJamaah" required onchange="syncPaymentJamaahName()" ><option value="">-- Memuat daftar jamaah... --</option></select></div>
       <div><label>Nominal Pembayaran</label><input id="paymentAmount" type="number" min="1" required placeholder="Contoh: 5000000"></div>
       <div><label>Diskon / Potongan Tagihan</label><input id="paymentDiscount" type="number" min="0" value="0" placeholder="Contoh: 500000"></div>
       <div class="full" style="font-size:12px;color:#687078">Diskon mengurangi total tagihan jamaah. Nilai diskon bukan uang masuk.</div>
@@ -949,43 +949,15 @@ function renderDash(){
 }
 
 let paymentDropdownRequest=0;
-async function fillPaymentJamaah(force=false){
+function fillPaymentJamaah(){
   const sel=document.getElementById('paymentJamaah');
   if(!sel)return;
-  const requestId=++paymentDropdownRequest;
   const old=sel.value;
+  const rows=(Array.isArray(data)?data:[])
+    .filter(x=>x&&x.id&&x.nama)
+    .slice()
+    .sort((a,b)=>String(a.nama||'').localeCompare(String(b.nama||''),'id'));
 
-  // Isi cepat dari data lokal terlebih dahulu.
-  let rows=Array.isArray(data)?data.filter(x=>x&&x.id&&x.nama):[];
-  if(rows.length && !force){
-    rows=rows.slice().sort((a,b)=>String(a.nama||'').localeCompare(String(b.nama||''),'id'));
-    sel.innerHTML='<option value="">-- Pilih Jamaah --</option>';
-    rows.forEach(x=>{
-      const opt=document.createElement('option');
-      opt.value=x.id;
-      opt.textContent=x.nama||'-';
-      sel.appendChild(opt);
-    });
-    if(rows.some(x=>x.id===old))sel.value=old;
-    if(!document.getElementById('paymentDate').value) document.getElementById('paymentDate').value=new Date().toISOString().slice(0,10);
-    return;
-  }
-
-  // Saat dropdown dibuka, ambil daftar terbaru langsung dari Supabase.
-  sel.innerHTML='<option value="">-- Memuat daftar jamaah... --</option>';
-  sel.disabled=true;
-  const {data:directRows,error}=await sb.from('jamaah').select('id,nama').order('nama',{ascending:true});
-  if(requestId!==paymentDropdownRequest)return;
-
-  if(error){
-    console.error('Gagal mengambil daftar jamaah untuk pembayaran:',error);
-    sel.innerHTML='<option value="">-- Gagal memuat jamaah --</option>';
-    sel.disabled=false;
-    notice('Daftar jamaah tidak dapat dimuat: '+error.message,'error');
-    return;
-  }
-
-  rows=Array.isArray(directRows)?directRows:[];
   sel.innerHTML='<option value="">-- Pilih Jamaah --</option>';
   rows.forEach(x=>{
     const opt=document.createElement('option');
@@ -994,9 +966,11 @@ async function fillPaymentJamaah(force=false){
     sel.appendChild(opt);
   });
   if(rows.some(x=>x.id===old))sel.value=old;
-  sel.disabled=false;
-  if(!document.getElementById('paymentDate').value) document.getElementById('paymentDate').value=new Date().toISOString().slice(0,10);
+  if(!document.getElementById('paymentDate').value){
+    document.getElementById('paymentDate').value=new Date().toISOString().slice(0,10);
+  }
 }
+
 function syncPaymentJamaahName(){
   const sel=document.getElementById('paymentJamaah');
   if(sel && sel.value){
