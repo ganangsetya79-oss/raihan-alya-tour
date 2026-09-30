@@ -242,7 +242,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;p
 <section id="jamaah" class="hidden">
   <div class="top"><h1>Data Jamaah</h1><input id="search" class="search" placeholder="Cari nama / HP / paket..." oninput="renderJamaah()"></div>
   <div class="panel"><div class="panel-head"><h2>Daftar Jamaah</h2><button class="btn" onclick="openForm()">+ Tambah Jamaah</button></div>
-    <table><thead><tr><th>Nama</th><th>Jenis Kelamin</th><th>No. HP</th><th>Paket</th><th>Harga</th><th>Dibayar</th><th>Sisa</th><th>Status</th><th>Aksi</th></tr></thead><tbody id="jamaahBody"></tbody></table>
+    <table><thead><tr><th>Nama</th><th>Jenis Kelamin</th><th>No. HP</th><th>Paket</th><th>Harga</th><th>Diskon</th><th>Dibayar</th><th>Sisa</th><th>Status</th><th>Aksi</th></tr></thead><tbody id="jamaahBody"></tbody></table>
   </div>
 </section>
 
@@ -254,7 +254,8 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;p
     <form id="paymentForm" class="form">
       <div><label>Nama Jamaah</label><select id="paymentJamaah" required></select></div>
       <div><label>Nominal Pembayaran</label><input id="paymentAmount" type="number" min="1" required placeholder="Contoh: 5000000"></div>
-      <div><label>Diskon</label><input id="paymentAmount" type="number" min="1" required placeholder="Contoh: 500000"></div>
+      <div><label>Diskon / Potongan Tagihan</label><input id="paymentDiscount" type="number" min="0" value="0" placeholder="Contoh: 500000"></div>
+      <div class="full" style="font-size:12px;color:#687078">Diskon mengurangi total tagihan jamaah. Nilai diskon bukan uang masuk.</div>
       <div><label>Tanggal Pembayaran</label><input id="paymentDate" type="date" required></div>
       <div><label>Metode Pembayaran</label>
         <select id="paymentMethod" required onchange="togglePaymentBank()">
@@ -277,13 +278,13 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;p
 
   <div class="panel">
     <div class="panel-head"><h2>Rekap Pembayaran Jamaah</h2></div>
-    <table><thead><tr><th>Jamaah</th><th>Harga Paket</th><th>Dibayar</th><th>Sisa</th><th>Status</th></tr></thead>
+    <table><thead><tr><th>Jamaah</th><th>Harga Paket</th><th>Diskon</th><th>Dibayar</th><th>Sisa</th><th>Status</th></tr></thead>
     <tbody id="paymentSummaryBody"></tbody></table>
   </div>
 
   <div class="panel">
     <div class="panel-head"><h2>Riwayat Transaksi</h2><span style="font-size:12px;color:#687078">Setiap pembayaran memiliki nomor invoice otomatis</span></div>
-    <table><thead><tr><th>No. Invoice</th><th>Tanggal</th><th>Jamaah</th><th>Nominal</th><th>Metode</th><th>Bank</th><th>Keterangan</th><th>Aksi</th></tr></thead>
+    <table><thead><tr><th>No. Invoice</th><th>Tanggal</th><th>Jamaah</th><th>Nominal</th><th>Diskon</th><th>Metode</th><th>Bank</th><th>Keterangan</th><th>Aksi</th></tr></thead>
     <tbody id="historyBody"></tbody></table>
   </div>
 </section>
@@ -486,7 +487,10 @@ let data=[], payments=[], documents=[], equipment=[], departures=[], currentUser
 
 const rupiah=n=>new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(Number(n)||0);
 const paidFor=id=>payments.filter(p=>p.jamaah_id===id).reduce((a,p)=>a+Number(p.amount||0),0);
-const status=x=>paidFor(x.id)>=Number(x.harga||0)?'<span class="badge paid">Lunas</span>':'<span class="badge unpaid">Belum Lunas</span>';
+const discountFor=id=>payments.filter(p=>p.jamaah_id===id).reduce((a,p)=>a+Number(p.discount||0),0);
+const netBillFor=x=>Math.max(0,Number(x.harga||0)-discountFor(x.id));
+const remainFor=x=>Math.max(0,netBillFor(x)-paidFor(x.id));
+const status=x=>paidFor(x.id)>=netBillFor(x)?'<span class="badge paid">Lunas</span>':'<span class="badge unpaid">Belum Lunas</span>';
 
 function notice(msg,type='ok'){
   const el=document.getElementById('globalNotice');
@@ -716,16 +720,16 @@ function renderReport(){
   let rows=[], headers=[], html='', title='';
   if(type==='jamaah'){
     rows=reportJamaahRows(); title='Laporan Jamaah'; headers=['No','Nama Jamaah','No. HP','Paket','Harga Paket','Keberangkatan','Terbayar','Sisa','Status'];
-    html=rows.map((j,i)=>{const paid=paidFor(j.id),s=Math.max(0,Number(j.harga||0)-paid),d=departureFor(j);return `<tr><td>${i+1}</td><td>${esc(j.nama)}</td><td>${esc(j.hp||'-')}</td><td>${esc(j.paket||'-')}</td><td>${rupiah(j.harga)}</td><td>${esc(d?.name||j.berangkat||'-')}</td><td>${rupiah(paid)}</td><td>${rupiah(s)}</td><td>${status(j)}</td></tr>`}).join('');
+    html=rows.map((j,i)=>{const paid=paidFor(j.id),s=remainFor(j),d=departureFor(j);return `<tr><td>${i+1}</td><td>${esc(j.nama)}</td><td>${esc(j.hp||'-')}</td><td>${esc(j.paket||'-')}</td><td>${rupiah(j.harga)}</td><td>${esc(d?.name||j.berangkat||'-')}</td><td>${rupiah(paid)}</td><td>${rupiah(s)}</td><td>${status(j)}</td></tr>`}).join('');
     const total=rows.reduce((a,j)=>a+Number(j.harga||0),0), paid=rows.reduce((a,j)=>a+paidFor(j.id),0); sum.innerHTML=reportCards([['Jumlah Jamaah',rows.length],['Total Paket',rupiah(total)],['Terbayar',rupiah(paid)],['Sisa',rupiah(Math.max(0,total-paid))]]);
   } else if(type==='payment'){
-    rows=reportPaymentRows(); title='Laporan Pembayaran'; headers=['No','Invoice','Tanggal','Jamaah','Jumlah','Metode','Bank','Keterangan'];
-    html=rows.map((p,i)=>{const j=data.find(x=>x.id===p.jamaah_id);return `<tr><td>${i+1}</td><td>${esc(p.invoice_no||'-')}</td><td>${esc(p.payment_date||'-')}</td><td>${esc(j?.nama||'-')}</td><td>${rupiah(p.amount)}</td><td>${esc(p.method||'-')}</td><td>${esc(p.bank||'-')}</td><td>${esc(p.note||'-')}</td></tr>`}).join('');
+    rows=reportPaymentRows(); title='Laporan Pembayaran'; headers=['No','Invoice','Tanggal','Jamaah','Jumlah','Diskon','Metode','Bank','Keterangan'];
+    html=rows.map((p,i)=>{const j=data.find(x=>x.id===p.jamaah_id);return `<tr><td>${i+1}</td><td>${esc(p.invoice_no||'-')}</td><td>${esc(p.payment_date||'-')}</td><td>${esc(j?.nama||'-')}</td><td>${rupiah(p.amount)}</td><td>${rupiah(p.discount||0)}</td><td>${esc(p.method||'-')}</td><td>${esc(p.bank||'-')}</td><td>${esc(p.note||'-')}</td></tr>`}).join('');
     const total=rows.reduce((a,p)=>a+Number(p.amount||0),0), cash=rows.filter(p=>p.method==='Cash').reduce((a,p)=>a+Number(p.amount||0),0), transfer=rows.filter(p=>p.method==='Transfer').reduce((a,p)=>a+Number(p.amount||0),0); sum.innerHTML=reportCards([['Transaksi',rows.length],['Total Pembayaran',rupiah(total)],['Cash',rupiah(cash)],['Transfer',rupiah(transfer)]]);
   } else if(type==='departure'){
     rows=reportDepartureRows(); title='Laporan Keberangkatan'; headers=['No','Grup','Tanggal','Maskapai','PNR','Jamaah','Lunas','Belum Lunas','Total Paket','Terbayar','Sisa'];
-    html=rows.map((d,i)=>{const js=data.filter(j=>j.departure_id===d.id),value=js.reduce((a,j)=>a+Number(j.harga||0),0),paid=js.reduce((a,j)=>a+paidFor(j.id),0),lunas=js.filter(j=>paidFor(j.id)>=Number(j.harga||0)).length;return `<tr><td>${i+1}</td><td>${esc(d.name)}</td><td>${esc(d.start_date||'-')}${d.end_date?' s/d '+esc(d.end_date):''}</td><td>${esc(d.airline||'-')}</td><td>${esc(d.pnr||'-')}</td><td>${js.length}</td><td>${lunas}</td><td>${js.length-lunas}</td><td>${rupiah(value)}</td><td>${rupiah(paid)}</td><td>${rupiah(Math.max(0,value-paid))}</td></tr>`}).join('');
-    const js=rows.flatMap(d=>data.filter(j=>j.departure_id===d.id)), value=js.reduce((a,j)=>a+Number(j.harga||0),0), paid=js.reduce((a,j)=>a+paidFor(j.id),0); sum.innerHTML=reportCards([['Jadwal',rows.length],['Jamaah',js.length],['Total Paket',rupiah(value)],['Sisa',rupiah(Math.max(0,value-paid))]]);
+    html=rows.map((d,i)=>{const js=data.filter(j=>j.departure_id===d.id),value=js.reduce((a,j)=>a+Number(j.harga||0),0),paid=js.reduce((a,j)=>a+paidFor(j.id),0),lunas=js.filter(j=>paidFor(j.id)>=Number(j.harga||0)).length;return `<tr><td>${i+1}</td><td>${esc(d.name)}</td><td>${esc(d.start_date||'-')}${d.end_date?' s/d '+esc(d.end_date):''}</td><td>${esc(d.airline||'-')}</td><td>${esc(d.pnr||'-')}</td><td>${js.length}</td><td>${lunas}</td><td>${js.length-lunas}</td><td>${rupiah(value)}</td><td>${rupiah(paid)}</td><td>${rupiah(js.reduce((a,j)=>a+remainFor(j),0))}</td></tr>`}).join('');
+    const js=rows.flatMap(d=>data.filter(j=>j.departure_id===d.id)), value=js.reduce((a,j)=>a+Number(j.harga||0),0), paid=js.reduce((a,j)=>a+paidFor(j.id),0); sum.innerHTML=reportCards([['Jadwal',rows.length],['Jamaah',js.length],['Total Paket',rupiah(value)],['Sisa',rupiah(js.reduce((a,j)=>a+remainFor(j),0))]]);
   } else if(type==='equipment'){
     rows=reportEquipmentRows(); title='Laporan Perlengkapan'; headers=['No','Nama Jamaah','Keberangkatan','Mukena / Ihram','Batik','Koper','Buku Manasik','Tanggal','Keterangan'];
     html=rows.map((j,i)=>{const x=getEquipment(j.id)||{},dep=departureFor(j),cell=k=>x[k]?'<span class="badge paid">✓ Diambil</span>':'<span class="badge unpaid">Belum</span>';return `<tr><td>${i+1}</td><td>${esc(j.nama)}</td><td>${esc(dep?.name||j.berangkat||'-')}</td><td>${cell('mukena_ihram')}</td><td>${cell('batik')}</td><td>${cell('koper')}</td><td>${cell('buku')}</td><td>${esc(x.taken_date||'-')}</td><td>${esc(x.note||'-')}</td></tr>`}).join('');
@@ -740,8 +744,8 @@ function renderReport(){
 function reportCards(items){return '<div class="report-summary-grid">'+items.map(x=>`<div class="report-summary-card"><div class="label">${x[0]}</div><div class="value">${x[1]}</div></div>`).join('')+'</div>';}
 function reportExportData(){
   const type=document.getElementById('reportType')?.value||'jamaah';
-  if(type==='jamaah')return {name:'Laporan Jamaah',head:['No','Nama Jamaah','No. HP','Paket','Harga Paket','Keberangkatan','Terbayar','Sisa','Status'],rows:reportJamaahRows().map((j,i)=>{const p=paidFor(j.id),d=departureFor(j);return [i+1,j.nama,j.hp||'',j.paket||'',Number(j.harga||0),d?.name||j.berangkat||'',p,Math.max(0,Number(j.harga||0)-p),p>=Number(j.harga||0)?'Lunas':'Belum Lunas']})};
-  if(type==='payment')return {name:'Laporan Pembayaran',head:['No','Invoice','Tanggal','Jamaah','Jumlah','Metode','Bank','Keterangan'],rows:reportPaymentRows().map((p,i)=>{const j=data.find(x=>x.id===p.jamaah_id);return [i+1,p.invoice_no||'',p.payment_date||'',j?.nama||'',Number(p.amount||0),p.method||'',p.bank||'',p.note||'']})};
+  if(type==='jamaah')return {name:'Laporan Jamaah',head:['No','Nama Jamaah','No. HP','Paket','Harga Paket','Keberangkatan','Terbayar','Sisa','Status'],rows:reportJamaahRows().map((j,i)=>{const p=paidFor(j.id),d=departureFor(j);return [i+1,j.nama,j.hp||'',j.paket||'',Number(j.harga||0),d?.name||j.berangkat||'',p,Math.max(0,Number(j.harga||0)-p),p>=netBillFor(j)?'Lunas':'Belum Lunas']})};
+  if(type==='payment')return {name:'Laporan Pembayaran',head:['No','Invoice','Tanggal','Jamaah','Jumlah','Diskon','Metode','Bank','Keterangan'],rows:reportPaymentRows().map((p,i)=>{const j=data.find(x=>x.id===p.jamaah_id);return [i+1,p.invoice_no||'',p.payment_date||'',j?.nama||'',Number(p.amount||0),Number(p.discount||0),p.method||'',p.bank||'',p.note||'']})};
   if(type==='departure')return {name:'Laporan Keberangkatan',head:['No','Grup','Tanggal','Maskapai','PNR','Jamaah','Lunas','Belum Lunas','Total Paket','Terbayar','Sisa'],rows:reportDepartureRows().map((d,i)=>{const js=data.filter(j=>j.departure_id===d.id),v=js.reduce((a,j)=>a+Number(j.harga||0),0),p=js.reduce((a,j)=>a+paidFor(j.id),0),l=js.filter(j=>paidFor(j.id)>=Number(j.harga||0)).length;return [i+1,d.name,(d.start_date||'')+(d.end_date?' s/d '+d.end_date:''),d.airline||'',d.pnr||'',js.length,l,js.length-l,v,p,Math.max(0,v-p)]})};
   if(type==='equipment')return {name:'Laporan Perlengkapan',head:['No','Nama Jamaah','Keberangkatan','Mukena / Ihram','Batik','Koper','Buku Manasik','Tanggal','Keterangan'],rows:reportEquipmentRows().map((j,i)=>{const x=getEquipment(j.id)||{},d=departureFor(j),ok=k=>x[k]?'Diambil':'Belum';return [i+1,j.nama,d?.name||j.berangkat||'',ok('mukena_ihram'),ok('batik'),ok('koper'),ok('buku'),x.taken_date||'',x.note||'']})};
   return {name:'Laporan Dokumen',head:['No','Nama Jamaah','Keberangkatan','KTP','KK','Passport','BPJS','Vaksin','Visa','Tiket','Status'],rows:reportDocumentRows().map((j,i)=>{const x=documents.find(d=>d.jamaah_id===j.id)||{},dep=departureFor(j),ok=k=>x[k]?'Lengkap':'Belum';return [i+1,j.nama,dep?.name||j.berangkat||'',ok('ktp'),ok('kk'),ok('passport'),ok('bpjs'),ok('vaccine'),ok('visa'),ok('ticket'),['ktp','kk','passport','bpjs','vaccine','visa','ticket'].every(k=>x[k])?'Lengkap':'Belum Lengkap']})};
@@ -762,8 +766,8 @@ function renderJamaah(){
   const q=(document.getElementById('search')?.value||'').toLowerCase();
   const rows=data.filter(x=>(x.nama+' '+(x.hp||'')+' '+(x.paket||'')+' '+(x.jenis_kelamin||'')).toLowerCase().includes(q));
   document.getElementById('jamaahBody').innerHTML=rows.map(x=>{
-    const paid=paidFor(x.id), remain=Math.max(0,Number(x.harga)-paid);
-    return `<tr><td>${esc(x.nama)}</td><td>${esc(x.jenis_kelamin||'-')}</td><td>${esc(x.hp||'')}</td><td>${esc(x.paket||'')}</td><td>${rupiah(x.harga)}</td><td>${rupiah(paid)}</td><td>${rupiah(remain)}</td><td>${status(x)}</td><td><button class="btn secondary" onclick="edit('${x.id}')">Edit</button> <button class="btn danger" onclick="hapus('${x.id}')">Hapus</button></td></tr>`;
+    const paid=paidFor(x.id), discount=discountFor(x.id), remain=remainFor(x);
+    return `<tr><td>${esc(x.nama)}</td><td>${esc(x.jenis_kelamin||'-')}</td><td>${esc(x.hp||'')}</td><td>${esc(x.paket||'')}</td><td>${rupiah(x.harga)}</td><td>${rupiah(discount)}</td><td>${rupiah(paid)}</td><td>${rupiah(remain)}</td><td>${status(x)}</td><td><button class="btn secondary" onclick="edit('${x.id}')">Edit</button> <button class="btn danger" onclick="hapus('${x.id}')">Hapus</button></td></tr>`;
   }).join('')||'<tr><td colspan="9">Belum ada data.</td></tr>';
 }
 
@@ -771,8 +775,8 @@ function renderPaymentSummary(){
   const body=document.getElementById('paymentSummaryBody');
   if(!body)return;
   body.innerHTML=data.map(x=>{
-    const paid=paidFor(x.id), remain=Math.max(0,Number(x.harga||0)-paid);
-    return `<tr><td>${esc(x.nama)}</td><td>${rupiah(x.harga)}</td><td>${rupiah(paid)}</td><td>${rupiah(remain)}</td><td>${status(x)}</td></tr>`;
+    const paid=paidFor(x.id), discount=discountFor(x.id), remain=remainFor(x);
+    return `<tr><td>${esc(x.nama)}</td><td>${rupiah(x.harga)}</td><td>${rupiah(discount)}</td><td>${rupiah(paid)}</td><td>${rupiah(remain)}</td><td>${status(x)}</td></tr>`;
   }).join('')||'<tr><td colspan="5">Belum ada data jamaah.</td></tr>';
 }
 
@@ -786,12 +790,13 @@ function renderPaymentHistory(){
       <td>${p.payment_date||'-'}</td>
       <td>${esc(j?.nama||'Jamaah tidak ditemukan')}</td>
       <td>${rupiah(p.amount)}</td>
+      <td>${rupiah(p.discount||0)}</td>
       <td>${esc(p.method||'-')}</td>
       <td>${esc(bank)}</td>
       <td>${esc(p.note||'-')}</td>
       <td><button class="btn small-btn" type="button" onclick="printPayment('${p.id}')">🖨️ Cetak 2 Nota</button> <button class="btn danger small-btn" type="button" onclick="deletePayment('${p.id}')">Hapus</button></td>
     </tr>`;
-  }).join('')||'<tr><td colspan="8">Belum ada pembayaran.</td></tr>';
+  }).join('')||'<tr><td colspan="9">Belum ada pembayaran.</td></tr>';
 }
 
 function formatDateID(v){
@@ -808,9 +813,12 @@ function printPayment(paymentId){
   const j=data.find(x=>x.id===p.jamaah_id);
   if(!j){notice('Data jamaah untuk transaksi ini tidak ditemukan.','error');return}
   const total=paidFor(j.id);
+  const totalDiscount=discountFor(j.id);
   const current=Number(p.amount||0);
+  const currentDiscount=Number(p.discount||0);
   const previous=Math.max(0,total-current);
-  const remain=Math.max(0,Number(j.harga||0)-total);
+  const remain=Math.max(0,Number(j.harga||0)-totalDiscount-total);
+  const netBill=Math.max(0,Number(j.harga||0)-totalDiscount);
   const bank=p.method==='Transfer'?(p.bank||'-'):'-';
   const inv=invoiceNumber(p);
   const common=(title,office)=>`
@@ -823,8 +831,11 @@ function printPayment(paymentId){
       <div class="row"><span>Nama Jamaah</span><b>${esc(j.nama)}</b></div>
       <div class="row"><span>Paket</span><b>${esc(j.paket||'-')}</b></div>
       <div class="row"><span>Harga Paket</span><b>${rupiah(j.harga)}</b></div>
+      <div class="row"><span>Total Diskon</span><b>${rupiah(totalDiscount)}</b></div>
+      <div class="row"><span>Total Tagihan Setelah Diskon</span><b>${rupiah(netBill)}</b></div>
       ${office?`<div class="row"><span>Total Sebelum Transaksi</span><b>${rupiah(previous)}</b></div>`:''}
       <div class="row highlight"><span>Pembayaran ${office?'Transaksi Ini':''}</span><b>${rupiah(current)}</b></div>
+      ${currentDiscount>0?`<div class="row"><span>Diskon Transaksi Ini</span><b>${rupiah(currentDiscount)}</b></div>`:''}
       <div class="row"><span>Total Pembayaran</span><b>${rupiah(total)}</b></div>
       <div class="row"><span>Sisa Pembayaran</span><b>${rupiah(remain)}</b></div>
       <div class="row"><span>Metode</span><b>${esc(p.method||'-')}</b></div>
@@ -903,10 +914,10 @@ function renderDash(){
     return byMonth&&byDep;
   });
 
-  const lunas=filtered.filter(x=>paidFor(x.id)>=Number(x.harga||0)).length;
+  const lunas=filtered.filter(x=>paidFor(x.id)>=netBillFor(x)).length;
   const nilai=filtered.reduce((a,x)=>a+Number(x.harga||0),0);
   const terbayar=filtered.reduce((a,x)=>a+paidFor(x.id),0);
-  const sisa=filtered.reduce((a,x)=>a+Math.max(0,Number(x.harga||0)-paidFor(x.id)),0);
+  const sisa=filtered.reduce((a,x)=>a+remainFor(x),0);
 
   document.getElementById('totalJamaah').textContent=filtered.length;
   document.getElementById('totalLunas').textContent=lunas;
@@ -924,15 +935,15 @@ function renderDash(){
     const rows=filtered.filter(j=>j.departure_id===d.id);
     const paid=rows.reduce((a,j)=>a+paidFor(j.id),0);
     const value=rows.reduce((a,j)=>a+Number(j.harga||0),0);
-    const remain=rows.reduce((a,j)=>a+Math.max(0,Number(j.harga||0)-paidFor(j.id)),0);
-    const lunasCount=rows.filter(j=>paidFor(j.id)>=Number(j.harga||0)).length;
+    const remain=rows.reduce((a,j)=>a+remainFor(j),0);
+    const lunasCount=rows.filter(j=>paidFor(j.id)>=netBillFor(j)).length;
     return `<tr><td>${esc(d.name)}</td><td>${d.start_date||'-'}${d.end_date?' s/d '+d.end_date:''}</td><td>${rows.length}</td><td>${lunasCount}</td><td>${rupiah(value)}</td><td>${rupiah(paid)}</td><td>${rupiah(remain)}</td></tr>`;
   }).join('');
   depBody.innerHTML=depRows||'<tr><td colspan="7">Belum ada jadwal pada filter ini.</td></tr>';
 
   document.getElementById('recentBody').innerHTML=filtered.slice(0,50).map(x=>{
     const d=departureFor(x);
-    const paid=paidFor(x.id), remain=Math.max(0,Number(x.harga||0)-paid);
+    const paid=paidFor(x.id), remain=remainFor(x);
     return `<tr><td>${esc(x.nama)}</td><td>${esc(x.paket||'')}</td><td>${d?esc(d.name):esc(x.berangkat||'-')}</td><td>${rupiah(paid)}</td><td>${rupiah(remain)}</td><td>${status(x)}</td></tr>`;
   }).join('')||'<tr><td colspan="6">Belum ada jamaah pada filter ini.</td></tr>';
 }
@@ -1023,6 +1034,7 @@ document.getElementById('paymentForm').addEventListener('submit',async e=>{
   e.preventDefault();
   const jamaah_id=document.getElementById('paymentJamaah').value;
   const amount=Number(document.getElementById('paymentAmount').value);
+  const discount=Math.max(0,Number(document.getElementById('paymentDiscount').value)||0);
   const payment_date=document.getElementById('paymentDate').value;
   const method=document.getElementById('paymentMethod').value;
   const bank=document.getElementById('paymentBank').value;
@@ -1031,18 +1043,20 @@ document.getElementById('paymentForm').addEventListener('submit',async e=>{
   if(!jamaah_id||amount<=0||!payment_date||!method){
     notice('Lengkapi nama, nominal, tanggal, dan metode pembayaran.','error');return
   }
+  if(discount<0){notice('Diskon tidak boleh negatif.','error');return}
   if(method==='Transfer'&&!bank){
     notice('Pilih bank transfer: Bank Muamalat atau BSI.','error');return
   }
 
   const {data:inserted,error}=await sb.from('payments').insert({
-    jamaah_id, amount, payment_date, method,
+    jamaah_id, amount, discount, payment_date, method,
     bank: method==='Transfer'?bank:null,
     note
   }).select('*').single();
   if(error){notice('Gagal menyimpan pembayaran: '+error.message,'error');return}
 
   document.getElementById('paymentAmount').value='';
+  document.getElementById('paymentDiscount').value='0';
   document.getElementById('paymentMethod').value='';
   document.getElementById('paymentBank').value='';
   document.getElementById('paymentNote').value='';
@@ -1243,7 +1257,7 @@ function renderDepartures(){
     const count=rows.length;
     const paid=rows.reduce((a,j)=>a+paidFor(j.id),0);
     const value=rows.reduce((a,j)=>a+Number(j.harga||0),0);
-    const remain=rows.reduce((a,j)=>a+Math.max(0,Number(j.harga||0)-paidFor(j.id)),0);
+    const remain=rows.reduce((a,j)=>a+remainFor(j),0);
     const lunas=rows.filter(j=>paidFor(j.id)>=Number(j.harga||0)).length;
     return `<tr>
       <td><b>${esc(d.name)}</b></td>
@@ -1270,7 +1284,7 @@ async function openDeparture(id){
   const rows=data.filter(j=>j.departure_id===id);
   const value=rows.reduce((a,j)=>a+Number(j.harga||0),0);
   const paid=rows.reduce((a,j)=>a+paidFor(j.id),0);
-  const remain=rows.reduce((a,j)=>a+Math.max(0,Number(j.harga||0)-paidFor(j.id)),0);
+  const remain=rows.reduce((a,j)=>a+remainFor(j),0);
   const lunas=rows.filter(j=>paidFor(j.id)>=Number(j.harga||0)).length;
   document.getElementById('departureDetailSummary').innerHTML=
     `<div class="card"><div class="label">Jamaah</div><div class="num">${rows.length}</div></div>
