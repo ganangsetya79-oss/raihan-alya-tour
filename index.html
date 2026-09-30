@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title> PT.Raihan Alya Tour - Management System</title>
+<title>Raihan Alya Tour — Management System</title>
 <style>
 *{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#f4f6f8;color:#20252b}
 .app{display:flex;min-height:100vh}.side{width:235px;background:#173f35;color:#fff;padding:22px 14px;position:fixed;inset:0 auto 0 0}.logo{font-size:19px;font-weight:700;padding:0 12px 25px}.logo small{display:block;font-size:11px;font-weight:400;opacity:.7;margin-top:5px}
@@ -279,6 +279,26 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;p
     <tbody id="paymentSummaryBody"></tbody></table>
   </div>
 
+  <div class="panel payment-period-panel">
+    <div class="panel-head"><h2>💰 Total Uang Masuk</h2><span style="font-size:12px;color:#687078">Filter berdasarkan periode tanggal pembayaran</span></div>
+    <div class="form" style="margin-bottom:14px">
+      <div><label>Dari Tanggal</label><input id="paymentPeriodFrom" type="date"></div>
+      <div><label>Sampai Tanggal</label><input id="paymentPeriodTo" type="date"></div>
+      <div style="display:flex;align-items:end;gap:8px">
+        <button type="button" class="btn" onclick="applyPaymentPeriod()">🔎 Tampilkan</button>
+        <button type="button" class="btn secondary" onclick="resetPaymentPeriod()">Reset</button>
+      </div>
+    </div>
+    <div class="summary-grid" id="paymentPeriodSummary">
+      <div class="card"><span>Total Uang Masuk</span><strong id="periodTotal">Rp0</strong><small id="periodLabel">Semua periode</small></div>
+      <div class="card"><span>Cash</span><strong id="periodCash">Rp0</strong><small>Pembayaran tunai</small></div>
+      <div class="card"><span>Transfer</span><strong id="periodTransfer">Rp0</strong><small>Semua bank</small></div>
+      <div class="card"><span>Bank Muamalat</span><strong id="periodMuamalat">Rp0</strong><small>Transfer Muamalat</small></div>
+      <div class="card"><span>BSI</span><strong id="periodBSI">Rp0</strong><small>Transfer BSI</small></div>
+      <div class="card"><span>Jumlah Transaksi</span><strong id="periodCount">0</strong><small>Transaksi pada periode</small></div>
+    </div>
+  </div>
+
   <div class="panel">
     <div class="panel-head"><h2>Riwayat Transaksi</h2><span style="font-size:12px;color:#687078">Setiap pembayaran memiliki nomor invoice otomatis</span></div>
     <table><thead><tr><th>No. Invoice</th><th>Tanggal</th><th>Jamaah</th><th>Nominal</th><th>Metode</th><th>Bank</th><th>Keterangan</th><th>Aksi</th></tr></thead>
@@ -490,7 +510,7 @@ function show(id,btn){
 function openAdminMenu(){document.getElementById('adminMenu').classList.add('show')}
 function closeAdminMenu(){document.getElementById('adminMenu').classList.remove('show')}
 
-function renderAll(){renderJamaah();renderPaymentSummary();renderPaymentHistory();renderDash();fillPaymentJamaah();fillDocumentJamaah();renderDocuments();fillEquipmentJamaah();renderEquipment();renderDepartures();renderReport();}
+function renderAll(){renderJamaah();renderPaymentSummary();renderPaymentPeriodSummary();renderPaymentHistory();renderDash();fillPaymentJamaah();fillDocumentJamaah();renderDocuments();fillEquipmentJamaah();renderEquipment();renderDepartures();renderReport();}
 
 function fillReportFilters(){
   const m=document.getElementById('reportMonth'), d=document.getElementById('reportDeparture'); if(!m||!d)return;
@@ -599,9 +619,54 @@ function renderPaymentSummary(){
   }).join('')||'<tr><td colspan="5">Belum ada data jamaah.</td></tr>';
 }
 
+function getPaymentPeriod(){
+  const from=document.getElementById('paymentPeriodFrom')?.value||'';
+  const to=document.getElementById('paymentPeriodTo')?.value||'';
+  return {from,to};
+}
+
+function filterPaymentsByPeriod(){
+  const {from,to}=getPaymentPeriod();
+  return payments.filter(p=>{
+    const d=p.payment_date||'';
+    return (!from||d>=from)&&(!to||d<=to);
+  });
+}
+
+function applyPaymentPeriod(){
+  const {from,to}=getPaymentPeriod();
+  if(from&&to&&from>to){ notice('Tanggal awal tidak boleh lebih besar dari tanggal akhir.','error'); return; }
+  renderPaymentPeriodSummary();
+  renderPaymentHistory();
+}
+
+function resetPaymentPeriod(){
+  const f=document.getElementById('paymentPeriodFrom');
+  const t=document.getElementById('paymentPeriodTo');
+  if(f)f.value=''; if(t)t.value='';
+  renderPaymentPeriodSummary();
+  renderPaymentHistory();
+}
+
+function renderPaymentPeriodSummary(){
+  const list=filterPaymentsByPeriod();
+  const total=list.reduce((a,p)=>a+Number(p.amount||0),0);
+  const cash=list.filter(p=>(p.method||'')==='Cash').reduce((a,p)=>a+Number(p.amount||0),0);
+  const transfer=list.filter(p=>(p.method||'')==='Transfer').reduce((a,p)=>a+Number(p.amount||0),0);
+  const muamalat=list.filter(p=>(p.method||'')==='Transfer'&&(p.bank||'')==='Bank Muamalat').reduce((a,p)=>a+Number(p.amount||0),0);
+  const bsi=list.filter(p=>(p.method||'')==='Transfer'&&(p.bank||'')==='BSI').reduce((a,p)=>a+Number(p.amount||0),0);
+  const {from,to}=getPaymentPeriod();
+  const label=from||to ? `${from?formatDateID(from):'Awal'} s/d ${to?formatDateID(to):'Sekarang'}` : 'Semua periode';
+  const set=(id,val)=>{const el=document.getElementById(id);if(el)el.textContent=val};
+  set('periodTotal',rupiah(total)); set('periodCash',rupiah(cash)); set('periodTransfer',rupiah(transfer));
+  set('periodMuamalat',rupiah(muamalat)); set('periodBSI',rupiah(bsi)); set('periodCount',String(list.length)); set('periodLabel',label);
+}
+
 function renderPaymentHistory(){
   const body=document.getElementById('historyBody');
-  body.innerHTML=payments.map(p=>{
+  if(!body)return;
+  const rows=filterPaymentsByPeriod();
+  body.innerHTML=rows.map(p=>{
     const j=data.find(x=>x.id===p.jamaah_id);
     const bank=p.method==='Transfer'?(p.bank||'-'):'-';
     return `<tr>
@@ -614,7 +679,7 @@ function renderPaymentHistory(){
       <td>${esc(p.note||'-')}</td>
       <td><button class="btn small-btn" type="button" onclick="printPayment('${p.id}')">🖨️ Cetak 2 Nota</button> <button class="btn danger small-btn" type="button" onclick="deletePayment('${p.id}')">Hapus</button></td>
     </tr>`;
-  }).join('')||'<tr><td colspan="8">Belum ada pembayaran.</td></tr>';
+  }).join('')||'<tr><td colspan="8">Tidak ada transaksi pada periode yang dipilih.</td></tr>';
 }
 
 function formatDateID(v){
