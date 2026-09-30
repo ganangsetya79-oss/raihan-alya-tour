@@ -175,6 +175,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;p
     <button class="active" onclick="show('dashboard',this)">🏠 Dashboard</button>
     <button onclick="show('jamaah',this)">👥 Data Jamaah</button>
     <button onclick="show('pembayaran',this)">💰 Pembayaran</button>
+    <button onclick="show('uangmasuk',this)">📈 Uang Masuk</button>
     <button onclick="show('dokumen',this)">📄 Dokumen</button>
     <button onclick="show('perlengkapan',this)">🎒 Perlengkapan</button>
     <button onclick="show('keberangkatan',this)">✈️ Keberangkatan</button>
@@ -279,30 +280,59 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;p
     <tbody id="paymentSummaryBody"></tbody></table>
   </div>
 
-  <div class="panel payment-period-panel">
-    <div class="panel-head"><h2>💰 Total Uang Masuk</h2><span style="font-size:12px;color:#687078">Filter berdasarkan periode tanggal pembayaran</span></div>
-    <div class="form" style="margin-bottom:14px">
-      <div><label>Dari Tanggal</label><input id="paymentPeriodFrom" type="date"></div>
-      <div><label>Sampai Tanggal</label><input id="paymentPeriodTo" type="date"></div>
-      <div style="display:flex;align-items:end;gap:8px">
-        <button type="button" class="btn" onclick="applyPaymentPeriod()">🔎 Tampilkan</button>
-        <button type="button" class="btn secondary" onclick="resetPaymentPeriod()">Reset</button>
-      </div>
-    </div>
-    <div class="summary-grid" id="paymentPeriodSummary">
-      <div class="card"><span>Total Uang Masuk</span><strong id="periodTotal">Rp0</strong><small id="periodLabel">Semua periode</small></div>
-      <div class="card"><span>Cash</span><strong id="periodCash">Rp0</strong><small>Pembayaran tunai</small></div>
-      <div class="card"><span>Transfer</span><strong id="periodTransfer">Rp0</strong><small>Semua bank</small></div>
-      <div class="card"><span>Bank Muamalat</span><strong id="periodMuamalat">Rp0</strong><small>Transfer Muamalat</small></div>
-      <div class="card"><span>BSI</span><strong id="periodBSI">Rp0</strong><small>Transfer BSI</small></div>
-      <div class="card"><span>Jumlah Transaksi</span><strong id="periodCount">0</strong><small>Transaksi pada periode</small></div>
-    </div>
-  </div>
-
   <div class="panel">
     <div class="panel-head"><h2>Riwayat Transaksi</h2><span style="font-size:12px;color:#687078">Setiap pembayaran memiliki nomor invoice otomatis</span></div>
     <table><thead><tr><th>No. Invoice</th><th>Tanggal</th><th>Jamaah</th><th>Nominal</th><th>Metode</th><th>Bank</th><th>Keterangan</th><th>Aksi</th></tr></thead>
     <tbody id="historyBody"></tbody></table>
+  </div>
+</section>
+
+
+<section id="uangmasuk" class="hidden">
+  <div class="top"><h1>Uang Masuk</h1></div>
+
+  <div class="panel">
+    <div class="panel-head">
+      <h2>Rekap Uang Masuk Berdasarkan Periode</h2>
+      <div class="actions">
+        <button class="btn secondary" onclick="resetUangMasuk()">Reset</button>
+        <button class="btn" onclick="renderUangMasuk()">Tampilkan</button>
+      </div>
+    </div>
+    <div class="form" style="grid-template-columns:repeat(2,minmax(0,1fr));">
+      <div><label>Dari Tanggal</label><input id="uangMasukStart" type="date"></div>
+      <div><label>Sampai Tanggal</label><input id="uangMasukEnd" type="date"></div>
+    </div>
+    <p class="muted" id="uangMasukPeriodText" style="margin-top:10px">Menampilkan seluruh transaksi pembayaran.</p>
+  </div>
+
+  <div class="cards">
+    <div class="card"><div class="label">Total Uang Masuk</div><div class="value" id="umTotal">Rp0</div></div>
+    <div class="card"><div class="label">Cash</div><div class="value" id="umCash">Rp0</div></div>
+    <div class="card"><div class="label">Transfer</div><div class="value" id="umTransfer">Rp0</div></div>
+    <div class="card"><div class="label">Jumlah Transaksi</div><div class="value" id="umCount">0</div></div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head"><h2>Rincian Transfer</h2></div>
+    <div class="cards" style="margin:0">
+      <div class="card"><div class="label">Bank Muamalat</div><div class="value" id="umMuamalat">Rp0</div></div>
+      <div class="card"><div class="label">BSI</div><div class="value" id="umBSI">Rp0</div></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head">
+      <h2>Transaksi Dalam Periode</h2>
+      <div class="actions">
+        <button class="btn secondary" onclick="printUangMasuk()">🖨️ Cetak</button>
+        <button class="btn" onclick="exportUangMasukCSV()">📥 Export CSV</button>
+      </div>
+    </div>
+    <table>
+      <thead><tr><th>No</th><th>Tanggal</th><th>Invoice</th><th>Jamaah</th><th>Nominal</th><th>Metode</th><th>Bank</th><th>Keterangan</th></tr></thead>
+      <tbody id="uangMasukBody"></tbody>
+    </table>
   </div>
 </section>
 
@@ -510,7 +540,88 @@ function show(id,btn){
 function openAdminMenu(){document.getElementById('adminMenu').classList.add('show')}
 function closeAdminMenu(){document.getElementById('adminMenu').classList.remove('show')}
 
-function renderAll(){renderJamaah();renderPaymentSummary();renderPaymentPeriodSummary();renderPaymentHistory();renderDash();fillPaymentJamaah();fillDocumentJamaah();renderDocuments();fillEquipmentJamaah();renderEquipment();renderDepartures();renderReport();}
+
+function uangMasukFiltered(){
+  const start=document.getElementById('uangMasukStart')?.value||'';
+  const end=document.getElementById('uangMasukEnd')?.value||'';
+  return (payments||[]).filter(p=>{
+    const d=p.payment_date||'';
+    if(start && d<start) return false;
+    if(end && d>end) return false;
+    return true;
+  }).sort((a,b)=>(b.payment_date||'').localeCompare(a.payment_date||''));
+}
+function renderUangMasuk(){
+  const rows=uangMasukFiltered();
+  const start=document.getElementById('uangMasukStart')?.value||'';
+  const end=document.getElementById('uangMasukEnd')?.value||'';
+  const total=rows.reduce((s,p)=>s+Number(p.amount||0),0);
+  const cash=rows.filter(p=>(p.method||'').toLowerCase()==='cash').reduce((s,p)=>s+Number(p.amount||0),0);
+  const transfer=rows.filter(p=>(p.method||'').toLowerCase()==='transfer').reduce((s,p)=>s+Number(p.amount||0),0);
+  const muamalat=rows.filter(p=>(p.bank||'').toLowerCase().includes('muamalat')).reduce((s,p)=>s+Number(p.amount||0),0);
+  const bsi=rows.filter(p=>(p.bank||'').toLowerCase()==='bsi').reduce((s,p)=>s+Number(p.amount||0),0);
+  const money=n=>new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(n||0);
+  const el=id=>document.getElementById(id);
+  if(el('umTotal')) el('umTotal').textContent=money(total);
+  if(el('umCash')) el('umCash').textContent=money(cash);
+  if(el('umTransfer')) el('umTransfer').textContent=money(transfer);
+  if(el('umMuamalat')) el('umMuamalat').textContent=money(muamalat);
+  if(el('umBSI')) el('umBSI').textContent=money(bsi);
+  if(el('umCount')) el('umCount').textContent=rows.length.toLocaleString('id-ID');
+  if(el('uangMasukPeriodText')){
+    if(start||end) el('uangMasukPeriodText').textContent='Periode: '+(start?formatDate(start):'awal')+' s/d '+(end?formatDate(end):'sekarang');
+    else el('uangMasukPeriodText').textContent='Menampilkan seluruh transaksi pembayaran.';
+  }
+  if(el('uangMasukBody')){
+    el('uangMasukBody').innerHTML=rows.map((p,i)=>{
+      const j=(data||[]).find(x=>x.id===p.jamaah_id);
+      return `<tr>
+        <td>${i+1}</td>
+        <td>${formatDate(p.payment_date)}</td>
+        <td>${esc(p.invoice_no||'-')}</td>
+        <td>${esc(j?.nama||'-')}</td>
+        <td>${money(p.amount)}</td>
+        <td>${esc(p.method||'-')}</td>
+        <td>${esc(p.bank||'-')}</td>
+        <td>${esc(p.note||'-')}</td>
+      </tr>`;
+    }).join('') || '<tr><td colspan="8" style="text-align:center">Tidak ada transaksi pada periode ini.</td></tr>';
+  }
+}
+function resetUangMasuk(){
+  const s=document.getElementById('uangMasukStart'),e=document.getElementById('uangMasukEnd');
+  if(s)s.value=''; if(e)e.value=''; renderUangMasuk();
+}
+function exportUangMasukCSV(){
+  const rows=uangMasukFiltered();
+  const money=n=>Number(n||0);
+  const lines=[['No','Tanggal','Invoice','Jamaah','Nominal','Metode','Bank','Keterangan']];
+  rows.forEach((p,i)=>{
+    const j=(data||[]).find(x=>x.id===p.jamaah_id);
+    lines.push([i+1,p.payment_date||'',p.invoice_no||'',j?.nama||'',money(p.amount),p.method||'',p.bank||'',p.note||'']);
+  });
+  const csv=lines.map(r=>r.map(v=>`"${String(v??'').replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob=new Blob(["\ufeff"+csv],{type:'text/csv;charset=utf-8;'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='rekap-uang-masuk.csv'; a.click(); URL.revokeObjectURL(a.href);
+}
+function printUangMasuk(){
+  const rows=uangMasukFiltered();
+  const start=document.getElementById('uangMasukStart')?.value||'';
+  const end=document.getElementById('uangMasukEnd')?.value||'';
+  const money=n=>new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(n||0);
+  const total=rows.reduce((s,p)=>s+Number(p.amount||0),0);
+  const w=window.open('','_blank');
+  if(!w){alert('Izinkan pop-up browser untuk mencetak laporan.');return}
+  const body=rows.map((p,i)=>{
+    const j=(data||[]).find(x=>x.id===p.jamaah_id);
+    return `<tr><td>${i+1}</td><td>${formatDate(p.payment_date)}</td><td>${esc(p.invoice_no||'-')}</td><td>${esc(j?.nama||'-')}</td><td>${money(p.amount)}</td><td>${esc(p.method||'-')}</td><td>${esc(p.bank||'-')}</td><td>${esc(p.note||'-')}</td></tr>`;
+  }).join('');
+  w.document.write(`<!doctype html><html><head><title>Rekap Uang Masuk - Raihan Alya Tour</title><style>
+  body{font-family:Arial,sans-serif;margin:30px;color:#222}h1{margin:0 0 4px;font-size:22px}h2{margin:0 0 14px;font-size:15px}p{margin:4px 0 16px;color:#555}.summary{padding:12px;border:1px solid #ddd;margin:15px 0;font-weight:bold}table{width:100%;border-collapse:collapse;font-size:11px}th,td{border:1px solid #bbb;padding:7px;text-align:left}th{background:#f3f3f3}@media print{button{display:none}}
+  </style></head><body><h1>RAIHAN ALYA TOUR</h1><h2>Melayani dengan Sepenuh Hati</h2><p>Rekap Uang Masuk${start||end?' | '+(start?formatDate(start):'Awal')+' s/d '+(end?formatDate(end):'Sekarang'):''}</p><div class="summary">Total Uang Masuk: ${money(total)} &nbsp; | &nbsp; Jumlah Transaksi: ${rows.length}</div><table><thead><tr><th>No</th><th>Tanggal</th><th>Invoice</th><th>Jamaah</th><th>Nominal</th><th>Metode</th><th>Bank</th><th>Keterangan</th></tr></thead><tbody>${body||'<tr><td colspan="8">Tidak ada transaksi.</td></tr>'}</tbody></table><script>window.onload=()=>window.print()<\/script></body></html>`);
+  w.document.close();
+}
+function renderAll(){renderJamaah();renderPaymentSummary();renderPaymentHistory();renderUangMasuk();renderDash();fillPaymentJamaah();fillDocumentJamaah();renderDocuments();fillEquipmentJamaah();renderEquipment();renderDepartures();renderReport();}
 
 function fillReportFilters(){
   const m=document.getElementById('reportMonth'), d=document.getElementById('reportDeparture'); if(!m||!d)return;
@@ -619,54 +730,9 @@ function renderPaymentSummary(){
   }).join('')||'<tr><td colspan="5">Belum ada data jamaah.</td></tr>';
 }
 
-function getPaymentPeriod(){
-  const from=document.getElementById('paymentPeriodFrom')?.value||'';
-  const to=document.getElementById('paymentPeriodTo')?.value||'';
-  return {from,to};
-}
-
-function filterPaymentsByPeriod(){
-  const {from,to}=getPaymentPeriod();
-  return payments.filter(p=>{
-    const d=p.payment_date||'';
-    return (!from||d>=from)&&(!to||d<=to);
-  });
-}
-
-function applyPaymentPeriod(){
-  const {from,to}=getPaymentPeriod();
-  if(from&&to&&from>to){ notice('Tanggal awal tidak boleh lebih besar dari tanggal akhir.','error'); return; }
-  renderPaymentPeriodSummary();
-  renderPaymentHistory();
-}
-
-function resetPaymentPeriod(){
-  const f=document.getElementById('paymentPeriodFrom');
-  const t=document.getElementById('paymentPeriodTo');
-  if(f)f.value=''; if(t)t.value='';
-  renderPaymentPeriodSummary();
-  renderPaymentHistory();
-}
-
-function renderPaymentPeriodSummary(){
-  const list=filterPaymentsByPeriod();
-  const total=list.reduce((a,p)=>a+Number(p.amount||0),0);
-  const cash=list.filter(p=>(p.method||'')==='Cash').reduce((a,p)=>a+Number(p.amount||0),0);
-  const transfer=list.filter(p=>(p.method||'')==='Transfer').reduce((a,p)=>a+Number(p.amount||0),0);
-  const muamalat=list.filter(p=>(p.method||'')==='Transfer'&&(p.bank||'')==='Bank Muamalat').reduce((a,p)=>a+Number(p.amount||0),0);
-  const bsi=list.filter(p=>(p.method||'')==='Transfer'&&(p.bank||'')==='BSI').reduce((a,p)=>a+Number(p.amount||0),0);
-  const {from,to}=getPaymentPeriod();
-  const label=from||to ? `${from?formatDateID(from):'Awal'} s/d ${to?formatDateID(to):'Sekarang'}` : 'Semua periode';
-  const set=(id,val)=>{const el=document.getElementById(id);if(el)el.textContent=val};
-  set('periodTotal',rupiah(total)); set('periodCash',rupiah(cash)); set('periodTransfer',rupiah(transfer));
-  set('periodMuamalat',rupiah(muamalat)); set('periodBSI',rupiah(bsi)); set('periodCount',String(list.length)); set('periodLabel',label);
-}
-
 function renderPaymentHistory(){
   const body=document.getElementById('historyBody');
-  if(!body)return;
-  const rows=filterPaymentsByPeriod();
-  body.innerHTML=rows.map(p=>{
+  body.innerHTML=payments.map(p=>{
     const j=data.find(x=>x.id===p.jamaah_id);
     const bank=p.method==='Transfer'?(p.bank||'-'):'-';
     return `<tr>
@@ -679,7 +745,7 @@ function renderPaymentHistory(){
       <td>${esc(p.note||'-')}</td>
       <td><button class="btn small-btn" type="button" onclick="printPayment('${p.id}')">🖨️ Cetak 2 Nota</button> <button class="btn danger small-btn" type="button" onclick="deletePayment('${p.id}')">Hapus</button></td>
     </tr>`;
-  }).join('')||'<tr><td colspan="8">Tidak ada transaksi pada periode yang dipilih.</td></tr>';
+  }).join('')||'<tr><td colspan="8">Belum ada pembayaran.</td></tr>';
 }
 
 function formatDateID(v){
