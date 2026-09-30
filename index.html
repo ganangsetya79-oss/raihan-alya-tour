@@ -175,6 +175,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;p
     <button class="active" onclick="show('dashboard',this)">🏠 Dashboard</button>
     <button onclick="show('jamaah',this)">👥 Data Jamaah</button>
     <button onclick="show('pembayaran',this)">💰 Pembayaran</button>
+    <button onclick="show('uangmasuk',this)">📈 Uang Masuk</button>
     <button onclick="show('dokumen',this)">📄 Dokumen</button>
     <button onclick="show('perlengkapan',this)">🎒 Perlengkapan</button>
     <button onclick="show('keberangkatan',this)">✈️ Keberangkatan</button>
@@ -283,6 +284,61 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;p
     <div class="panel-head"><h2>Riwayat Transaksi</h2><span style="font-size:12px;color:#687078">Setiap pembayaran memiliki nomor invoice otomatis</span></div>
     <table><thead><tr><th>No. Invoice</th><th>Tanggal</th><th>Jamaah</th><th>Nominal</th><th>Metode</th><th>Bank</th><th>Keterangan</th><th>Aksi</th></tr></thead>
     <tbody id="historyBody"></tbody></table>
+  </div>
+</section>
+
+
+<section id="uangmasuk" class="hidden">
+  <div class="top"><h1>Uang Masuk</h1></div>
+
+  <div class="panel">
+    <div class="panel-head">
+      <h2>Rekap Uang Masuk Berdasarkan Periode</h2>
+      <div class="actions">
+        <button class="btn secondary" onclick="resetUangMasuk()">Reset</button>
+        <button class="btn" onclick="renderUangMasuk()">Tampilkan</button>
+      </div>
+    </div>
+    <div class="form" style="grid-template-columns:repeat(2,minmax(0,1fr));">
+      <div><label>Dari Tanggal</label><input id="uangMasukStart" type="date"></div>
+      <div><label>Sampai Tanggal</label><input id="uangMasukEnd" type="date"></div>
+    </div>
+    <div class="actions" style="margin-top:12px;flex-wrap:wrap;">
+      <button type="button" class="btn secondary" onclick="setUangMasukPeriod('today')">Hari Ini</button>
+      <button type="button" class="btn secondary" onclick="setUangMasukPeriod('week')">7 Hari</button>
+      <button type="button" class="btn secondary" onclick="setUangMasukPeriod('month')">Bulan Ini</button>
+      <button type="button" class="btn secondary" onclick="setUangMasukPeriod('30days')">30 Hari</button>
+    </div>
+    <p class="muted" id="uangMasukPeriodText" style="margin-top:10px">Menampilkan seluruh transaksi pembayaran.</p>
+  </div>
+
+  <div class="cards">
+    <div class="card"><div class="label">Total Uang Masuk</div><div class="value" id="umTotal">Rp0</div></div>
+    <div class="card"><div class="label">Cash</div><div class="value" id="umCash">Rp0</div></div>
+    <div class="card"><div class="label">Transfer</div><div class="value" id="umTransfer">Rp0</div></div>
+    <div class="card"><div class="label">Jumlah Transaksi</div><div class="value" id="umCount">0</div></div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head"><h2>Rincian Transfer</h2></div>
+    <div class="cards" style="margin:0">
+      <div class="card"><div class="label">Bank Muamalat</div><div class="value" id="umMuamalat">Rp0</div></div>
+      <div class="card"><div class="label">BSI</div><div class="value" id="umBSI">Rp0</div></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head">
+      <h2>Transaksi Dalam Periode</h2>
+      <div class="actions">
+        <button class="btn secondary" onclick="printUangMasuk()">🖨️ Cetak</button>
+        <button class="btn" onclick="exportUangMasukCSV()">📥 Export CSV</button>
+      </div>
+    </div>
+    <table>
+      <thead><tr><th>No</th><th>Tanggal</th><th>Invoice</th><th>Jamaah</th><th>Nominal</th><th>Metode</th><th>Bank</th><th>Keterangan</th></tr></thead>
+      <tbody id="uangMasukBody"></tbody>
+    </table>
   </div>
 </section>
 
@@ -453,7 +509,8 @@ async function startApp(){
   if(!currentUser)return;
   document.getElementById('onlineLogin').style.display='none';
   document.getElementById('mainApp').style.display='flex';
-  await loadData();
+  const ok=await loadData();
+  if(!ok)return;
   renderAll();
 }
 
@@ -463,21 +520,33 @@ async function logout(){
 }
 
 async function loadData(){
+  // Data utama wajib dimuat terlebih dahulu agar form pembayaran tetap bisa
+  // menampilkan daftar jamaah walaupun salah satu modul tambahan bermasalah.
   const j=await sb.from('jamaah').select('*').order('created_at',{ascending:false});
   const p=await sb.from('payments').select('*').order('payment_date',{ascending:false});
-  const d=await sb.from('documents').select('*');
-  const e=await sb.from('equipment').select('*');
-  const dep=await sb.from('departures').select('*').order('start_date',{ascending:false});
-  if(j.error){notice('Gagal membaca tabel jamaah: '+j.error.message,'error');return}
-  if(p.error){notice('Gagal membaca tabel pembayaran: '+p.error.message,'error');return}
-  if(d.error){notice('Tabel dokumen belum siap: '+d.error.message,'error');return}
-  if(e.error){notice('Tabel perlengkapan belum siap: '+e.error.message,'error');return}
-  if(dep.error){notice('Tabel keberangkatan belum siap: '+dep.error.message,'error');return}
+  if(j.error){notice('Gagal membaca tabel jamaah: '+j.error.message,'error');return false}
+  if(p.error){notice('Gagal membaca tabel pembayaran: '+p.error.message,'error');return false}
+
   data=j.data||[];
   payments=p.data||[];
-  documents=d.data||[];
-  equipment=e.data||[];
-  departures=dep.data||[];
+  documents=[];
+  equipment=[];
+  departures=[];
+
+  // Modul tambahan tidak boleh mengosongkan data jamaah/pembayaran.
+  const d=await sb.from('documents').select('*');
+  if(d.error){notice('Modul dokumen belum siap: '+d.error.message,'error');}
+  else documents=d.data||[];
+
+  const e=await sb.from('equipment').select('*');
+  if(e.error){notice('Modul perlengkapan belum siap: '+e.error.message,'error');}
+  else equipment=e.data||[];
+
+  const dep=await sb.from('departures').select('*').order('start_date',{ascending:false});
+  if(dep.error){notice('Modul keberangkatan belum siap: '+dep.error.message,'error');}
+  else departures=dep.data||[];
+
+  return true;
 }
 
 function show(id,btn){
@@ -490,7 +559,114 @@ function show(id,btn){
 function openAdminMenu(){document.getElementById('adminMenu').classList.add('show')}
 function closeAdminMenu(){document.getElementById('adminMenu').classList.remove('show')}
 
-function renderAll(){renderJamaah();renderPaymentSummary();renderPaymentHistory();renderDash();fillPaymentJamaah();fillDocumentJamaah();renderDocuments();fillEquipmentJamaah();renderEquipment();renderDepartures();renderReport();}
+
+function uangMasukFiltered(){
+  const start=document.getElementById('uangMasukStart')?.value||'';
+  const end=document.getElementById('uangMasukEnd')?.value||'';
+  return (payments||[]).filter(p=>{
+    const d=p.payment_date||'';
+    if(start && d<start) return false;
+    if(end && d>end) return false;
+    return true;
+  }).sort((a,b)=>(b.payment_date||'').localeCompare(a.payment_date||''));
+}
+function renderUangMasuk(){
+  const rows=uangMasukFiltered();
+  const start=document.getElementById('uangMasukStart')?.value||'';
+  const end=document.getElementById('uangMasukEnd')?.value||'';
+  const total=rows.reduce((s,p)=>s+Number(p.amount||0),0);
+  const cash=rows.filter(p=>(p.method||'').toLowerCase()==='cash').reduce((s,p)=>s+Number(p.amount||0),0);
+  const transfer=rows.filter(p=>(p.method||'').toLowerCase()==='transfer').reduce((s,p)=>s+Number(p.amount||0),0);
+  const muamalat=rows.filter(p=>(p.bank||'').toLowerCase().includes('muamalat')).reduce((s,p)=>s+Number(p.amount||0),0);
+  const bsi=rows.filter(p=>(p.bank||'').toLowerCase()==='bsi').reduce((s,p)=>s+Number(p.amount||0),0);
+  const money=n=>new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(n||0);
+  const el=id=>document.getElementById(id);
+  if(el('umTotal')) el('umTotal').textContent=money(total);
+  if(el('umCash')) el('umCash').textContent=money(cash);
+  if(el('umTransfer')) el('umTransfer').textContent=money(transfer);
+  if(el('umMuamalat')) el('umMuamalat').textContent=money(muamalat);
+  if(el('umBSI')) el('umBSI').textContent=money(bsi);
+  if(el('umCount')) el('umCount').textContent=rows.length.toLocaleString('id-ID');
+  if(el('uangMasukPeriodText')){
+    if(start||end) el('uangMasukPeriodText').textContent='Periode: '+(start?formatDate(start):'awal')+' s/d '+(end?formatDate(end):'sekarang');
+    else el('uangMasukPeriodText').textContent='Menampilkan seluruh transaksi pembayaran.';
+  }
+  if(el('uangMasukBody')){
+    el('uangMasukBody').innerHTML=rows.map((p,i)=>{
+      const j=(data||[]).find(x=>x.id===p.jamaah_id);
+      return `<tr>
+        <td>${i+1}</td>
+        <td>${formatDate(p.payment_date)}</td>
+        <td>${esc(p.invoice_no||'-')}</td>
+        <td>${esc(j?.nama||'-')}</td>
+        <td>${money(p.amount)}</td>
+        <td>${esc(p.method||'-')}</td>
+        <td>${esc(p.bank||'-')}</td>
+        <td>${esc(p.note||'-')}</td>
+      </tr>`;
+    }).join('') || '<tr><td colspan="8" style="text-align:center">Tidak ada transaksi pada periode ini.</td></tr>';
+  }
+}
+function localISODate(d){
+  const y=d.getFullYear();
+  const m=String(d.getMonth()+1).padStart(2,'0');
+  const day=String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+function setUangMasukPeriod(type){
+  const s=document.getElementById('uangMasukStart');
+  const e=document.getElementById('uangMasukEnd');
+  if(!s||!e)return;
+  const now=new Date();
+  const end=new Date(now);
+  let start=new Date(now);
+  if(type==='today'){
+    start=new Date(now);
+  }else if(type==='week'){
+    start.setDate(start.getDate()-6);
+  }else if(type==='month'){
+    start=new Date(now.getFullYear(),now.getMonth(),1);
+  }else if(type==='30days'){
+    start.setDate(start.getDate()-29);
+  }
+  s.value=localISODate(start);
+  e.value=localISODate(end);
+  renderUangMasuk();
+}
+function resetUangMasuk(){
+  const s=document.getElementById('uangMasukStart'),e=document.getElementById('uangMasukEnd');
+  if(s)s.value=''; if(e)e.value=''; renderUangMasuk();
+}
+function exportUangMasukCSV(){
+  const rows=uangMasukFiltered();
+  const money=n=>Number(n||0);
+  const lines=[['No','Tanggal','Invoice','Jamaah','Nominal','Metode','Bank','Keterangan']];
+  rows.forEach((p,i)=>{
+    const j=(data||[]).find(x=>x.id===p.jamaah_id);
+    lines.push([i+1,p.payment_date||'',p.invoice_no||'',j?.nama||'',money(p.amount),p.method||'',p.bank||'',p.note||'']);
+  });
+  const csv=lines.map(r=>r.map(v=>`"${String(v??'').replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob=new Blob(["\ufeff"+csv],{type:'text/csv;charset=utf-8;'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='rekap-uang-masuk.csv'; a.click(); URL.revokeObjectURL(a.href);
+}
+function printUangMasuk(){
+  const rows=uangMasukFiltered();
+  const start=document.getElementById('uangMasukStart')?.value||'';
+  const end=document.getElementById('uangMasukEnd')?.value||'';
+  const money=n=>new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(n||0);
+  const total=rows.reduce((s,p)=>s+Number(p.amount||0),0);
+  const w=window.open('','_blank');
+  if(!w){alert('Izinkan pop-up browser untuk mencetak laporan.');return}
+  const body=rows.map((p,i)=>{
+    const j=(data||[]).find(x=>x.id===p.jamaah_id);
+    return `<tr><td>${i+1}</td><td>${formatDate(p.payment_date)}</td><td>${esc(p.invoice_no||'-')}</td><td>${esc(j?.nama||'-')}</td><td>${money(p.amount)}</td><td>${esc(p.method||'-')}</td><td>${esc(p.bank||'-')}</td><td>${esc(p.note||'-')}</td></tr>`;
+  }).join('');
+  w.document.write(`<!doctype html><html><head><title>Rekap Uang Masuk - Raihan Alya Tour</title><style>
+  body{font-family:Arial,sans-serif;margin:30px;color:#222}h1{margin:0 0 4px;font-size:22px}h2{margin:0 0 14px;font-size:15px}p{margin:4px 0 16px;color:#555}.summary{padding:12px;border:1px solid #ddd;margin:15px 0;font-weight:bold}table{width:100%;border-collapse:collapse;font-size:11px}th,td{border:1px solid #bbb;padding:7px;text-align:left}th{background:#f3f3f3}@media print{button{display:none}}
+  </style></head><body><h1>RAIHAN ALYA TOUR</h1><h2>Melayani dengan Sepenuh Hati</h2><p>Rekap Uang Masuk${start||end?' | '+(start?formatDate(start):'Awal')+' s/d '+(end?formatDate(end):'Sekarang'):''}</p><div class="summary">Total Uang Masuk: ${money(total)} &nbsp; | &nbsp; Jumlah Transaksi: ${rows.length}</div><table><thead><tr><th>No</th><th>Tanggal</th><th>Invoice</th><th>Jamaah</th><th>Nominal</th><th>Metode</th><th>Bank</th><th>Keterangan</th></tr></thead><tbody>${body||'<tr><td colspan="8">Tidak ada transaksi.</td></tr>'}</tbody></table><script>window.onload=()=>window.print()<\/script></body></html>`);
+  w.document.close();
+}
+async function renderAll(){renderJamaah();renderPaymentSummary();renderPaymentHistory();renderUangMasuk();renderDash();await fillPaymentJamaah();fillDocumentJamaah();renderDocuments();fillEquipmentJamaah();renderEquipment();renderDepartures();renderReport();}
 
 function fillReportFilters(){
   const m=document.getElementById('reportMonth'), d=document.getElementById('reportDeparture'); if(!m||!d)return;
@@ -760,12 +936,44 @@ function renderDash(){
   }).join('')||'<tr><td colspan="6">Belum ada jamaah pada filter ini.</td></tr>';
 }
 
-function fillPaymentJamaah(){
+async function fillPaymentJamaah(){
   const sel=document.getElementById('paymentJamaah');
+  if(!sel)return;
+
   const old=sel.value;
-  sel.innerHTML='<option value="">-- Pilih Jamaah --</option>'+data.map(x=>`<option value="${x.id}">${esc(x.nama)}</option>`).join('');
-  if(data.some(x=>x.id===old))sel.value=old;
-  if(!document.getElementById('paymentDate').value)document.getElementById('paymentDate').value=new Date().toISOString().slice(0,10);
+  // Utamakan data yang sudah dimuat. Jika kosong, ambil langsung dari Supabase
+  // agar dropdown pembayaran tidak bergantung pada render modul lain.
+  let rows=Array.isArray(data)?data.filter(x=>x&&x.id&&x.nama):[];
+
+  if(!rows.length){
+    const {data:directRows,error}=await sb.from('jamaah')
+      .select('id,nama')
+      .order('nama',{ascending:true});
+
+    if(!error && Array.isArray(directRows)){
+      rows=directRows;
+      data=directRows.length?directRows:data;
+    }else if(error){
+      console.error('Gagal mengambil daftar jamaah untuk pembayaran:',error);
+      sel.innerHTML='<option value="">-- Gagal memuat jamaah --</option>';
+      notice('Daftar jamaah tidak dapat dimuat: '+error.message,'error');
+      return;
+    }
+  }
+
+  rows=rows.slice().sort((a,b)=>String(a.nama||'').localeCompare(String(b.nama||''),'id'));
+
+  sel.innerHTML='<option value="">-- Pilih Jamaah --</option>';
+  rows.forEach(x=>{
+    const opt=document.createElement('option');
+    opt.value=x.id;
+    opt.textContent=x.nama||'-';
+    sel.appendChild(opt);
+  });
+
+  if(rows.some(x=>x.id===old))sel.value=old;
+  if(!document.getElementById('paymentDate').value)
+    document.getElementById('paymentDate').value=new Date().toISOString().slice(0,10);
 }
 
 function openForm(id=null){
