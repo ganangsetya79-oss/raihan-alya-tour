@@ -6,9 +6,9 @@
 <title>Raihan Alya Tour — Management System</title>
 <style>
 *{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#f4f6f8;color:#20252b}
-.app{display:flex;min-height:100vh}.side{width:235px;background:#173f35;color:#fff;padding:22px 14px;position:fixed;inset:0 auto 0 0}.logo{font-size:19px;font-weight:700;padding:0 12px 25px}.logo small{display:block;font-size:11px;font-weight:400;opacity:.7;margin-top:5px}
+.app{display:flex;min-height:100vh}.side{width:235px;background:#173f35;color:#fff;padding:22px 14px;position:fixed;inset:0 auto 0 0;z-index:1000;transition:width .25s ease,transform .25s ease;overflow:hidden}.logo{font-size:19px;font-weight:700;padding:0 12px 25px;white-space:nowrap}.logo small{display:block;font-size:11px;font-weight:400;opacity:.7;margin-top:5px}.sidebar-toggle{position:absolute;right:10px;top:18px;width:32px;height:32px;border:0;border-radius:8px;background:rgba(255,255,255,.1);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.2s}.sidebar-toggle:hover{background:rgba(255,255,255,.18)}.sidebar-toggle svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .nav button{width:100%;border:0;background:transparent;color:#dce9e5;text-align:left;padding:11px 12px;border-radius:8px;margin:3px 0;cursor:pointer;font-size:14px;display:flex;align-items:center;gap:11px;transition:background .18s ease,color .18s ease}.nav button.active,.nav button:hover{background:#286253;color:#fff}.nav-icon{width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;flex:none;opacity:.9}.nav-icon svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.nav button.active .nav-icon{opacity:1}.nav-label{white-space:nowrap}
-.main{margin-left:235px;width:calc(100% - 235px);padding:28px}.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:25px;gap:15px}.top h1{margin:0;font-size:25px}.user{background:#fff;padding:10px 14px;border-radius:9px;box-shadow:0 2px 8px #0000000d}
+.main{margin-left:235px;width:calc(100% - 235px);padding:28px;transition:margin-left .25s ease,width .25s ease}.app.sidebar-collapsed .side{width:76px;padding-left:10px;padding-right:10px}.app.sidebar-collapsed .main{margin-left:76px;width:calc(100% - 76px)}.app.sidebar-collapsed .logo{font-size:0;padding-left:0;padding-right:0}.app.sidebar-collapsed .logo small{display:none}.app.sidebar-collapsed .nav button{justify-content:center;padding-left:8px;padding-right:8px}.app.sidebar-collapsed .nav-label{display:none}.app.sidebar-collapsed .nav-icon{width:24px;height:24px}.app.sidebar-collapsed .nav-icon svg{width:20px;height:20px}.app.sidebar-collapsed .sidebar-toggle{right:22px}.app.sidebar-collapsed .sidebar-toggle svg{transform:rotate(180deg)}.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:25px;gap:15px}.top h1{margin:0;font-size:25px}.user{background:#fff;padding:10px 14px;border-radius:9px;box-shadow:0 2px 8px #0000000d}
 .cards{display:grid;grid-template-columns:repeat(4,1fr);gap:15px;margin-bottom:22px}.card{background:#fff;border-radius:12px;padding:19px;box-shadow:0 2px 10px #0000000a}.label{font-size:13px;color:#727b83}.num{font-size:25px;font-weight:700;margin-top:9px}
 .panel{background:#fff;border-radius:12px;padding:20px;box-shadow:0 2px 10px #0000000a;margin-bottom:20px}.panel-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;gap:10px}.panel h2{font-size:17px;margin:0}
 .btn{background:#1f705d;color:#fff;border:0;border-radius:7px;padding:10px 14px;cursor:pointer}.btn:hover{background:#185746}.btn.secondary{background:#e9edef;color:#273038}.btn.danger{background:#b84040}
@@ -170,6 +170,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;p
 
 <div class="app" id="mainApp" style="display:none">
 <aside class="side">
+  <button class="sidebar-toggle" id="sidebarToggle" type="button" onclick="toggleSidebar()" aria-label="Tutup sidebar" title="Tutup sidebar"><svg viewBox="0 0 24 24"><path d="m15 6-6 6 6 6"/><path d="M9 12h10"/></svg></button>
   <div class="logo">RAIHAN ALYA TOUR<small>Management System</small></div>
   <div class="nav">
     <button class="active" onclick="show('dashboard',this)"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 10.8 12 3l9 7.8v9.2a1 1 0 0 1-1 1h-5.5v-6h-5v6H4a1 1 0 0 1-1-1z"/></svg></span><span class="nav-label">Dashboard</span></button>
@@ -554,6 +555,25 @@ async function loadData(){
   return true;
 }
 
+function toggleSidebar(){
+  const app=document.getElementById('mainApp');
+  if(!app)return;
+  app.classList.toggle('sidebar-collapsed');
+  const collapsed=app.classList.contains('sidebar-collapsed');
+  const btn=document.getElementById('sidebarToggle');
+  if(btn){
+    btn.setAttribute('aria-label',collapsed?'Buka sidebar':'Tutup sidebar');
+    btn.setAttribute('title',collapsed?'Buka sidebar':'Tutup sidebar');
+  }
+  try{localStorage.setItem('raihan_sidebar_collapsed',collapsed?'1':'0')}catch(e){}
+}
+function initSidebar(){
+  const app=document.getElementById('mainApp');
+  if(!app)return;
+  try{
+    if(localStorage.getItem('raihan_sidebar_collapsed')==='1')app.classList.add('sidebar-collapsed');
+  }catch(e){}
+}
 function show(id,btn){
   document.querySelectorAll('main section').forEach(x=>x.classList.add('hidden'));
   document.getElementById(id).classList.remove('hidden');
@@ -1421,6 +1441,7 @@ function esc(v){
   return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
 }
 
+initSidebar();
 sb.auth.getSession().then(({data})=>{
   if(data.session)startApp();
 });
