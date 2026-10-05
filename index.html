@@ -539,7 +539,7 @@ const SUPABASE_URL='https://hsnvuqnpqgbokdbiwjar.supabase.co';
 const SUPABASE_KEY='sb_publishable_qsYyXhpBu2xT3sGYAv--6w_AqEjU297';
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 
-let data=[], payments=[], documents=[], equipment=[], departures=[], currentUser=null;
+let data=[], payments=[], documents=[], equipment=[], departures=[], currentUser=null, currentAccess=null;
 
 const rupiah=n=>new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(Number(n)||0);
 const paidFor=id=>payments.filter(p=>p.jamaah_id===id).reduce((a,p)=>a+Number(p.amount||0),0);
@@ -554,6 +554,28 @@ function notice(msg,type='ok'){
   setTimeout(()=>{el.innerHTML=''},4000);
 }
 
+async function loadAccessProfile(){
+  const {data:row,error}=await sb.from('app_users').select('*').eq('user_id',currentUser.id).maybeSingle();
+  if(error){
+    // Jika tabel akses belum dibuat, jangan memblokir instalasi lama.
+    currentAccess={role:'admin',active:true,permissions:['dashboard','jamaah','pembayaran','uangmasuk','dokumen','perlengkapan','keberangkatan','laporan']};
+    return true;
+  }
+  if(row && row.active===false){
+    document.getElementById('loginError').textContent='Akun Anda sedang dinonaktifkan.';
+    await sb.auth.signOut();
+    return false;
+  }
+  currentAccess=row||{role:'admin',active:true,permissions:['dashboard','jamaah','pembayaran','uangmasuk','dokumen','perlengkapan','keberangkatan','laporan']};
+  if(currentAccess.role==='admin')currentAccess.permissions=['dashboard','jamaah','pembayaran','uangmasuk','dokumen','perlengkapan','keberangkatan','laporan'];
+  if(!Array.isArray(currentAccess.permissions))currentAccess.permissions=defaultPermissions(currentAccess.role);
+  return true;
+}
+function canAccess(module){return currentAccess?.role==='admin'||(currentAccess?.permissions||[]).includes(module)}
+function applyAccessNavigation(){
+  const map=['dashboard','jamaah','pembayaran','uangmasuk','dokumen','perlengkapan','keberangkatan','laporan'];
+  document.querySelectorAll('.nav button').forEach((btn,i)=>{if(map[i])btn.style.display=canAccess(map[i])?'flex':'none'});
+}
 async function onlineLogin(){
   const email=document.getElementById('loginEmail').value.trim();
   const password=document.getElementById('loginPassword').value;
@@ -568,8 +590,11 @@ async function startApp(){
   const {data:sessionData}=await sb.auth.getSession();
   currentUser=sessionData.session?.user||null;
   if(!currentUser)return;
+  const accessOk=await loadAccessProfile();
+  if(!accessOk)return;
   document.getElementById('onlineLogin').style.display='none';
   document.getElementById('mainApp').style.display='flex';
+  applyAccessNavigation();
   const ok=await loadData();
   if(!ok)return;
   renderAll();
@@ -630,6 +655,8 @@ function initSidebar(){
   }catch(e){}
 }
 function show(id,btn){
+  if(id==='akses' && currentAccess?.role!=='admin'){notice('Hanya Administrator yang dapat mengelola akses pengguna.','error');return}
+  if(id!=='akses' && !canAccess(id)){notice('Anda tidak memiliki akses ke modul ini.','error');return}
   document.querySelectorAll('main section').forEach(x=>x.classList.add('hidden'));
   document.getElementById(id).classList.remove('hidden');
   document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('active'));
