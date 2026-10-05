@@ -1974,7 +1974,7 @@ document.getElementById('departureForm').addEventListener('submit',async e=>{
   if(editId)openDeparture(editId);
   notice(editId?'Grup keberangkatan berhasil diperbarui.':'Grup keberangkatan berhasil dibuat.');
 });
-async async function deleteDeparture(id){
+async function deleteDeparture(id){
   const d=departures.find(x=>x.id===id);
   if(!d||!confirm(`Hapus grup "${d.name}"? Jamaah tidak akan dihapus.`))return;
   const {error}=await sb.from('departures').delete().eq('id',id);
