@@ -746,6 +746,28 @@ const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 
 const GOOGLE_SHEETS_WEBAPP_URL="https://script.google.com/macros/s/AKfycbzGD3BzOL4e2LlKnAlZvG_hYww4h0iNnYXLhsi1r9YNf9R1T68zEEejYw30_zErzVme/exec";
 async function syncToSpreadsheet(sheet,data){
+  if(!GOOGLE_SHEETS_WEBAPP_URL||!data)return false;
+  try{
+    const payload=JSON.stringify({sheet:String(sheet||''),data:JSON.parse(JSON.stringify(data))});
+    await fetch(GOOGLE_SHEETS_WEBAPP_URL,{
+      method:'POST',
+      mode:'no-cors',
+      headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body:payload,
+      keepalive:true
+    });
+    console.log('Data dikirim ke Google Sheets:',sheet,data);
+    return true;
+  }catch(err){
+    console.error('Sinkronisasi Google Sheets gagal:',err);
+    return false;
+  }
+}
+function syncManyToSpreadsheet(sheet,rows){
+  if(!Array.isArray(rows))return;
+  rows.forEach(row=>syncToSpreadsheet(sheet,row));
+}
+async function syncToSpreadsheet(sheet,data){
   if(!GOOGLE_SHEETS_WEBAPP_URL||!data)return;
   try{
     await fetch(GOOGLE_SHEETS_WEBAPP_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({sheet,data:JSON.parse(JSON.stringify(data))})});
