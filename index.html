@@ -2494,6 +2494,6 @@ function renderDashboardExtras(){const el=document.getElementById('dashboardAler
 const incomplete=(documents||[]).filter(d=>d&&DOC_TYPES&&DOC_TYPES.some(([k])=>!d[k+'_path']));if(incomplete.length)alerts.push({type:'info',text:incomplete.length+' jamaah memiliki dokumen belum lengkap',btn:'Dokumen',action:"show('dokumen',document.querySelectorAll('.nav button')[6])"});
 el.innerHTML=alerts.slice(0,10).map(a=>'<div class="dashboard-alert-item '+a.type+'"><div><strong>'+esc(a.text)+'</strong></div><button class="btn secondary small-btn" type="button" onclick="'+a.action+'">'+a.btn+'</button></div>').join('')||'<div class="muted">Tidak ada perhatian khusus.</div>';
 const month=document.getElementById('dashMonth')?.value||'';const filteredPayments=(payments||[]).filter(p=>!month||monthKey(p.payment_date)===month);const income=filteredPayments.reduce((a,p)=>a+Number(p.amount||0),0);const expense=(expenses||[]).filter(x=>!month||monthKey(x.date)===month).reduce((a,x)=>a+Number(x.amount||0),0);document.getElementById('dashIncomeExtra').textContent=rupiah(income);document.getElementById('dashExpenseExtra').textContent=rupiah(expense);document.getElementById('dashNetExtra').textContent=rupiah(income-expense);renderDepartureChecklist();renderActivityLog()}
-</script></script>
+</script>
 </body>
 </html>
