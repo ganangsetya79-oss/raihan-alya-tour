@@ -186,10 +186,54 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;p
 .payment-search-hint{display:flex;align-items:center;gap:5px;margin-top:5px;font-size:11px;color:#687078}.payment-search-hint svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:0 0 auto}
 .payment-jamaah-picker{position:relative}.payment-jamaah-picker #paymentJamaahSearch{margin-bottom:7px}.payment-jamaah-picker #paymentJamaah{width:100%}.payment-jamaah-picker #paymentJamaahSearch:focus{border-color:#0877c9;box-shadow:0 0 0 2px rgba(8,119,201,.08)}
 .expense-summary-panel{border:1px solid #dce7e3;background:linear-gradient(135deg,#fbfdfc 0%,#f2f8f5 100%)}.expense-cards{grid-template-columns:repeat(4,minmax(0,1fr))!important}.expense-cards .card{border:1px solid #e4ebe8;border-radius:12px}.expense-filter-form{align-items:end}@media(max-width:900px){.expense-cards{grid-template-columns:repeat(2,minmax(0,1fr))!important}.expense-filter-form{grid-template-columns:1fr!important}}@media(max-width:600px){.expense-cards{grid-template-columns:1fr!important}}
+@media(max-width:768px){
+  html,body{width:100%;max-width:100%;overflow-x:hidden}
+  .app{min-width:0;width:100%}
+  .side{width:250px;transform:translateX(-100%);box-shadow:8px 0 24px rgba(0,0,0,.16);z-index:1200}
+  .app.mobile-nav-open .side{transform:translateX(0)}
+  .main,.app.sidebar-collapsed .main{margin-left:0;width:100%;padding:14px 12px 24px}
+  .app.sidebar-collapsed .side{width:250px;padding-left:14px;padding-right:14px}
+  .app.sidebar-collapsed .logo{font-size:15px;padding:0 44px 25px 12px}
+  .app.sidebar-collapsed .logo small{display:block}
+  .mobile-menu-btn{display:flex!important;position:fixed;top:10px;left:10px;width:40px;height:40px;border:0;border-radius:10px;background:#173f35;color:#fff;align-items:center;justify-content:center;z-index:1100;box-shadow:0 4px 14px rgba(0,0,0,.15);cursor:pointer}
+  .mobile-menu-btn svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
+  .mobile-nav-backdrop{display:block!important;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:1150}
+  .dashboard-brand{padding-left:52px}
+  .dashboard-brand-text{min-width:0}
+  .dashboard-brand-title{font-size:18px}
+  .dashboard-brand-slogan,.dashboard-brand-subtitle{font-size:10px;white-space:normal}
+  .dashboard-live-datetime{padding-left:52px;flex-wrap:wrap}
+  .top{gap:8px;flex-wrap:wrap}
+  .top h1{font-size:20px;line-height:1.25}
+  .panel{padding:13px;border-radius:10px}
+  .panel-head{gap:8px;flex-wrap:wrap}
+  .panel-head h2{font-size:15px}
+  .form-grid,.form-grid-3,.stats-grid,.cards-grid,.equipment-grid{grid-template-columns:1fr!important}
+  .stats-grid{gap:9px}
+  .stat-card{min-width:0;padding:12px}
+  .form{gap:10px}
+  input,select,textarea{max-width:100%;font-size:14px}
+  .btn{min-height:38px}
+  .btn-group,.actions,.package-actions{width:100%;flex-wrap:wrap}
+  .btn-group .btn,.actions .btn,.package-actions .btn{flex:1 1 auto}
+  .table-wrap,.table-responsive{width:100%;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  table{min-width:680px}
+  .modal,.modal-content,.dialog{width:calc(100vw - 24px)!important;max-width:calc(100vw - 24px)!important}
+  .modal{padding:12px}
+  .dashboard-calendar-card{width:100%;max-width:320px}
+  .dashboard-calendar-row{justify-content:center}
+  .dashboard-calendar-toggle-wrap{display:flex!important;justify-content:flex-start}
+  .dashboard-filter-panel .form-grid{grid-template-columns:1fr!important}
+  .payment-jamaah-picker{width:100%}
+  .payment-jamaah-picker select,.payment-jamaah-picker input{width:100%}
+}
+@media(min-width:769px){.mobile-menu-btn,.mobile-nav-backdrop{display:none!important}}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
+<button type="button" class="mobile-menu-btn" id="mobileMenuBtn" onclick="toggleMobileNav()" aria-label="Buka menu" title="Buka menu"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"></path></svg></button>
+<div class="mobile-nav-backdrop" id="mobileNavBackdrop" onclick="toggleMobileNav(false)" style="display:none"></div>
 
 <div id="onlineLogin" style="position:fixed;inset:0;background:#173f35;display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px">
   <div style="background:white;border-radius:14px;padding:28px;width:min(400px,100%)">
@@ -1619,6 +1663,13 @@ function saveCalendarNote(){
 }
 calendarRender();
 
+function toggleMobileNav(force){
+  const app=document.querySelector('.app'),back=document.getElementById('mobileNavBackdrop');
+  if(!app)return;
+  const open=typeof force==='boolean'?force:!app.classList.contains('mobile-nav-open');
+  app.classList.toggle('mobile-nav-open',open);
+  if(back)back.style.display=open?'block':'none';
+}
 function updateDashboardLiveDateTime(){
   const now=new Date(),dateEl=document.getElementById('dashboardLiveDate'),timeEl=document.getElementById('dashboardLiveTime');
   if(!dateEl&&!timeEl)return;
