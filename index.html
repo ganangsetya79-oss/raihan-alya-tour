@@ -598,8 +598,32 @@ const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 let data=[], payments=[], documents=[], equipment=[], departures=[], currentUser=null, currentAccess=null;
 
 const rupiah=n=>new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(Number(n)||0);
-const paidFor=id=>payments.filter(p=>p.jamaah_id===id).reduce((a,p)=>a+Number(p.amount||0),0);
-const discountFor=id=>payments.filter(p=>p.jamaah_id===id).reduce((a,p)=>a+Number(p.discount||0),0);
+const isGroupJamaah=x=>!!(x&&(x.kategori==='grup'||String(x.nama_rombongan||'').trim()));
+const groupNameFor=x=>String(x?.nama_rombongan||'').trim();
+const groupMembersFor=x=>{
+  const name=groupNameFor(x);
+  if(!name)return[];
+  return data.filter(j=>groupNameFor(j)===name);
+};
+const groupTotalFor=x=>groupMembersFor(x).reduce((a,j)=>a+Number(j.harga||0),0);
+const groupPaymentsFor=x=>{
+  const ids=new Set(groupMembersFor(x).map(j=>j.id));
+  return payments.filter(p=>ids.has(p.jamaah_id));
+};
+const groupPaidFor=x=>groupPaymentsFor(x).reduce((a,p)=>a+Number(p.amount||0),0);
+const groupDiscountFor=x=>groupPaymentsFor(x).reduce((a,p)=>a+Number(p.discount||0),0);
+const paidFor=id=>{
+  const x=data.find(j=>j.id===id);
+  if(!x||!isGroupJamaah(x))return payments.filter(p=>p.jamaah_id===id).reduce((a,p)=>a+Number(p.amount||0),0);
+  const total=groupTotalFor(x), groupPaid=groupPaidFor(x);
+  return total>0?groupPaid*(Number(x.harga||0)/total):0;
+};
+const discountFor=id=>{
+  const x=data.find(j=>j.id===id);
+  if(!x||!isGroupJamaah(x))return payments.filter(p=>p.jamaah_id===id).reduce((a,p)=>a+Number(p.discount||0),0);
+  const total=groupTotalFor(x), groupDiscount=groupDiscountFor(x);
+  return total>0?groupDiscount*(Number(x.harga||0)/total):0;
+};
 const netBillFor=x=>Math.max(0,Number(x.harga||0)-discountFor(x.id));
 const remainFor=x=>Math.max(0,netBillFor(x)-paidFor(x.id));
 const status=x=>paidFor(x.id)>=netBillFor(x)?'<span class="badge paid">Lunas</span>':'<span class="badge unpaid">Belum Lunas</span>';
@@ -1127,21 +1151,36 @@ function renderJamaah(){
 function renderPaymentSummary(){
   const body=document.getElementById('paymentSummaryBody');
   if(!body)return;
-  body.innerHTML=data.map(x=>{
-    const paid=paidFor(x.id), discount=discountFor(x.id), remain=remainFor(x);
-    return `<tr><td>${esc(x.nama)}</td><td>${rupiah(x.harga)}</td><td>${rupiah(discount)}</td><td>${rupiah(paid)}</td><td>${rupiah(remain)}</td><td>${status(x)}</td></tr>`;
-  }).join('')||'<tr><td colspan="5">Belum ada data jamaah.</td></tr>';
+  const seen=new Set();
+  const rows=[];
+  data.forEach(x=>{
+    if(isGroupJamaah(x)){
+      const name=groupNameFor(x);
+      if(!name||seen.has(name))return;
+      seen.add(name);
+      const members=groupMembersFor(x);
+      const total=groupTotalFor(x),discount=groupDiscountFor(x),paid=groupPaidFor(x),remain=Math.max(0,total-discount-paid);
+      const groupStatus=paid>=Math.max(0,total-discount)?'<span class="badge paid">Lunas</span>':'<span class="badge unpaid">Belum Lunas</span>';
+      rows.push(`<tr><td>👥 <b>${esc(name)}</b><div class="muted">${members.length} anggota</div></td><td>${rupiah(total)}</td><td>${rupiah(discount)}</td><td>${rupiah(paid)}</td><td>${rupiah(remain)}</td><td>${groupStatus}</td></tr>`);
+    }else{
+      const paid=paidFor(x.id),discount=discountFor(x.id),remain=remainFor(x);
+      rows.push(`<tr><td>${esc(x.nama)}</td><td>${rupiah(x.harga)}</td><td>${rupiah(discount)}</td><td>${rupiah(paid)}</td><td>${rupiah(remain)}</td><td>${status(x)}</td></tr>`);
+    }
+  });
+  body.innerHTML=rows.join('')||'<tr><td colspan="6">Belum ada data jamaah.</td></tr>';
 }
 
 function renderPaymentHistory(){
   const body=document.getElementById('historyBody');
   body.innerHTML=payments.map(p=>{
     const j=data.find(x=>x.id===p.jamaah_id);
+    const group=isGroupJamaah(j), groupName=group?groupNameFor(j):'';
+    const jamaahLabel=group?'👥 '+groupName+' ('+groupMembersFor(j).length+' anggota)':(j?.nama||'Jamaah tidak ditemukan');
     const bank=p.method==='Transfer'?(p.bank||'-'):'-';
     return `<tr>
       <td>${esc(p.invoice_no||'-')}</td>
       <td>${p.payment_date||'-'}</td>
-      <td>${esc(j?.nama||'Jamaah tidak ditemukan')}</td>
+      <td>${esc(jamaahLabel)}</td>
       <td>${rupiah(p.amount)}</td>
       <td>${rupiah(p.discount||0)}</td>
       <td>${esc(p.method||'-')}</td>
@@ -1338,12 +1377,25 @@ async function fillPaymentJamaah(){
   }
 
   rows=rows.filter(x=>x&&x.id&&x.nama).sort((a,b)=>String(a.nama||'').localeCompare(String(b.nama||''),'id'));
-  sel.innerHTML='<option value="">-- Pilih Jamaah --</option>';
+  sel.innerHTML='<option value="">-- Pilih Jamaah / Rombongan --</option>';
+  const seenGroups=new Set();
   rows.forEach(x=>{
-    const opt=document.createElement('option');
-    opt.value=x.id;
-    opt.textContent=x.nama||'-';
-    sel.appendChild(opt);
+    if(isGroupJamaah(x)){
+      const groupName=groupNameFor(x);
+      if(!groupName||seenGroups.has(groupName))return;
+      const members=groupMembersFor(x);
+      const rep=members[0]||x;
+      seenGroups.add(groupName);
+      const opt=document.createElement('option');
+      opt.value=rep.id;
+      opt.textContent='👥 Rombongan: '+groupName+' — '+members.length+' anggota';
+      sel.appendChild(opt);
+    }else{
+      const opt=document.createElement('option');
+      opt.value=x.id;
+      opt.textContent=x.nama||'-';
+      sel.appendChild(opt);
+    }
   });
   sel.disabled=false;
   if(rows.some(x=>x.id===old))sel.value=old;
@@ -1472,7 +1524,13 @@ if(jamaahForm) jamaahForm.addEventListener('submit',async e=>{
 
 document.getElementById('paymentForm').addEventListener('submit',async e=>{
   e.preventDefault();
-  const jamaah_id=document.getElementById('paymentJamaah').value;
+  let jamaah_id=document.getElementById('paymentJamaah').value;
+  const selectedJamaah=(data||[]).find(x=>x.id===jamaah_id);
+  const selectedGroup=isGroupJamaah(selectedJamaah);
+  if(selectedGroup){
+    const members=groupMembersFor(selectedJamaah);
+    if(members.length)jamaah_id=members[0].id;
+  }
   const amount=Number(document.getElementById('paymentAmount').value);
   const discount=Math.max(0,Number(document.getElementById('paymentDiscount').value)||0);
   const payment_date=document.getElementById('paymentDate').value;
@@ -1488,10 +1546,13 @@ document.getElementById('paymentForm').addEventListener('submit',async e=>{
     notice('Pilih bank transfer: Bank Muamalat atau BSI.','error');return
   }
 
+  const paymentNote=selectedGroup
+    ? ('Pembayaran Rombongan: '+groupNameFor(selectedJamaah)+(note?' — '+note:''))
+    : note;
   const {data:inserted,error}=await sb.from('payments').insert({
     jamaah_id, amount, discount, payment_date, method,
     bank: method==='Transfer'?bank:null,
-    note
+    note:paymentNote
   }).select('*').single();
   if(error){notice('Gagal menyimpan pembayaran: '+error.message,'error');return}
 
