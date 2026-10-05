@@ -27,7 +27,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;p
 .jamaah-category-switch{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
 .jamaah-category-switch label{display:flex;align-items:center;gap:7px;padding:9px 14px;border:1px solid #d8e2df;border-radius:9px;background:#fff;cursor:pointer;font-size:12px;font-weight:700}
 .jamaah-category-switch input{accent-color:#18745f}
-.jamaah-group-tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.jamaah-group-tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.bulk-tools{display:flex;gap:7px;align-items:center;flex-wrap:wrap}.bulk-select-all,.bulk-check{width:16px;height:16px;accent-color:#18745f;cursor:pointer}
 .jamaah-select-all{width:16px;height:16px;accent-color:#18745f}
 .jamaah-check{width:16px;height:16px;accent-color:#18745f}
 .jamaah-group-badge{display:inline-flex;padding:3px 8px;border-radius:999px;background:#eef7f3;color:#18745f;font-size:10px;font-weight:700}
@@ -347,8 +347,8 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;p
   </div>
 
   <div class="panel">
-    <div class="panel-head"><h2>Riwayat Transaksi</h2><span style="font-size:12px;color:#687078">Invoice Tagihan = total kewajiban; Nota = bukti pembayaran</span></div>
-    <table><thead><tr><th>No. Invoice</th><th>Tanggal</th><th>Jamaah</th><th>Nominal</th><th>Diskon</th><th>Metode</th><th>Bank</th><th>Keterangan</th><th>Aksi</th></tr></thead>
+    <div class="panel-head"><div><h2>Riwayat Transaksi</h2><span style="font-size:12px;color:#687078">Invoice Tagihan = total kewajiban; Nota = bukti pembayaran</span></div><div class="bulk-tools"><button class="btn danger small-btn" type="button" onclick="deleteSelectedPayments()">🗑️ Hapus Terpilih</button></div></div>
+    <table><thead><tr><th style="width:38px;text-align:center"><input class="bulk-select-all" id="paymentSelectAll" type="checkbox" onchange="toggleAllPayments(this.checked)" title="Pilih semua"></th><th>No. Invoice</th><th>Tanggal</th><th>Jamaah</th><th>Nominal</th><th>Diskon</th><th>Metode</th><th>Bank</th><th>Keterangan</th><th>Aksi</th></tr></thead>
     <tbody id="historyBody"></tbody></table>
   </div>
 </section>
@@ -426,8 +426,8 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;p
     </div>
   </div>
   <div class="panel">
-    <div class="panel-head"><h2>Rekap Kelengkapan Dokumen</h2></div>
-    <table><thead><tr><th>Jamaah</th><th>Lengkap</th><th>Status</th></tr></thead><tbody id="docBody"></tbody></table>
+    <div class="panel-head"><div><h2>Rekap Kelengkapan Dokumen</h2></div><div class="bulk-tools"><button class="btn danger small-btn" type="button" onclick="deleteSelectedDocuments()">🗑️ Hapus Dokumen Terpilih</button></div></div>
+    <table><thead><tr><th style="width:38px;text-align:center"><input class="bulk-select-all" id="docSelectAll" type="checkbox" onchange="toggleAllDocuments(this.checked)" title="Pilih semua"></th><th>Jamaah</th><th>Lengkap</th><th>Status</th></tr></thead><tbody id="docBody"></tbody></table>
   </div>
 </section>
 <section id="perlengkapan" class="hidden">
@@ -464,8 +464,8 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;p
   </div>
 
   <div class="panel">
-    <div class="panel-head"><h2>Rekap Pengambilan Perlengkapan</h2><span style="font-size:12px;color:#687078">Klik jamaah untuk melihat detail pengambilan.</span></div>
-    <div class="table-wrap"><table><thead><tr><th>No</th><th>Nama Jamaah</th><th>Keberangkatan</th><th>Mukena / Ihram</th><th>Batik</th><th>Koper</th><th>Buku Manasik</th><th>Tanggal</th><th>Keterangan</th></tr></thead><tbody id="equipmentBody"></tbody></table></div>
+    <div class="panel-head"><div><h2>Rekap Pengambilan Perlengkapan</h2><span style="font-size:12px;color:#687078">Klik jamaah untuk melihat detail pengambilan.</span></div><div class="bulk-tools"><button class="btn danger small-btn" type="button" onclick="deleteSelectedEquipment()">🗑️ Hapus Rekap Terpilih</button></div></div>
+    <div class="table-wrap"><table><thead><tr><th style="width:38px;text-align:center"><input class="bulk-select-all" id="equipmentSelectAll" type="checkbox" onchange="toggleAllEquipment(this.checked)" title="Pilih semua"></th><th>No</th><th>Nama Jamaah</th><th>Keberangkatan</th><th>Mukena / Ihram</th><th>Batik</th><th>Koper</th><th>Buku Manasik</th><th>Tanggal</th><th>Keterangan</th></tr></thead><tbody id="equipmentBody"></tbody></table></div>
   </div>
 </section>
 <section id="keberangkatan" class="hidden">
@@ -487,8 +487,8 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;p
   </div>
 
   <div class="panel">
-    <div class="panel-head"><h2>Daftar Grup Keberangkatan</h2></div>
-    <table><thead><tr><th>Grup</th><th>Berangkat</th><th>Pulang</th><th>Maskapai</th><th>PNR</th><th>Jamaah</th><th>Aksi</th></tr></thead>
+    <div class="panel-head"><div><h2>Daftar Grup Keberangkatan</h2></div><div class="bulk-tools"><button class="btn danger small-btn" type="button" onclick="deleteSelectedDepartures()">🗑️ Hapus Terpilih</button></div></div>
+    <table><thead><tr><th style="width:38px;text-align:center"><input class="bulk-select-all" id="departureSelectAll" type="checkbox" onchange="toggleAllDepartures(this.checked)" title="Pilih semua"></th><th>Grup</th><th>Berangkat</th><th>Pulang</th><th>Maskapai</th><th>PNR</th><th>Jamaah</th><th>Aksi</th></tr></thead>
     <tbody id="departureBody"></tbody></table>
   </div>
 
@@ -596,7 +596,7 @@ const SUPABASE_KEY='sb_publishable_qsYyXhpBu2xT3sGYAv--6w_AqEjU297';
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 
 let data=[], payments=[], documents=[], equipment=[], departures=[], currentUser=null, currentAccess=null;
-const APP_VERSION='2026-10-05-invoice-fix-2'; // force fresh deploy after invoice fix
+const APP_VERSION='2026-10-05-bulk-delete-1'; // force fresh deploy after invoice fix
 
 const rupiah=n=>new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(Number(n)||0);
 const isGroupJamaah=x=>!!(x&&(x.kategori==='grup'||String(x.nama_rombongan||'').trim()));
@@ -1182,7 +1182,7 @@ function renderPaymentHistory(){
     const jamaahLabel=group?'👥 '+groupName+' ('+groupMembersFor(j).length+' anggota)':(j?.nama||'Jamaah tidak ditemukan');
     const bank=p.method==='Transfer'?(p.bank||'-'):'-';
     return `<tr>
-      <td>${esc(p.invoice_no||'-')}</td>
+      <td style="text-align:center"><input class="bulk-check payment-check" type="checkbox" value="${esc(p.id)}" onchange="syncBulkState('payment')"></td><td>${esc(p.invoice_no||'-')}</td>
       <td>${p.payment_date||'-'}</td>
       <td>${esc(jamaahLabel)}</td>
       <td>${rupiah(p.amount)}</td>
@@ -1192,7 +1192,7 @@ function renderPaymentHistory(){
       <td>${esc(p.note||'-')}</td>
       <td><button class="btn small-btn" type="button" onclick="printInvoice('${p.jamaah_id}')">🧾 Invoice Tagihan</button> <button class="btn secondary small-btn" type="button" onclick="printPayment('${p.id}')">🖨️ Cetak 2 Nota</button> <button class="btn danger small-btn" type="button" onclick="deletePayment('${p.id}')">Hapus</button></td>
     </tr>`;
-  }).join('')||'<tr><td colspan="9">Belum ada pembayaran.</td></tr>';
+  }).join('')||'<tr><td colspan="10">Belum ada pembayaran.</td></tr>';
 }
 
 function formatDate(v){ return formatDateID(v); }
@@ -1267,6 +1267,61 @@ function togglePaymentBank(){
     bank.required=false;
     bank.value='';
   }
+}
+
+function syncBulkState(type){
+  const map={payment:['.payment-check','paymentSelectAll'],doc:['.doc-check','docSelectAll'],equipment:['.equipment-check','equipmentSelectAll'],departure:['.departure-check','departureSelectAll']};
+  const cfg=map[type]; if(!cfg)return;
+  const checks=[...document.querySelectorAll(cfg[0])], all=document.getElementById(cfg[1]);
+  const checked=checks.filter(x=>x.checked);
+  if(all){all.checked=checks.length>0&&checked.length===checks.length;all.indeterminate=checked.length>0&&checked.length<checks.length}
+}
+function toggleAllPayments(v){document.querySelectorAll('.payment-check').forEach(x=>x.checked=v);syncBulkState('payment')}
+function toggleAllDocuments(v){document.querySelectorAll('.doc-check').forEach(x=>x.checked=v);syncBulkState('doc')}
+function toggleAllEquipment(v){document.querySelectorAll('.equipment-check').forEach(x=>x.checked=v);syncBulkState('equipment')}
+function toggleAllDepartures(v){document.querySelectorAll('.departure-check').forEach(x=>x.checked=v);syncBulkState('departure')}
+
+async function deleteSelectedPayments(){
+  const ids=[...document.querySelectorAll('.payment-check:checked')].map(x=>x.value).filter(Boolean);
+  if(!ids.length){notice('Centang minimal satu transaksi pembayaran.','error');return}
+  if(!confirm('Hapus '+ids.length+' transaksi pembayaran terpilih? Tindakan ini akan mengurangi riwayat pembayaran dan perhitungan uang masuk.'))return;
+  const {error}=await sb.from('payments').delete().in('id',ids);
+  if(error){notice('Gagal menghapus pembayaran terpilih: '+error.message,'error');return}
+  await loadData();renderAll();notice(ids.length+' transaksi pembayaran berhasil dihapus.');
+}
+async function deleteSelectedDocuments(){
+  const ids=[...document.querySelectorAll('.doc-check:checked')].map(x=>x.value).filter(Boolean);
+  if(!ids.length){notice('Centang minimal satu data dokumen.','error');return}
+  if(!confirm('Hapus seluruh data dokumen yang tersimpan untuk '+ids.length+' jamaah terpilih? File dokumen di Storage yang tercatat juga akan dihapus.'))return;
+  for(const jamaahId of ids){
+    const d=getDoc(jamaahId)||{};
+    const paths=DOC_TYPES.map(([k])=>d[k+'_path']).filter(Boolean);
+    if(paths.length)await sb.storage.from('document').remove(paths);
+    const result=await sb.from('documents').delete().eq('jamaah_id',jamaahId);
+    if(result.error){notice('Gagal menghapus dokumen '+jamaahId+': '+result.error.message,'error');return}
+  }
+  await loadData();renderAll();notice(ids.length+' data dokumen berhasil dihapus.');
+}
+async function deleteSelectedEquipment(){
+  const ids=[...document.querySelectorAll('.equipment-check:checked')].map(x=>x.value).filter(Boolean);
+  if(!ids.length){notice('Centang minimal satu rekap perlengkapan.','error');return}
+  if(!confirm('Hapus rekap perlengkapan untuk '+ids.length+' jamaah terpilih?'))return;
+  const {error}=await sb.from('equipment').delete().in('jamaah_id',ids);
+  if(error){notice('Gagal menghapus rekap perlengkapan: '+error.message,'error');return}
+  await loadData();renderAll();notice(ids.length+' rekap perlengkapan berhasil dihapus.');
+}
+async function deleteSelectedDepartures(){
+  const ids=[...document.querySelectorAll('.departure-check:checked')].map(x=>x.value).filter(Boolean);
+  if(!ids.length){notice('Centang minimal satu grup keberangkatan.','error');return}
+  const selected=(departures||[]).filter(x=>ids.includes(String(x.id)));
+  const names=selected.slice(0,4).map(x=>x.name||'Grup').join(', ');
+  if(!confirm('Hapus '+ids.length+' grup keberangkatan terpilih? Data jamaah tidak akan dihapus, tetapi penugasan keberangkatannya dapat tetap menyimpan ID lama.
+
+'+names))return;
+  const {error}=await sb.from('departures').delete().in('id',ids);
+  if(error){notice('Gagal menghapus grup keberangkatan: '+error.message,'error');return}
+  document.getElementById('departureDetailPanel')?.classList.add('hidden');
+  await loadData();renderAll();notice(ids.length+' grup keberangkatan berhasil dihapus.');
 }
 
 async function deletePayment(id){
@@ -1760,8 +1815,8 @@ function renderEquipment(){
   const body=document.getElementById('equipmentBody'); if(!body)return;
   body.innerHTML=data.slice().sort((a,b)=>(a.nama||'').localeCompare(b.nama||'')).map((j,i)=>{
     const x=getEquipment(j.id)||{}, dep=departureFor(j);
-    return `<tr><td>${i+1}</td><td><b>${esc(j.nama)}</b></td><td>${esc(dep?.name||j.berangkat||'-')}</td><td>${eqCell(x.ihram)}</td><td>${eqCell(x.mukena)}</td><td>${eqCell(x.batik)}</td><td>${eqCell(x.koper)}</td><td>${eqCell(x.buku)}</td><td>${esc(x.taken_date||'-')}</td><td>${esc(x.note||'-')}</td></tr>`;
-  }).join('')||'<tr><td colspan="10">Belum ada data jamaah.</td></tr>';
+    return `<tr><td style="text-align:center"><input class="bulk-check equipment-check" type="checkbox" value="${esc(j.id)}" onchange="syncBulkState('equipment')"></td><td>${i+1}</td><td><b>${esc(j.nama)}</b></td><td>${esc(dep?.name||j.berangkat||'-')}</td><td>${eqCell(x.ihram)}</td><td>${eqCell(x.mukena)}</td><td>${eqCell(x.batik)}</td><td>${eqCell(x.koper)}</td><td>${eqCell(x.buku)}</td><td>${esc(x.taken_date||'-')}</td><td>${esc(x.note||'-')}</td></tr>`;
+  }).join('')||'<tr><td colspan="11">Belum ada data jamaah.</td></tr>';
 }
 function renderDocuments(){
   const body=document.getElementById('docBody');
@@ -1769,8 +1824,8 @@ function renderDocuments(){
   body.innerHTML=data.map(j=>{
     const d=getDoc(j.id)||{};
     const n=DOC_TYPES.filter(([k])=>d[k+'_path']).length;
-    return `<tr><td>${esc(j.nama)}</td><td>${n}/8</td><td>${n===8?'<span class="badge paid">Lengkap</span>':'<span class="badge unpaid">Belum Lengkap</span>'}</td></tr>`;
-  }).join('')||'<tr><td colspan="3">Belum ada data jamaah.</td></tr>';
+    return `<tr><td style="text-align:center"><input class="bulk-check doc-check" type="checkbox" value="${esc(j.id)}" onchange="syncBulkState('doc')"></td><td>${esc(j.nama)}</td><td>${n}/8</td><td>${n===8?'<span class="badge paid">Lengkap</span>':'<span class="badge unpaid">Belum Lengkap</span>'}</td></tr>`;
+  }).join('')||'<tr><td colspan="4">Belum ada data jamaah.</td></tr>';
 }
 
 
@@ -1785,7 +1840,7 @@ function renderDepartures(){
     const remain=rows.reduce((a,j)=>a+remainFor(j),0);
     const lunas=rows.filter(j=>paidFor(j.id)>=Number(j.harga||0)).length;
     return `<tr>
-      <td><b>${esc(d.name)}</b></td>
+      <td style="text-align:center"><input class="bulk-check departure-check" type="checkbox" value="${esc(d.id)}" onchange="syncBulkState('departure')"></td><td><b>${esc(d.name)}</b></td>
       <td>${d.start_date||'-'}</td>
       <td>${d.end_date||'-'}</td>
       <td>${esc(d.airline||'-')}</td>
@@ -1797,7 +1852,7 @@ function renderDepartures(){
         <button class="btn danger" type="button" onclick="deleteDeparture('${d.id}')">Hapus</button>
       </td>
     </tr>`;
-  }).join('')||'<tr><td colspan="7">Belum ada grup keberangkatan.</td></tr>';
+  }).join('')||'<tr><td colspan="8">Belum ada grup keberangkatan.</td></tr>';
 }
 async function openDeparture(id){
   const d=departures.find(x=>x.id===id);
@@ -1911,7 +1966,7 @@ document.getElementById('departureForm').addEventListener('submit',async e=>{
   if(editId)openDeparture(editId);
   notice(editId?'Grup keberangkatan berhasil diperbarui.':'Grup keberangkatan berhasil dibuat.');
 });
-async function deleteDeparture(id){
+async async function deleteDeparture(id){
   const d=departures.find(x=>x.id===id);
   if(!d||!confirm(`Hapus grup "${d.name}"? Jamaah tidak akan dihapus.`))return;
   const {error}=await sb.from('departures').delete().eq('id',id);
