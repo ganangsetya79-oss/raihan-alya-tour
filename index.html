@@ -181,6 +181,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;p
 
 .equipment-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.equipment-card{border:1px solid #dfe4e8;border-radius:12px;padding:14px;display:flex;gap:10px;align-items:center;background:#fff;cursor:pointer;transition:.2s}.equipment-card:hover{border-color:#b99a55;box-shadow:0 4px 14px rgba(0,0,0,.06)}.equipment-card input{width:20px;height:20px;accent-color:#b99a55}.equipment-card span{display:flex;flex-direction:column;gap:3px}.equipment-card small{color:#7b858d;font-size:11px}.eq-ok{color:#16794b;font-weight:700}.eq-no{color:#9b3d3d;font-weight:700}@media(max-width:900px){.equipment-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .package-actions{display:flex;gap:6px;flex-wrap:wrap}.package-actions .btn{padding:7px 10px;font-size:12px}
+.dashboard-calendar-row{display:flex;align-items:flex-start;margin:0 0 18px}.dashboard-calendar-card{width:340px;max-width:100%;background:#fff;border:1px solid #e3e6e8;border-radius:12px;box-shadow:0 3px 14px rgba(20,30,35,.06);overflow:hidden}.calendar-selected-head{height:46px;padding:0 14px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #eceeef;font-size:13px;color:#333}.calendar-mini-btn{width:28px;height:28px;border:1px solid #e1e4e6;border-radius:6px;background:#fafafa;color:#555;font-size:17px;line-height:1;cursor:pointer}.calendar-month-head{display:grid;grid-template-columns:32px 1fr 32px;align-items:center;padding:12px 12px 8px;font-size:14px}.calendar-month-head strong{text-align:left}.calendar-nav-btn{border:0;background:transparent;color:#777;font-size:22px;cursor:pointer;height:30px;border-radius:6px}.calendar-nav-btn:hover,.calendar-mini-btn:hover{background:#f1f3f4}.calendar-weekdays,.calendar-grid{display:grid;grid-template-columns:repeat(7,1fr);padding:0 10px}.calendar-weekdays{margin-top:3px;margin-bottom:3px}.calendar-weekdays span{text-align:center;font-size:10px;font-weight:600;color:#555;padding:5px 0}.calendar-cell{height:38px;display:flex;align-items:center;justify-content:center}.calendar-day{width:34px;height:34px;border:0;background:transparent;border-radius:50%;font-size:12px;color:#303438;cursor:pointer}.calendar-day:hover{background:#f0f3f5}.calendar-day.other-month{color:#a8abad}.calendar-day.today{outline:1px solid #1478c9;outline-offset:-1px}.calendar-day.selected{background:#0877c9;color:#fff}.calendar-day.has-note{font-weight:700;position:relative}.calendar-day.has-note:after{content:'';position:absolute;bottom:4px;width:4px;height:4px;border-radius:50%;background:#0877c9}.calendar-day.selected.has-note:after{background:#fff}.calendar-note-wrap{border-top:1px solid #eceeef;padding:10px 12px 12px;background:#fbfcfc}.calendar-note-wrap label{display:block;font-size:11px;color:#6b7378;margin-bottom:5px}.calendar-note-wrap textarea{width:100%;box-sizing:border-box;border:1px solid #d9dddf;border-radius:7px;padding:8px;font:inherit;font-size:12px;resize:vertical;min-height:52px}.calendar-save-btn{margin-top:7px;width:100%;padding:7px 10px;font-size:11px}@media(max-width:600px){.dashboard-calendar-row{justify-content:center}.dashboard-calendar-card{width:100%;max-width:360px}.calendar-cell{height:36px}.calendar-day{width:32px;height:32px}}
 .expense-summary-panel{border:1px solid #dce7e3;background:linear-gradient(135deg,#fbfdfc 0%,#f2f8f5 100%)}.expense-cards{grid-template-columns:repeat(4,minmax(0,1fr))!important}.expense-cards .card{border:1px solid #e4ebe8;border-radius:12px}.expense-filter-form{align-items:end}@media(max-width:900px){.expense-cards{grid-template-columns:repeat(2,minmax(0,1fr))!important}.expense-filter-form{grid-template-columns:1fr!important}}@media(max-width:600px){.expense-cards{grid-template-columns:1fr!important}}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -227,6 +228,27 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;p
       <div class="dashboard-brand-title">RAIHAN ALYA TOUR</div>
       <div class="dashboard-brand-slogan">“Melayani dengan Sepenuh Hati”</div>
       <div class="dashboard-brand-subtitle">Umroh &amp; Haji • Management System</div>
+    </div>
+  </div>
+
+  <div class="dashboard-calendar-row">
+    <div class="dashboard-calendar-card">
+      <div class="calendar-selected-head">
+        <div id="calendarSelectedLabel">Senin, 05 Oktober</div>
+        <button type="button" class="calendar-mini-btn" onclick="calendarGoToday()" title="Kembali ke hari ini">⌄</button>
+      </div>
+      <div class="calendar-month-head">
+        <button type="button" class="calendar-nav-btn" onclick="calendarMoveMonth(-1)" aria-label="Bulan sebelumnya">‹</button>
+        <strong id="calendarMonthLabel">Oktober 2026</strong>
+        <button type="button" class="calendar-nav-btn" onclick="calendarMoveMonth(1)" aria-label="Bulan berikutnya">›</button>
+      </div>
+      <div class="calendar-weekdays"><span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span></div>
+      <div id="dashboardCalendarGrid" class="calendar-grid"></div>
+      <div class="calendar-note-wrap">
+        <label for="calendarNote">Catatan tanggal</label>
+        <textarea id="calendarNote" rows="2" placeholder="Tambahkan catatan untuk tanggal ini..."></textarea>
+        <button type="button" class="btn calendar-save-btn" onclick="saveCalendarNote()">Simpan Catatan</button>
+      </div>
     </div>
   </div>
 
@@ -660,7 +682,7 @@ const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 
 let data=[], payments=[], documents=[], equipment=[], departures=[], expenses=[], currentUser=null, currentAccess=null;
 const EXPENSE_STORAGE_KEY='raihan_alya_daily_expenses_v1';
-const APP_VERSION='2026-10-05-expense-daily-recap-1';
+const APP_VERSION='2026-10-05-dashboard-calendar-1';
 
 const rupiah=n=>new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(Number(n)||0);
 const isGroupJamaah=x=>!!(x&&(x.kategori==='grup'||String(x.nama_rombongan||'').trim()));
@@ -1525,6 +1547,60 @@ function fillDashFilters(){
   depSel.innerHTML='<option value="">Semua Jadwal</option>'+deps.map(d=>`<option value="${d.id}">${esc(d.name)} — ${d.start_date||'-'}</option>`).join('');
   depSel.value=deps.some(d=>d.id===oldDep)?oldDep:'';
 }
+const DASH_CALENDAR_NOTE_KEY='raihan_alya_calendar_notes_v1';
+let dashboardCalendarDate=new Date();
+let dashboardCalendarSelected=localISODate(new Date());
+
+function calendarDateKey(y,m,d){return y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0')}
+function calendarNotes(){try{const x=JSON.parse(localStorage.getItem(DASH_CALENDAR_NOTE_KEY)||'{}');return x&&typeof x==='object'?x:{}}catch(e){return{}}}
+function calendarFormatLong(dateStr){
+  const [y,m,d]=dateStr.split('-').map(Number);
+  return new Date(y,m-1,d).toLocaleDateString('id-ID',{weekday:'long',day:'2-digit',month:'long'});
+}
+function calendarRender(){
+  const grid=document.getElementById('dashboardCalendarGrid'),label=document.getElementById('calendarMonthLabel'),selectedLabel=document.getElementById('calendarSelectedLabel'),note=document.getElementById('calendarNote');
+  if(!grid||!label)return;
+  const y=dashboardCalendarDate.getFullYear(),m=dashboardCalendarDate.getMonth();
+  label.textContent=new Date(y,m,1).toLocaleDateString('id-ID',{month:'long',year:'numeric'});
+  if(selectedLabel)selectedLabel.textContent=calendarFormatLong(dashboardCalendarSelected);
+  const notes=calendarNotes();
+  if(note)note.value=notes[dashboardCalendarSelected]||'';
+  const first=new Date(y,m,1),start=first.getDay(),days=new Date(y,m+1,0).getDate(),prevDays=new Date(y,m,0).getDate();
+  let html='';
+  for(let i=0;i<42;i++){
+    const n=i-start+1;
+    let day=n,cm=m,cy=y,other=false;
+    if(n<1){day=prevDays+n;cm=m-1;other=true}
+    else if(n>days){day=n-days;cm=m+1;other=true}
+    if(cm<0){cm=11;cy--}else if(cm>11){cm=0;cy++}
+    const key=calendarDateKey(cy,cm,day),today=localISODate(new Date());
+    const cls=['calendar-day'];if(other)cls.push('other-month');if(key===today)cls.push('today');if(key===dashboardCalendarSelected)cls.push('selected');if(notes[key])cls.push('has-note');
+    html+='<div class="calendar-cell"><button type="button" class="'+cls.join(' ')+'" onclick="calendarSelectDate(\''+key+'\')" aria-label="'+calendarFormatLong(key)+'">'+day+'</button></div>';
+  }
+  grid.innerHTML=html;
+}
+function calendarSelectDate(key){
+  dashboardCalendarSelected=key;
+  const [y,m]=key.split('-').map(Number);dashboardCalendarDate=new Date(y,m-1,1);
+  calendarRender();
+}
+function calendarMoveMonth(delta){
+  dashboardCalendarDate=new Date(dashboardCalendarDate.getFullYear(),dashboardCalendarDate.getMonth()+delta,1);
+  calendarRender();
+}
+function calendarGoToday(){
+  const now=new Date();dashboardCalendarDate=new Date(now.getFullYear(),now.getMonth(),1);dashboardCalendarSelected=localISODate(now);calendarRender();
+}
+function saveCalendarNote(){
+  const note=document.getElementById('calendarNote');if(!note)return;
+  const notes=calendarNotes(),value=note.value.trim();
+  if(value)notes[dashboardCalendarSelected]=value;else delete notes[dashboardCalendarSelected];
+  localStorage.setItem(DASH_CALENDAR_NOTE_KEY,JSON.stringify(notes));
+  calendarRender();
+  if(typeof notice==='function')notice(value?'Catatan kalender berhasil disimpan.':'Catatan kalender dihapus.');
+}
+calendarRender();
+
 function renderDash(){
   fillDashFilters();
   const month=document.getElementById('dashMonth')?.value||'';
