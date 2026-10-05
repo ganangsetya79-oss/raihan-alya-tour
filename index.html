@@ -1334,8 +1334,36 @@ function expenseToday(){return localISODate(new Date())}
 function expenseRowsFiltered(){const start=document.getElementById('expenseStart')?.value||'',end=document.getElementById('expenseEnd')?.value||'',cat=document.getElementById('expenseFilterCategory')?.value||'';return (expenses||[]).filter(x=>(!start||(x.date||'')>=start)&&(!end||(x.date||'')<=end)&&(!cat||x.category===cat)).sort((a,b)=>(b.date||'').localeCompare(a.date||'')||(b.created_at||'').localeCompare(a.created_at||''))}
 function expenseIncomeForPeriod(){const start=document.getElementById('expenseStart')?.value||'',end=document.getElementById('expenseEnd')?.value||'';return (payments||[]).filter(p=>(!start||(p.payment_date||'')>=start)&&(!end||(p.payment_date||'')<=end)).reduce((a,p)=>a+Number(p.amount||0),0)}
 function expenseCurrencyInfo(code){
-  const map={IDR:{name:'Rupiah',symbol:'Rp'},USD:{name:'Dollar AS',symbol:'
-  const rows=expenseRowsFiltered(),today=expenseToday(),now=new Date(),mk=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0'),todayTotal=(expenses||[]).filter(x=>x.date===today).reduce((a,x)=>a+Number(x.amount||0),0),monthTotal=(expenses||[]).filter(x=>String(x.date||'').startsWith(mk)).reduce((a,x)=>a+Number(x.amount||0),0),periodTotal=rows.reduce((a,x)=>a+Number(x.amount||0),0),income=expenseIncomeForPeriod(),el=id=>document.getElementById(id);
+  const map={IDR:{name:'Rupiah',symbol:'Rp'},USD:{name:'Dollar AS',symbol:'$'},SAR:{name:'Riyal Saudi',symbol:'SAR'}};
+  return map[code]||map.IDR;
+}
+function formatExpenseOriginal(x){
+  const cur=x.currency||'IDR',info=expenseCurrencyInfo(cur),n=Number(x.amount)||0;
+  return cur==='IDR'?expenseMoney(n):info.symbol+' '+new Intl.NumberFormat('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}).format(n);
+}
+function expenseAmountIdr(x){return Number(x.amount_idr??x.amount)||0}
+function toggleExpenseCurrency(){
+  const cur=document.getElementById('expenseCurrency')?.value||'IDR';
+  const wrap=document.getElementById('expenseRateWrap'),rate=document.getElementById('expenseRate');
+  const isForeign=cur!=='IDR';
+  if(wrap)wrap.classList.toggle('hidden',!isForeign);
+  if(rate)rate.required=isForeign;
+  if(!isForeign&&rate)rate.value='1';
+  updateExpenseCurrencyTotal();
+}
+function updateExpenseCurrencyTotal(){
+  const cur=document.getElementById('expenseCurrency')?.value||'IDR';
+  const amount=Number(document.getElementById('expenseAmount')?.value)||0;
+  const rate=cur==='IDR'?1:(Number(document.getElementById('expenseRate')?.value)||0);
+  const total=amount*rate;
+  const out=document.getElementById('expenseAmountIdr');
+  if(out)out.value=total?expenseMoney(total):'Rp 0';
+}
+function renderExpenses(){
+  const rows=expenseRowsFiltered(),today=expenseToday(),now=new Date(),mk=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0'),
+    todayTotal=(expenses||[]).filter(x=>x.date===today).reduce((a,x)=>a+expenseAmountIdr(x),0),
+    monthTotal=(expenses||[]).filter(x=>String(x.date||'').startsWith(mk)).reduce((a,x)=>a+expenseAmountIdr(x),0),
+    periodTotal=rows.reduce((a,x)=>a+expenseAmountIdr(x),0),income=expenseIncomeForPeriod(),el=id=>document.getElementById(id);
   if(el('expenseTodayTotal'))el('expenseTodayTotal').textContent=expenseMoney(todayTotal);
   if(el('expenseMonthTotal'))el('expenseMonthTotal').textContent=expenseMoney(monthTotal);
   if(el('expensePeriodTotal'))el('expensePeriodTotal').textContent=expenseMoney(periodTotal);
@@ -1346,15 +1374,10 @@ function expenseCurrencyInfo(code){
   if(body){
     body.innerHTML=rows.map((x,i)=>{
       const receipt=x.receipt_path
-        ? `<button class="btn secondary small-btn" type="button" onclick="openExpenseReceipt('${encodeURIComponent(x.receipt_path)}')">Lihat Bukti</button>`
-        : `<button class="btn secondary small-btn" type="button" onclick="editExpense('${esc(x.id)}')">Upload Bukti</button>`;
-      return `<tr>
-        <td style="text-align:center"><input class="bulk-check expense-check" type="checkbox" value="${esc(x.id)}" onchange="syncBulkState('expense')"></td>
-        <td>${i+1}</td><td>${formatDate(x.date)}</td><td>${esc(x.category)}</td><td>${esc(x.description)}</td>
-        <td>${expenseMoney(x.amount)}</td><td>${esc(x.method)}</td><td>${esc(x.bank||'-')}</td><td>${receipt}</td><td>${esc(x.note||'-')}</td>
-        <td><div class="package-actions"><button class="btn secondary small-btn" type="button" onclick="editExpense('${esc(x.id)}')">Edit</button><button class="btn danger small-btn" type="button" onclick="deleteExpense('${esc(x.id)}')">Hapus</button></div></td>
-      </tr>`;
-    }).join('')||'<tr><td colspan="11" style="text-align:center">Belum ada pengeluaran pada periode ini.</td></tr>';
+        ? '<button class="btn secondary small-btn" type="button" onclick="openExpenseReceipt(\''+encodeURIComponent(x.receipt_path)+'\')">Lihat Bukti</button>'
+        : '<button class="btn secondary small-btn" type="button" onclick="editExpense(\''+esc(x.id)+'\')">Upload Bukti</button>';
+      return '<tr><td style="text-align:center"><input class="bulk-check expense-check" type="checkbox" value="'+esc(x.id)+'" onchange="syncBulkState(\'expense\')"></td><td>'+(i+1)+'</td><td>'+formatDate(x.date)+'</td><td>'+esc(x.category)+'</td><td>'+esc(x.description)+'</td><td><b>'+esc(x.currency||'IDR')+'</b></td><td>'+formatExpenseOriginal(x)+'</td><td>'+(x.currency&&x.currency!=='IDR'?expenseMoney(Number(x.rate)||0):'—')+'</td><td><b>'+expenseMoney(expenseAmountIdr(x))+'</b></td><td>'+esc(x.method)+'</td><td>'+esc(x.bank||'-')+'</td><td>'+receipt+'</td><td>'+esc(x.note||'-')+'</td><td><div class="package-actions"><button class="btn secondary small-btn" type="button" onclick="editExpense(\''+esc(x.id)+'\')">Edit</button><button class="btn danger small-btn" type="button" onclick="deleteExpense(\''+esc(x.id)+'\')">Hapus</button></div></td></tr>';
+    }).join('')||'<tr><td colspan="14" style="text-align:center">Belum ada pengeluaran pada periode ini.</td></tr>';
   }
   syncBulkState('expense');
 }
@@ -1437,7 +1460,7 @@ async function openExpenseReceipt(encodedPath){
 function deleteExpense(id){const x=expenses.find(v=>v.id===id);if(!x)return;if(!confirm('Hapus pengeluaran "'+(x.description||'')+'"?'))return;expenses=expenses.filter(v=>v.id!==id);saveLocalExpenses();renderExpenses();notice('Pengeluaran berhasil dihapus.')}
 function toggleAllExpenses(checked){document.querySelectorAll('.expense-check').forEach(x=>x.checked=checked);syncBulkState('expense')}
 function deleteSelectedExpenses(){const ids=[...document.querySelectorAll('.expense-check:checked')].map(x=>x.value);if(!ids.length){notice('Pilih pengeluaran yang ingin dihapus.','error');return}if(!confirm('Hapus '+ids.length+' pengeluaran terpilih?'))return;expenses=expenses.filter(x=>!ids.includes(x.id));saveLocalExpenses();renderExpenses();notice(ids.length+' pengeluaran berhasil dihapus.')}
-function exportExpensesCSV(){const rows=expenseRowsFiltered(),lines=[['No','Tanggal','Kategori','Mata Uang','Nominal Asli','Kurs','Nilai IDR','Metode','Bank','Bukti','Keterangan']];rows.forEach((x,i)=>lines.push([i+1,x.date||'',x.category||'',x.currency||'IDR',Number(x.amount||0),Number(x.rate||1),expenseAmountIdr(x),x.method||'',x.bank||'',x.receipt_name||'',x.note||'']));const csv=lines.map(r=>r.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\n'),blob=new Blob(["\ufeff"+csv],{type:'text/csv;charset=utf-8;'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='rekap-pengeluaran-harian.csv';a.click();URL.revokeObjectURL(a.href)}
+function exportExpensesCSV(){const rows=expenseRowsFiltered(),lines=[['No','Tanggal','Kategori','Mata Uang','Nominal Asli','Kurs','Nilai IDR','Uraian','Metode','Bank','Bukti','Keterangan']];rows.forEach((x,i)=>lines.push([i+1,x.date||'',x.category||'',x.currency||'IDR',Number(x.amount||0),Number(x.rate||1),expenseAmountIdr(x),x.description||'',x.method||'',x.bank||'',x.receipt_name||'',x.note||'']));const csv=lines.map(r=>r.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\\n'),blob=new Blob(["\\ufeff"+csv],{type:'text/csv;charset=utf-8;'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='rekap-pengeluaran-harian.csv';a.click();URL.revokeObjectURL(a.href)}
 function printExpenses(){const rows=expenseRowsFiltered(),st=document.getElementById('expenseStart')?.value||'',en=document.getElementById('expenseEnd')?.value||'',total=rows.reduce((a,x)=>a+Number(x.amount||0),0),w=window.open('','_blank');if(!w){alert('Izinkan pop-up browser untuk mencetak laporan.');return}const body=rows.map((x,i)=>'<tr><td>'+(i+1)+'</td><td>'+formatDate(x.date)+'</td><td>'+esc(x.category)+'</td><td>'+esc(x.description)+'</td><td>'+expenseMoney(x.amount)+'</td><td>'+esc(x.method)+'</td><td>'+esc(x.note||'-')+'</td></tr>').join('');w.document.write('<!doctype html><html><head><title>Rekap Pengeluaran - Raihan Alya Tour</title><style>body{font-family:Arial,sans-serif;margin:30px;color:#222}table{width:100%;border-collapse:collapse;font-size:11px}th,td{border:1px solid #bbb;padding:7px;text-align:left}th{background:#f3f3f3}.summary{padding:12px;border:1px solid #ddd;margin:15px 0;font-weight:bold}</style></head><body><h1>RAIHAN ALYA TOUR</h1><h2>Rekap Pengeluaran Harian</h2><p>'+((st||en)?'Periode '+(st?formatDate(st):'awal')+' s/d '+(en?formatDate(en):'sekarang'):'Seluruh periode')+'</p><div class="summary">Total Pengeluaran: '+expenseMoney(total)+' · Jumlah Transaksi: '+rows.length+'</div><table><thead><tr><th>No</th><th>Tanggal</th><th>Kategori</th><th>Uraian</th><th>Nominal</th><th>Metode</th><th>Bank</th><th>Bukti</th><th>Keterangan</th></tr></thead><tbody>'+(body||'<tr><td colspan="7">Tidak ada data.</td></tr>')+'</tbody></table><script>window.onload=()=>window.print()<\\/script></body></html>');w.document.close()}
 function fillReportFilters(){
   const m=document.getElementById('reportMonth'), d=document.getElementById('reportDeparture'); if(!m||!d)return;
