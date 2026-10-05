@@ -558,7 +558,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;p
     <div id="individualForm" class="full"><div class="jamaah-individual-form">
       <div><label>Nama Lengkap</label><input id="nama" required></div><div><label>Jenis Kelamin</label><select id="jenis_kelamin"><option value="">-- Pilih --</option><option value="Laki-laki">Laki-laki</option><option value="Perempuan">Perempuan</option></select></div>
       <div><label>No. HP</label><input id="hp" required></div><div><label>NIK</label><input id="nik"></div><div><label>Alamat</label><input id="alamat"></div>
-      <div><label>Paket</label><select id="paket" onchange="syncPackagePrice('paket','harga')"></select></div>
+      <div><label>Paket</label><select id="jPaketSelect" onchange="syncPackagePrice('jPaketSelect','harga')"></select></div>
       <div><label>Harga Paket</label><input id="harga" type="number" min="0" required></div><div><label>Tanggal Berangkat</label><input id="berangkat" type="date"></div>
       <div class="full"><label>Catatan</label><input id="catatan"></div>
     </div></div>
@@ -1208,7 +1208,7 @@ const defaultPackages=[{id:'pkg-executive',name:'Executive',price:'',hotel:'',du
 function getPackages(){try{const r=localStorage.getItem(PACKAGE_KEY);const a=r?JSON.parse(r):defaultPackages;return Array.isArray(a)&&a.length?a:defaultPackages}catch(e){return defaultPackages}}
 function savePackages(a){localStorage.setItem(PACKAGE_KEY,JSON.stringify(a))}
 function packageOptions(selected=''){return getPackages().map(p=>'<option value="'+esc(p.name)+'" '+(p.name===selected?'selected':'')+'>'+esc(p.name)+'</option>').join('')}
-function refreshPackageSelects(){const s=document.getElementById('paket');if(s){const old=s.value;s.innerHTML=packageOptions(old);if(old)s.value=old}document.querySelectorAll('#jamaahMembers select[data-field="paket"]').forEach(s=>{const old=s.value;s.innerHTML=packageOptions(old);if(old)s.value=old});const r=document.getElementById('reportPackage');if(r){const old=r.value;r.innerHTML='<option value="">Semua Paket</option>'+getPackages().map(p=>'<option value="'+esc(p.name)+'">'+esc(p.name)+'</option>').join('');if(old)r.value=old}}
+function refreshPackageSelects(){const s=document.getElementById('jPaketSelect');if(s){const old=s.value;s.innerHTML=packageOptions(old);if(old)s.value=old}document.querySelectorAll('#jamaahMembers select[data-field="paket"]').forEach(s=>{const old=s.value;s.innerHTML=packageOptions(old);if(old)s.value=old});const r=document.getElementById('reportPackage');if(r){const old=r.value;r.innerHTML='<option value="">Semua Paket</option>'+getPackages().map(p=>'<option value="'+esc(p.name)+'">'+esc(p.name)+'</option>').join('');if(old)r.value=old}}
 function packageByName(name){return getPackages().find(p=>p.name===name)}
 function syncPackagePrice(selectId,priceId){const s=document.getElementById(selectId),p=document.getElementById(priceId);const item=packageByName(s?.value);if(item&&item.price!==''&&p)p.value=item.price}
 function syncPackageMemberPrice(s){const item=packageByName(s.value),card=s.closest('.jamaah-member-card'),p=card?.querySelector('[data-field="harga"]');if(item&&item.price!==''&&p)p.value=item.price}
@@ -1700,7 +1700,7 @@ if(jamaahForm) jamaahForm.addEventListener('submit',async e=>{
       result=await sb.from('jamaah').insert(fallbackRows);
     }
   }else{
-    const payload={nama:document.getElementById('nama').value.trim(),jenis_kelamin:document.getElementById('jenis_kelamin').value,hp:document.getElementById('hp').value.trim(),nik:document.getElementById('nik').value.trim(),alamat:document.getElementById('alamat').value.trim(),paket:document.getElementById('paket').value,harga:Number(document.getElementById('harga').value)||0,berangkat:document.getElementById('berangkat').value||null,catatan:document.getElementById('catatan').value.trim()};
+    const payload={nama:document.getElementById('nama').value.trim(),jenis_kelamin:document.getElementById('jenis_kelamin').value,hp:document.getElementById('hp').value.trim(),nik:document.getElementById('nik').value.trim(),alamat:document.getElementById('alamat').value.trim(),paket:document.getElementById('jPaketSelect').value,harga:Number(document.getElementById('harga').value)||0,berangkat:document.getElementById('berangkat').value||null,catatan:document.getElementById('catatan').value.trim()};
     if(id)result=await sb.from('jamaah').update(payload).eq('id',id);else result=await sb.from('jamaah').insert(payload);
     if(result.error){console.error('Simpan jamaah gagal:',JSON.stringify(result.error,null,2));notice('Gagal menyimpan jamaah: '+(result.error.message||'Kesalahan Supabase')+(result.error.details?' — '+result.error.details:''),'error');return}
   }
