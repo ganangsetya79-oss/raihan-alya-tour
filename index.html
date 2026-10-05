@@ -550,7 +550,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;p
     <div><label>Jabatan</label><input id="profilePosition" placeholder="Contoh: Admin Travel"></div>
     <div><label>Email</label><input id="profileEmail" readonly></div>
     <div><label>Role</label><input id="profileRole" readonly></div>
-    <div class="actions full"><button type="button" class="btn secondary" onclick="closeMyProfile()">Batal</button><button type="button" class="btn secondary" onclick="openPasswordForm()">Ganti Password</button><button class="btn" type="submit">Simpan Profil</button></div>
+    <div class="actions full"><button type="button" class="btn secondary" onclick="closeMyProfile()">Batal</button><button type="button" class="btn secondary" onclick="openPasswordForm()">Ganti Password</button><button class="btn" id="profileSaveBtn" type="button" onclick="saveMyProfile()">Simpan Profil</button></div>
   </form>
 </div></div>
 
@@ -738,35 +738,49 @@ function updateProfilePreview(url){
   const el=document.getElementById('profileAvatarPreview'); if(!el)return;
   el.innerHTML=url?'<img src="'+esc(url)+'" alt="Foto Profil">':'<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.2"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>';
 }
+window.saveMyProfile=async function(){
+  if(!currentUser){notice('Sesi login tidak ditemukan.','error');return}
+  const name=document.getElementById('profileName').value.trim();
+  if(!name){notice('Nama lengkap wajib diisi.','error');document.getElementById('profileName').focus();return}
+  const btn=document.getElementById('profileSaveBtn');
+  if(btn){btn.disabled=true;btn.textContent='Menyimpan...'}
+  try{
+    let photoUrl=document.getElementById('profilePhotoUrl').value.trim();
+    const file=document.getElementById('profilePhotoFile')?.files?.[0];
+    if(file){
+      const ext=(file.name.split('.').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,'')||'jpg';
+      const path=currentUser.id+'/profile-'+Date.now()+'.'+ext;
+      const up=await sb.storage.from('profile-photos').upload(path,file,{upsert:true,contentType:file.type});
+      if(up.error)throw new Error('Upload foto gagal: '+up.error.message);
+      photoUrl=sb.storage.from('profile-photos').getPublicUrl(path).data.publicUrl||'';
+    }
+    const payload={user_id:currentUser.id,nama_lengkap:name,nomor_hp:document.getElementById('profilePhone').value.trim(),jabatan:document.getElementById('profilePosition').value.trim(),foto_url:photoUrl,updated_at:new Date().toISOString()};
+    const {error}=await sb.from('user_profiles').upsert(payload,{onConflict:'user_id'});
+    if(error)throw new Error(error.message);
+    document.getElementById('profilePhotoFile').value='';
+    closeMyProfile();
+    await loadMyProfile();
+    notice('Profil berhasil diperbarui');
+  }catch(err){
+    notice('Gagal menyimpan profil: '+(err.message||err),'error');
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent='Simpan Profil'}
+  }
+};
 document.addEventListener('DOMContentLoaded',()=>{
   const pf=document.getElementById('profileForm');
   if(!pf)return;
   const photoFile=document.getElementById('profilePhotoFile');
-  photoFile.addEventListener('change',e=>{
+  photoFile?.addEventListener('change',e=>{
     const f=e.target.files?.[0]; if(!f)return;
     if(!f.type.startsWith('image/')){notice('File harus berupa gambar.','error');photoFile.value='';return}
     if(f.size>2*1024*1024){notice('Ukuran foto maksimal 2 MB.','error');photoFile.value='';return}
     const reader=new FileReader(); reader.onload=()=>updateProfilePreview(reader.result); reader.readAsDataURL(f);
   });
-  document.getElementById('profilePhotoUrl').addEventListener('input',e=>{if(!photoFile.files?.[0])updateProfilePreview(e.target.value.trim())});
-  pf.addEventListener('submit',async e=>{
-    e.preventDefault();
-    if(!currentUser){notice('Sesi login tidak ditemukan.','error');return}
-    let photoUrl=document.getElementById('profilePhotoUrl').value.trim();
-    const file=photoFile.files?.[0];
-    if(file){
-      const ext=(file.name.split('.').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,'')||'jpg';
-      const path=currentUser.id+'/profile-'+Date.now()+'.'+ext;
-      const up=await sb.storage.from('profile-photos').upload(path,file,{upsert:true,contentType:file.type});
-      if(up.error){notice('Gagal upload foto: '+up.error.message,'error');return}
-      const pub=sb.storage.from('profile-photos').getPublicUrl(path);
-      photoUrl=pub.data.publicUrl||'';
-    }
-    const payload={user_id:currentUser.id,nama_lengkap:document.getElementById('profileName').value.trim(),nomor_hp:document.getElementById('profilePhone').value.trim(),jabatan:document.getElementById('profilePosition').value.trim(),foto_url:photoUrl,updated_at:new Date().toISOString()};
-    const {error}=await sb.from('user_profiles').upsert(payload,{onConflict:'user_id'});
-    if(error){notice('Gagal menyimpan profil: '+error.message,'error');return}
-    closeMyProfile();await loadMyProfile();notice('Profil berhasil diperbarui');
+  document.getElementById('profilePhotoUrl')?.addEventListener('input',e=>{
+    if(!photoFile.files?.[0])updateProfilePreview(e.target.value.trim())
   });
+  pf.addEventListener('submit',e=>{e.preventDefault();window.saveMyProfile()});
 });
 
 function defaultPermissions(role){
