@@ -180,6 +180,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;p
 @media(max-width:900px){.report-grid,.report-summary-grid{grid-template-columns:1fr 1fr}}@media(max-width:600px){.report-grid,.report-summary-grid{grid-template-columns:1fr}}
 
 .equipment-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.equipment-card{border:1px solid #dfe4e8;border-radius:12px;padding:14px;display:flex;gap:10px;align-items:center;background:#fff;cursor:pointer;transition:.2s}.equipment-card:hover{border-color:#b99a55;box-shadow:0 4px 14px rgba(0,0,0,.06)}.equipment-card input{width:20px;height:20px;accent-color:#b99a55}.equipment-card span{display:flex;flex-direction:column;gap:3px}.equipment-card small{color:#7b858d;font-size:11px}.eq-ok{color:#16794b;font-weight:700}.eq-no{color:#9b3d3d;font-weight:700}@media(max-width:900px){.equipment-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.package-actions{display:flex;gap:6px;flex-wrap:wrap}.package-actions .btn{padding:7px 10px;font-size:12px}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -203,6 +204,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;p
   <div class="nav">
     <button class="active" onclick="show('dashboard',this)"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 10.8 12 3l9 7.8v9.2a1 1 0 0 1-1 1h-5.5v-6h-5v6H4a1 1 0 0 1-1-1z"/></svg></span><span class="nav-label">Dashboard</span></button>
     <button onclick="show('jamaah',this)"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M16 11a3 3 0 1 0 0-6"/><path d="M17 14a5 5 0 0 1 4 6"/></svg></span><span class="nav-label">Data Jamaah</span></button>
+    <button onclick="show('paket',this)"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 7h16"/><path d="M6 4h12l2 3v13H4V7z"/><path d="M8 11h8M8 15h5"/></svg></span><span class="nav-label">Kelola Paket</span></button>
     <button onclick="show('pembayaran',this)"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 9h18"/><path d="M7 15h4"/></svg></span><span class="nav-label">Pembayaran</span></button>
     <button onclick="show('uangmasuk',this)"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 19V9"/><path d="M10 19V5"/><path d="M16 19v-7"/><path d="M3 19h18"/></svg></span><span class="nav-label">Uang Masuk</span></button>
     <button onclick="show('dokumen',this)"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h6"/></svg></span><span class="nav-label">Dokumen</span></button>
@@ -505,6 +507,27 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;p
     <tbody id="departureJamaahBody"></tbody></table>
   </div>
 </section>
+<section id="paket" class="hidden">
+  <div class="top"><h1>Kelola Paket</h1><div class="muted">Atur daftar paket yang tersedia untuk input jamaah.</div></div>
+  <div class="panel">
+    <div class="panel-head"><h2 id="packageFormTitle">Tambah Paket</h2><span class="muted">Daftar paket tersimpan di browser admin ini.</span></div>
+    <form id="packageForm" class="form" onsubmit="savePackage(event)">
+      <input type="hidden" id="packageEditId">
+      <div><label>Nama Paket</label><input id="packageName" required placeholder="Contoh: Executive"></div>
+      <div><label>Harga Paket</label><input id="packagePrice" type="number" min="0" placeholder="Contoh: 41500000"></div>
+      <div><label>Hotel</label><input id="packageHotel" placeholder="Contoh: Movenpick / Zamzam"></div>
+      <div><label>Durasi / Keterangan</label><input id="packageDuration" placeholder="Contoh: 12 Hari"></div>
+      <div><label>Keberangkatan</label><input id="packageDeparture" placeholder="Contoh: 8 & 9 Oktober 2026"></div>
+      <div><label>Kepulangan</label><input id="packageReturn" placeholder="Contoh: 19 & 20 Oktober 2026"></div>
+      <div class="full"><label>Catatan Paket</label><textarea id="packageNotes" rows="3" placeholder="Fasilitas atau catatan paket"></textarea></div>
+      <div class="actions full"><button type="button" class="btn secondary" onclick="resetPackageForm()">Batal / Reset</button><button class="btn" type="submit">Simpan Paket</button></div>
+    </form>
+  </div>
+  <div class="panel">
+    <div class="panel-head"><h2>Daftar Paket</h2><span class="muted" id="packageCount">0 paket</span></div>
+    <div class="table-wrap"><table><thead><tr><th>Nama Paket</th><th>Harga</th><th>Hotel</th><th>Durasi</th><th>Keberangkatan</th><th>Kepulangan</th><th>Aksi</th></tr></thead><tbody id="packageBody"></tbody></table></div>
+  </div>
+</section>
 <section id="laporan" class="hidden">
   <div class="top"><h1>Laporan</h1><div class="muted">Rekap administrasi Raihan Alya Tour</div></div>
   <div class="report-filter panel">
@@ -535,7 +558,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;p
     <div id="individualForm" class="full"><div class="jamaah-individual-form">
       <div><label>Nama Lengkap</label><input id="nama" required></div><div><label>Jenis Kelamin</label><select id="jenis_kelamin"><option value="">-- Pilih --</option><option value="Laki-laki">Laki-laki</option><option value="Perempuan">Perempuan</option></select></div>
       <div><label>No. HP</label><input id="hp" required></div><div><label>NIK</label><input id="nik"></div><div><label>Alamat</label><input id="alamat"></div>
-      <div><label>Paket</label><select id="paket"><option value="Executive">Executive</option><option value="Premium">Premium</option><option value="Economis">Economis</option></select></div>
+      <div><label>Paket</label><select id="paket" onchange="syncPackagePrice('paket','harga')"></select></div>
       <div><label>Harga Paket</label><input id="harga" type="number" min="0" required></div><div><label>Tanggal Berangkat</label><input id="berangkat" type="date"></div>
       <div class="full"><label>Catatan</label><input id="catatan"></div>
     </div></div>
@@ -654,7 +677,7 @@ async function loadAccessProfile(){
 }
 function canAccess(module){return currentAccess?.role==='admin'||(currentAccess?.permissions||[]).includes(module)}
 function applyAccessNavigation(){
-  const map=['dashboard','jamaah','pembayaran','uangmasuk','dokumen','perlengkapan','keberangkatan','laporan'];
+  const map=['dashboard','jamaah','paket','pembayaran','uangmasuk','dokumen','perlengkapan','keberangkatan','laporan'];
   document.querySelectorAll('.nav button').forEach((btn,i)=>{if(map[i])btn.style.display=canAccess(map[i])?'flex':'none'});
 }
 async function onlineLogin(){
@@ -1050,7 +1073,7 @@ function printUangMasuk(){
   </style></head><body><h1>RAIHAN ALYA TOUR</h1><h2>Melayani dengan Sepenuh Hati</h2><p>Rekap Uang Masuk${start||end?' | '+(start?formatDate(start):'Awal')+' s/d '+(end?formatDate(end):'Sekarang'):''}</p><div class="summary">Total Uang Masuk: ${money(total)} &nbsp; | &nbsp; Jumlah Transaksi: ${rows.length}</div><table><thead><tr><th>No</th><th>Tanggal</th><th>Invoice</th><th>Jamaah</th><th>Nominal</th><th>Metode</th><th>Bank</th><th>Keterangan</th></tr></thead><tbody>${body||'<tr><td colspan="8">Tidak ada transaksi.</td></tr>'}</tbody></table>\x3Cscript>window.onload=()=>window.print()<\/script></body></html>`);
   w.document.close();
 }
-function renderAll(){renderJamaah();renderPaymentSummary();renderPaymentHistory();renderUangMasuk();renderDash();fillPaymentJamaah();fillDocumentJamaah();renderDocuments();fillEquipmentJamaah();renderEquipment();renderDepartures();renderReport();}
+function renderAll(){refreshPackageSelects();renderPackages();renderJamaah();renderPaymentSummary();renderPaymentHistory();renderUangMasuk();renderDash();fillPaymentJamaah();fillDocumentJamaah();renderDocuments();fillEquipmentJamaah();renderEquipment();renderDepartures();renderReport();}
 
 function fillReportFilters(){
   const m=document.getElementById('reportMonth'), d=document.getElementById('reportDeparture'); if(!m||!d)return;
@@ -1180,6 +1203,21 @@ function printInvoice(jamaahId){
     '<div class="sign"><div>Admin / Petugas<div class="space"></div>(________________)</div><div>Jamaah<div class="space"></div>(________________)</div></div>';
   openPrintWindow(inv,body);
 }
+function formatDateID(value){if(!value)return '-';const d=new Date(value);return Number.isNaN(d.getTime())?String(value):d.toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'})}
+const PACKAGE_KEY='raihan_alya_packages_v1';
+const defaultPackages=[{id:'pkg-executive',name:'Executive',price:'',hotel:'',duration:'',departure:'',returnDate:'',notes:''},{id:'pkg-premium',name:'Premium',price:'',hotel:'',duration:'',departure:'',returnDate:'',notes:''},{id:'pkg-economis',name:'Economis',price:'',hotel:'',duration:'',departure:'',returnDate:'',notes:''}];
+function getPackages(){try{const r=localStorage.getItem(PACKAGE_KEY);const a=r?JSON.parse(r):defaultPackages;return Array.isArray(a)&&a.length?a:defaultPackages}catch(e){return defaultPackages}}
+function savePackages(a){localStorage.setItem(PACKAGE_KEY,JSON.stringify(a))}
+function packageOptions(selected=''){return getPackages().map(p=>'<option value="'+esc(p.name)+'" '+(p.name===selected?'selected':'')+'>'+esc(p.name)+'</option>').join('')}
+function refreshPackageSelects(){const s=document.getElementById('paket');if(s){const old=s.value;s.innerHTML=packageOptions(old);if(old)s.value=old}document.querySelectorAll('#jamaahMembers select[data-field="paket"]').forEach(s=>{const old=s.value;s.innerHTML=packageOptions(old);if(old)s.value=old});const r=document.getElementById('reportPackage');if(r){const old=r.value;r.innerHTML='<option value="">Semua Paket</option>'+getPackages().map(p=>'<option value="'+esc(p.name)+'">'+esc(p.name)+'</option>').join('');if(old)r.value=old}}
+function packageByName(name){return getPackages().find(p=>p.name===name)}
+function syncPackagePrice(selectId,priceId){const s=document.getElementById(selectId),p=document.getElementById(priceId);const item=packageByName(s?.value);if(item&&item.price!==''&&p)p.value=item.price}
+function syncPackageMemberPrice(s){const item=packageByName(s.value),card=s.closest('.jamaah-member-card'),p=card?.querySelector('[data-field="harga"]');if(item&&item.price!==''&&p)p.value=item.price}
+function renderPackages(){const b=document.getElementById('packageBody');if(!b)return;const a=getPackages();document.getElementById('packageCount').textContent=a.length+' paket';b.innerHTML=a.map(p=>'<tr><td><b>'+esc(p.name)+'</b><div class="muted">'+esc(p.notes||'')+'</div></td><td>'+rupiah(p.price||0)+'</td><td>'+esc(p.hotel||'-')+'</td><td>'+esc(p.duration||'-')+'</td><td>'+esc(p.departure||'-')+'</td><td>'+esc(p.returnDate||'-')+'</td><td><div class="package-actions"><button type="button" class="btn" onclick="editPackage(\''+esc(p.id)+'\')">Edit</button><button type="button" class="btn danger" onclick="deletePackage(\''+esc(p.id)+'\')">Hapus</button></div></td></tr>').join('')}
+function resetPackageForm(){document.getElementById('packageForm')?.reset();document.getElementById('packageEditId').value='';document.getElementById('packageFormTitle').textContent='Tambah Paket'}
+function savePackage(e){e.preventDefault();const name=document.getElementById('packageName').value.trim();if(!name){notice('Nama paket wajib diisi.','error');return}const a=getPackages(),id=document.getElementById('packageEditId').value||'pkg-'+Date.now();const item={id,name,price:document.getElementById('packagePrice').value,hotel:document.getElementById('packageHotel').value.trim(),duration:document.getElementById('packageDuration').value.trim(),departure:document.getElementById('packageDeparture').value.trim(),returnDate:document.getElementById('packageReturn').value.trim(),notes:document.getElementById('packageNotes').value.trim()};if(a.some(p=>p.name.toLowerCase()===name.toLowerCase()&&p.id!==id)){notice('Nama paket sudah ada.','error');return}const i=a.findIndex(p=>p.id===id);if(i>=0)a[i]=item;else a.push(item);savePackages(a);renderPackages();refreshPackageSelects();resetPackageForm();notice('Paket berhasil disimpan.')}
+function editPackage(id){const p=getPackages().find(x=>x.id===id);if(!p)return;document.getElementById('packageEditId').value=p.id;document.getElementById('packageName').value=p.name||'';document.getElementById('packagePrice').value=p.price||'';document.getElementById('packageHotel').value=p.hotel||'';document.getElementById('packageDuration').value=p.duration||'';document.getElementById('packageDeparture').value=p.departure||'';document.getElementById('packageReturn').value=p.returnDate||'';document.getElementById('packageNotes').value=p.notes||'';document.getElementById('packageFormTitle').textContent='Edit Paket';document.getElementById('packageName').focus()}
+function deletePackage(id){const p=getPackages().find(x=>x.id===id);if(!p)return;if(!confirm('Hapus paket '+p.name+'? Data jamaah yang sudah memakai paket ini tidak ikut terhapus.'))return;const a=getPackages().filter(x=>x.id!==id);savePackages(a.length?a:[{id:'pkg-default',name:'Paket Baru',price:'',hotel:'',duration:'',departure:'',returnDate:'',notes:''}]);renderPackages();refreshPackageSelects();notice('Paket berhasil dihapus.')}
 function printPayment(paymentId){
   const p=payments.find(x=>x.id===paymentId);
   if(!p){notice('Transaksi tidak ditemukan.','error');return}
@@ -1556,7 +1594,7 @@ function jamaahMemberTemplate(index,data={}){
       <div><label>Nama Lengkap</label><input data-field="nama" placeholder="Nama anggota" value="${esc(data.nama||'')}"></div>
       <div><label>Jenis Kelamin</label><select data-field="jenis_kelamin"><option value="">-- Pilih --</option><option value="Laki-laki" ${data.jenis_kelamin==='Laki-laki'?'selected':''}>Laki-laki</option><option value="Perempuan" ${data.jenis_kelamin==='Perempuan'?'selected':''}>Perempuan</option></select></div>
       <div><label>NIK</label><input data-field="nik" placeholder="NIK" value="${esc(data.nik||'')}"></div>
-      <div><label>Paket</label><select data-field="paket"><option value="Executive" ${data.paket==='Executive'?'selected':''}>Executive</option><option value="Premium" ${data.paket==='Premium'?'selected':''}>Premium</option><option value="Economis" ${data.paket==='Economis'?'selected':''}>Economis</option></select></div>
+      <div><label>Paket</label><select data-field="paket" onchange="syncPackageMemberPrice(this)">${packageOptions(data.paket||'')}</select></div>
       <div><label>Harga Paket</label><input data-field="harga" type="number" min="0" placeholder="Harga" value="${data.harga??''}"></div>
     </div>
   </div>`;
