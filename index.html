@@ -303,7 +303,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;p
   <div class="panel">
     <div class="panel-head">
       <div><h2>Daftar Jamaah</h2><div class="muted" style="margin-top:4px">Kelola jamaah individu maupun grup/rombongan.</div></div>
-      <div class="jamaah-group-tools"><button class="btn secondary small-btn" type="button" onclick="assignSelectedGroup()">Buat/Atur Rombongan</button><button class="btn" onclick="openForm()">+ Tambah Jamaah</button></div>
+      <div class="jamaah-group-tools"><button class="btn secondary small-btn" type="button" onclick="assignSelectedGroup()">Buat/Atur Rombongan</button><button class="btn danger small-btn" type="button" onclick="hapusTerpilihJamaah()">🗑️ Hapus Terpilih</button><button class="btn" onclick="openForm()">+ Tambah Jamaah</button></div>
     </div>
     <div class="muted" style="margin-bottom:10px;font-size:11px">Centang beberapa jamaah untuk memasukkannya ke satu grup/rombongan.</div>
     <table><thead><tr><th style="width:38px;text-align:center"><input class="jamaah-select-all" id="jamaahSelectAll" type="checkbox" onchange="toggleAllJamaah(this.checked)" title="Pilih semua"></th><th>Nama</th><th>Kategori</th><th>Rombongan</th><th>Jenis Kelamin</th><th>No. HP</th><th>Paket</th><th>Harga</th><th>Diskon</th><th>Dibayar</th><th>Sisa</th><th>Status</th><th>Aksi</th></tr></thead><tbody id="jamaahBody"></tbody></table>
@@ -1474,6 +1474,20 @@ function syncJamaahSelectState(){
   if(all){all.checked=checks.length>0&&checked.length===checks.length;all.indeterminate=checked.length>0&&checked.length<checks.length}
 }
 function toggleAllJamaah(checked){document.querySelectorAll('.jamaah-check').forEach(x=>x.checked=checked);syncJamaahSelectState()}
+async function hapusTerpilihJamaah(){
+  const ids=[...document.querySelectorAll('.jamaah-check:checked')].map(x=>x.value).filter(Boolean);
+  if(!ids.length){notice('Centang minimal satu data jamaah yang ingin dihapus.','error');return}
+  const selected=(data||[]).filter(x=>ids.includes(String(x.id)));
+  const names=selected.slice(0,5).map(x=>x.nama||'Jamaah').join(', ');
+  const extra=selected.length>5?' dan '+(selected.length-5)+' lainnya':'';
+  if(!confirm('Hapus '+selected.length+' data jamaah terpilih?\\n\\n'+names+extra+'\\n\\nData yang dicentang saja yang akan dihapus.'))return;
+  const {error}=await sb.from('jamaah').delete().in('id',ids);
+  if(error){notice('Gagal menghapus data terpilih: '+error.message,'error');return}
+  await loadData();renderAll();
+  const all=document.getElementById('jamaahSelectAll');
+  if(all){all.checked=false;all.indeterminate=false}
+  notice(selected.length+' data jamaah berhasil dihapus.');
+}
 async function assignSelectedGroup(){
   const ids=[...document.querySelectorAll('.jamaah-check:checked')].map(x=>x.value);
   if(ids.length<1){notice('Centang minimal 1 jamaah terlebih dahulu.','error');return}
