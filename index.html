@@ -274,7 +274,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;p
   </div>
   <div class="notice ok access-info"><strong>Catatan:</strong> akun login dibuat melalui Supabase Auth. Halaman ini mengatur <b>role, status aktif, dan modul yang boleh diakses</b> untuk akun yang sudah terdaftar.</div>
   <div class="panel">
-    <div class="panel-head"><h2>Daftar Pengguna</h2><button class="btn secondary small-btn" onclick="renderAccessUsers()">Refresh</button></div>
+    <div class="panel-head"><h2>Daftar Pengguna</h2><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><input id="accessSearch" placeholder="Cari email pengguna..." style="width:230px" oninput="renderAccessUsers()"><select id="accessRoleFilter" onchange="renderAccessUsers()" style="width:150px"><option value="">Semua Role</option><option value="admin">Administrator</option><option value="finance">Keuangan</option><option value="operator">Operator</option><option value="viewer">Viewer</option></select><button class="btn secondary small-btn" onclick="renderAccessUsers()">Refresh</button></div></div>
     <div class="access-table-wrap"><table><thead><tr><th>Pengguna</th><th>Role</th><th>Akses Modul</th><th>Status</th><th>Aksi</th></tr></thead><tbody id="accessUsersBody"><tr><td colspan="5">Memuat...</td></tr></tbody></table></div>
   </div>
 </section>
@@ -548,9 +548,11 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;p
     <div><label>Jabatan</label><input id="profilePosition" placeholder="Contoh: Admin Travel"></div>
     <div><label>Email</label><input id="profileEmail" readonly></div>
     <div><label>Role</label><input id="profileRole" readonly></div>
-    <div class="actions full"><button type="button" class="btn secondary" onclick="closeMyProfile()">Batal</button><button class="btn" type="submit">Simpan Profil</button></div>
+    <div class="actions full"><button type="button" class="btn secondary" onclick="closeMyProfile()">Batal</button><button type="button" class="btn secondary" onclick="openPasswordForm()">Ganti Password</button><button class="btn" type="submit">Simpan Profil</button></div>
   </form>
 </div></div>
+
+<div class="modal" id="passwordModal"><div class="modal-box" style="max-width:460px"><div class="modal-head"><h2>Ganti Password</h2><button class="close" onclick="closePasswordForm()">×</button></div><form id="passwordForm" class="form"><div class="full"><label>Password Baru</label><input id="newPassword" type="password" minlength="6" required placeholder="Minimal 6 karakter"></div><div class="full"><label>Konfirmasi Password</label><input id="confirmPassword" type="password" minlength="6" required placeholder="Ulangi password baru"></div><div class="actions full"><button type="button" class="btn secondary" onclick="closePasswordForm()">Batal</button><button class="btn" type="submit">Simpan Password</button></div></form></div></div>
 
 <div class="admin-menu" id="adminMenu"><button onclick="closeAdminMenu()">Tutup</button><button onclick="openMyProfile()"><span class="menu-svg"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.2"/><path d="M5 20a7 7 0 0 1 14 0"/></svg></span> Profil Saya</button><button onclick="openAccessPage()"><span class="menu-svg"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M16 11a3 3 0 1 0 0-6"/><path d="M17 14a5 5 0 0 1 4 6"/></svg></span> Kelola Akses Pengguna</button><button onclick="logout()"><span class="menu-svg"><svg viewBox="0 0 24 24"><path d="M10 5H5v14h5"/><path d="m15 8 4 4-4 4"/><path d="M19 12H9"/></svg></span> Keluar</button></div>
 
@@ -714,6 +716,22 @@ async function openMyProfile(){
   updateProfilePreview(profile?.foto_url||'');
 }
 function closeMyProfile(){document.getElementById('profileModal').classList.remove('show')}
+function openPasswordForm(){closeMyProfile();document.getElementById('newPassword').value='';document.getElementById('confirmPassword').value='';document.getElementById('passwordModal').classList.add('show')}
+function closePasswordForm(){document.getElementById('passwordModal').classList.remove('show')}
+document.addEventListener('DOMContentLoaded',()=>{
+  const pf=document.getElementById('passwordForm');
+  if(!pf)return;
+  pf.addEventListener('submit',async e=>{
+    e.preventDefault();
+    const p=document.getElementById('newPassword').value;
+    const cp=document.getElementById('confirmPassword').value;
+    if(p.length<6){notice('Password minimal 6 karakter.','error');return}
+    if(p!==cp){notice('Konfirmasi password tidak sama.','error');return}
+    const {error}=await sb.auth.updateUser({password:p});
+    if(error){notice('Gagal mengganti password: '+error.message,'error');return}
+    closePasswordForm();notice('Password berhasil diganti.');
+  });
+});
 function updateProfilePreview(url){
   const el=document.getElementById('profileAvatarPreview'); if(!el)return;
   el.innerHTML=url?'<img src="'+esc(url)+'" alt="Foto Profil">':'<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.2"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>';
@@ -749,12 +767,16 @@ async function renderAccessUsers(){
   body.innerHTML='<tr><td colspan="5">Memuat data akses...</td></tr>';
   const {data:rows,error}=await sb.from('app_users').select('*').order('created_at',{ascending:false});
   if(error){body.innerHTML='<tr><td colspan="5"><div class="notice error"><b>Gagal membaca data akses.</b><br><span style="font-size:11px">'+esc(error.message||'Kesalahan Supabase')+'</span></div></td></tr>';return}
-  if(!rows?.length){body.innerHTML='<tr><td colspan="5">Belum ada pengguna yang diberi akses.</td></tr>';return}
-  body.innerHTML=rows.map(u=>{
+  const q=(document.getElementById('accessSearch')?.value||'').trim().toLowerCase();
+  const roleFilter=document.getElementById('accessRoleFilter')?.value||'';
+  const filtered=(rows||[]).filter(u=>(!q || String(u.email||'').toLowerCase().includes(q) || String(u.user_id||'').toLowerCase().includes(q)) && (!roleFilter || u.role===roleFilter));
+  if(!filtered.length){body.innerHTML='<tr><td colspan="5"><div class="muted" style="padding:18px;text-align:center">Tidak ada pengguna yang cocok dengan filter.</div></td></tr>';return}
+  body.innerHTML=filtered.map(u=>{
     const perms=Array.isArray(u.permissions)?u.permissions:defaultPermissions(u.role);
     const mods=perms.map(x=>'<span class="access-module">'+esc(ACCESS_LABELS[x]||x)+'</span>').join('');
     const active=u.active!==false;
-    return `<tr><td><div class="access-user-email">${esc(u.email||'-')}</div><div class="access-user-id">${esc(u.user_id||'')}</div></td><td><span class="badge paid">${esc(u.role||'viewer')}</span></td><td><div class="access-modules">${mods||'<span class="muted">Tidak ada</span>'}</div></td><td><span class="access-status ${active?'access-active':'access-inactive'}">${active?'Aktif':'Nonaktif'}</span></td><td><div class="access-actions"><button class="btn secondary small-btn" onclick="editAccessUser('${esc(u.id)}')">Edit</button><button class="btn danger small-btn" onclick="toggleAccessUser('${esc(u.id)}',${active})">${active?'Nonaktifkan':'Aktifkan'}</button></div></td></tr>`;
+    const roleLabel={admin:'Administrator',finance:'Keuangan',operator:'Operator',viewer:'Viewer'}[u.role]||u.role||'Viewer';
+    return `<tr><td><div class="access-user-email">${esc(u.email||'-')}</div><div class="access-user-id">${esc(u.user_id||'')}</div></td><td><span class="badge paid">${esc(roleLabel)}</span></td><td><div class="access-modules">${mods||'<span class="muted">Tidak ada</span>'}</div></td><td><span class="access-status ${active?'access-active':'access-inactive'}">${active?'Aktif':'Nonaktif'}</span></td><td><div class="access-actions"><button class="btn secondary small-btn" onclick="editAccessUser('${esc(u.id)}')">Edit</button><button class="btn danger small-btn" onclick="toggleAccessUser('${esc(u.id)}',${active})">${active?'Nonaktifkan':'Aktifkan'}</button></div></td></tr>`;
   }).join('');
 }
 function syncAccessPermissions(){
