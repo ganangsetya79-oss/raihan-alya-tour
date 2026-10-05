@@ -182,6 +182,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;p
 .equipment-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.equipment-card{border:1px solid #dfe4e8;border-radius:12px;padding:14px;display:flex;gap:10px;align-items:center;background:#fff;cursor:pointer;transition:.2s}.equipment-card:hover{border-color:#b99a55;box-shadow:0 4px 14px rgba(0,0,0,.06)}.equipment-card input{width:20px;height:20px;accent-color:#b99a55}.equipment-card span{display:flex;flex-direction:column;gap:3px}.equipment-card small{color:#7b858d;font-size:11px}.eq-ok{color:#16794b;font-weight:700}.eq-no{color:#9b3d3d;font-weight:700}@media(max-width:900px){.equipment-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .package-actions{display:flex;gap:6px;flex-wrap:wrap}.package-actions .btn{padding:7px 10px;font-size:12px}
 .dashboard-calendar-row{display:flex;align-items:flex-start;margin:0 0 18px}.dashboard-calendar-card{position:relative;width:300px;max-width:100%;background:#fff;border:1px solid #e3e6e8;border-radius:12px;box-shadow:0 3px 14px rgba(20,30,35,.06);overflow:hidden}.calendar-close-btn{position:absolute;top:8px;right:9px;width:27px;height:27px;border:0;border-radius:6px;background:transparent;color:#777;font-size:22px;line-height:24px;cursor:pointer;z-index:2}.calendar-close-btn:hover{background:#f0f2f3;color:#333}.calendar-selected-head{height:42px;padding:0 14px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #eceeef;font-size:13px;color:#333}.calendar-mini-btn{width:28px;height:28px;border:1px solid #e1e4e6;border-radius:6px;background:#fafafa;color:#555;font-size:17px;line-height:1;cursor:pointer}.calendar-month-head{display:grid;grid-template-columns:28px 1fr 28px;align-items:center;padding:12px 12px 8px;font-size:14px}.calendar-month-head strong{text-align:left}.calendar-nav-btn{border:0;background:transparent;color:#777;font-size:22px;cursor:pointer;height:30px;border-radius:6px}.calendar-nav-btn:hover,.calendar-mini-btn:hover{background:#f1f3f4}.calendar-weekdays,.calendar-grid{display:grid;grid-template-columns:repeat(7,1fr);padding:0 8px}.calendar-weekdays{margin-top:3px;margin-bottom:3px}.calendar-weekdays span{text-align:center;font-size:10px;font-weight:600;color:#555;padding:5px 0}.calendar-cell{height:34px;display:flex;align-items:center;justify-content:center}.calendar-day{width:30px;height:30px;border:0;background:transparent;border-radius:50%;font-size:12px;color:#303438;cursor:pointer}.calendar-day:hover{background:#f0f3f5}.calendar-day.other-month{color:#a8abad}.calendar-day.today{outline:1px solid #1478c9;outline-offset:-1px}.calendar-day.selected{background:#0877c9;color:#fff}.calendar-day.has-note{font-weight:700;position:relative}.calendar-day.has-note:after{content:'';position:absolute;bottom:4px;width:4px;height:4px;border-radius:50%;background:#0877c9}.calendar-day.selected.has-note:after{background:#fff}.calendar-note-wrap{border-top:1px solid #eceeef;padding:10px 12px 12px;background:#fbfcfc}.calendar-note-wrap label{display:block;font-size:11px;color:#6b7378;margin-bottom:5px}.calendar-note-wrap textarea{width:100%;box-sizing:border-box;border:1px solid #d9dddf;border-radius:7px;padding:8px;font:inherit;font-size:12px;resize:vertical;min-height:52px}.calendar-save-btn{margin-top:7px;width:100%;padding:7px 10px;font-size:11px}.dashboard-calendar-toggle-wrap{margin:0 0 10px}.dashboard-calendar-open-btn{font-size:11px;padding:7px 11px}.calendar-note-wrap{padding:8px 10px 10px}@media(max-width:600px){.dashboard-calendar-row{justify-content:center}.dashboard-calendar-card{width:100%;max-width:320px}.calendar-cell{height:34px}.calendar-day{width:30px;height:30px}}
+.payment-jamaah-picker{position:relative}.payment-jamaah-picker #paymentJamaahSearch{margin-bottom:7px}.payment-jamaah-picker #paymentJamaah{width:100%}.payment-jamaah-picker #paymentJamaahSearch:focus{border-color:#0877c9;box-shadow:0 0 0 2px rgba(8,119,201,.08)}
 .expense-summary-panel{border:1px solid #dce7e3;background:linear-gradient(135deg,#fbfdfc 0%,#f2f8f5 100%)}.expense-cards{grid-template-columns:repeat(4,minmax(0,1fr))!important}.expense-cards .card{border:1px solid #e4ebe8;border-radius:12px}.expense-filter-form{align-items:end}@media(max-width:900px){.expense-cards{grid-template-columns:repeat(2,minmax(0,1fr))!important}.expense-filter-form{grid-template-columns:1fr!important}}@media(max-width:600px){.expense-cards{grid-template-columns:1fr!important}}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -344,7 +345,12 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;p
   <div class="panel">
     <div class="panel-head"><h2>Input Pembayaran</h2></div>
     <form id="paymentForm" class="form">
-      <div><label>Nama Jamaah</label><select id="paymentJamaah" required onchange="syncPaymentJamaahName()" ><option value="">-- Memuat daftar jamaah... --</option></select></div>
+      <div class="payment-jamaah-picker">
+  <label>Nama Jamaah</label>
+  <input id="paymentJamaahSearch" type="text" placeholder="🔎 Ketik nama jamaah untuk mencari..." autocomplete="off" oninput="filterPaymentJamaahOptions()">
+  <select id="paymentJamaah" required onchange="syncPaymentJamaahName();syncPaymentJamaahSearch()" ><option value="">-- Memuat daftar jamaah... --</option></select>
+  <div class="muted" style="margin-top:5px;font-size:11px">Ketik nama di kolom pencarian, lalu pilih jamaah dari daftar.</div>
+</div>
       <div><label>Nominal Pembayaran</label><input id="paymentAmount" type="number" min="1" required placeholder="Contoh: 5000000"></div>
       <div><label>Diskon / Potongan Tagihan</label><input id="paymentDiscount" type="number" min="0" value="0" placeholder="Contoh: 500000"></div>
       <div class="full" style="font-size:12px;color:#687078">Diskon mengurangi total tagihan jamaah. Nilai diskon bukan uang masuk.</div>
@@ -1658,6 +1664,7 @@ function renderDash(){
 
 let paymentDropdownRequest=0;
 async function fillPaymentJamaah(){
+  const searchInput=document.getElementById('paymentJamaahSearch');
   const sel=document.getElementById('paymentJamaah');
   if(!sel)return;
   const old=sel.value;
@@ -1715,10 +1722,35 @@ async function fillPaymentJamaah(){
   });
   sel.disabled=false;
   if(rows.some(x=>x.id===old))sel.value=old;
+  if(searchInput)searchInput.value='';
+  [...sel.options].forEach(o=>o.hidden=false);
   const date=document.getElementById('paymentDate');
   if(date&&!date.value)date.value=new Date().toISOString().slice(0,10);
 }
 
+function filterPaymentJamaahOptions(){
+  const sel=document.getElementById('paymentJamaah'),input=document.getElementById('paymentJamaahSearch');
+  if(!sel||!input)return;
+  const q=String(input.value||'').trim().toLowerCase();
+  const current=sel.value;
+  [...sel.options].forEach(opt=>{
+    if(!opt.value){opt.hidden=false;return}
+    opt.hidden=!!q&&!String(opt.textContent||'').toLowerCase().includes(q);
+  });
+  if(current&&[...sel.options].some(o=>o.value===current&&!o.hidden))sel.value=current;
+}
+function syncPaymentJamaahSearch(){
+  const sel=document.getElementById('paymentJamaah'),input=document.getElementById('paymentJamaahSearch');
+  if(sel&&input){
+    const opt=sel.options[sel.selectedIndex];
+    input.value=opt&&opt.value?String(opt.textContent||'').replace(/^👥\s*/,''): '';
+  }
+}
+function clearPaymentJamaahSearch(){
+  const input=document.getElementById('paymentJamaahSearch'),sel=document.getElementById('paymentJamaah');
+  if(input)input.value='';
+  if(sel)[...sel.options].forEach(o=>o.hidden=false);
+}
 function syncPaymentJamaahName(){
   const sel=document.getElementById('paymentJamaah');
   if(sel && sel.value){
