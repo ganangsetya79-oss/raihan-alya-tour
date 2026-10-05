@@ -1195,6 +1195,7 @@ function renderPaymentHistory(){
   }).join('')||'<tr><td colspan="9">Belum ada pembayaran.</td></tr>';
 }
 
+function formatDate(v){ return formatDateID(v); }
 function formatDateID(v){
   if(!v)return '-';
   const d=new Date(v+'T00:00:00');
@@ -1233,6 +1234,24 @@ function printInvoice(jamaahId){
     '<div class="sign"><div>Admin / Petugas<div class="space"></div>(________________)</div><div>Jamaah<div class="space"></div>(________________)</div></div>'+
     '<div class="foot">Invoice ini merupakan dokumen tagihan PT Raihan Alya Tour.</div></div>'+
     '<script>window.onload=function(){setTimeout(function(){window.print()},300)}<\/script></body></html>');
+  w.document.close();
+}
+
+function printPayment(paymentId){
+  const p=payments.find(x=>x.id===paymentId);
+  if(!p){notice('Transaksi tidak ditemukan.','error');return}
+  const j=data.find(x=>x.id===p.jamaah_id);
+  if(!j){notice('Data jamaah untuk transaksi ini tidak ditemukan.','error');return}
+  const group=isGroupJamaah(j);
+  const members=group?groupMembersFor(j):[j];
+  const label=group?groupNameFor(j):(j.nama||'-');
+  const w=window.open('','_blank','width=700,height=800');
+  if(!w){notice('Pop-up diblokir browser. Izinkan pop-up untuk mencetak nota.','error');return}
+  const rows=members.map((m,i)=>'<tr><td>'+(i+1)+'</td><td>'+esc(m.nama||'-')+'</td><td>'+esc(m.paket||'-')+'</td><td style="text-align:right">'+rupiah(m.harga)+'</td></tr>').join('');
+  const total=group?groupTotalFor(j):Number(j.harga||0);
+  const paid=Number(p.amount||0);
+  const inv=invoiceNumber(p);
+  w.document.write('<!doctype html><html><head><meta charset="utf-8"><title>'+esc(inv)+'</title><style>*{box-sizing:border-box}body{font-family:Arial,sans-serif;margin:0;color:#222}.page{width:180mm;margin:auto;padding:12mm}.head{border-bottom:2px solid #173f35;padding-bottom:8px;margin-bottom:12px}.company{font-size:18px;font-weight:800;color:#173f35}.sub{font-size:11px;color:#666;margin-top:3px}.title{text-align:center;font-weight:800;font-size:16px;margin:14px 0}.meta{font-size:11px;line-height:1.7;margin-bottom:10px}table{width:100%;border-collapse:collapse;font-size:10px}th,td{border:1px solid #ccc;padding:5px}th{background:#f3f6f4;text-align:left}.right{text-align:right}.summary{margin-top:12px;border:1px solid #ddd;padding:9px;font-size:11px}.summary div{display:flex;justify-content:space-between;padding:3px 0}.grand{font-weight:800;border-top:1px solid #173f35;margin-top:4px;padding-top:5px}.sign{margin-top:30px;display:grid;grid-template-columns:1fr 1fr;text-align:center;font-size:10px}.space{height:42px}@media print{@page{size:A5;margin:0}.page{width:auto;padding:9mm}}</style></head><body><div class="page"><div class="head"><div class="company">PT RAIHAN ALYA TOUR</div><div class="sub">Palangka Raya, Kalimantan Tengah</div></div><div class="title">BUKTI PEMBAYARAN</div><div class="meta"><b>No. Nota:</b> '+esc(inv)+'<br><b>Tanggal:</b> '+esc(formatDateID(p.payment_date))+'<br><b>'+ (group?'Rombongan':'Jamaah') +':</b> '+esc(label)+'</div>'+ (group?'<table><thead><tr><th>No</th><th>Nama Jamaah</th><th>Paket</th><th class="right">Harga</th></tr></thead><tbody>'+rows+'</tbody></table>':'') +'<div class="summary"><div><span>Total Tagihan</span><b>'+rupiah(total)+'</b></div><div><span>Pembayaran Ini</span><b>'+rupiah(paid)+'</b></div><div><span>Metode</span><b>'+esc(p.method||'-')+'</b></div><div><span>Bank</span><b>'+esc(p.bank||'-')+'</b></div><div><span>Keterangan</span><b>'+esc(p.note||'-')+'</b></div><div class="grand"><span>Terima Pembayaran</span><b>'+rupiah(paid)+'</b></div></div><div class="sign"><div>Admin / Petugas<div class="space"></div>(________________)</div><div>Jamaah<div class="space"></div>(________________)</div></div></div><script>window.onload=function(){setTimeout(function(){window.print()},250)}<\\/script></body></html>');
   w.document.close();
 }
 
