@@ -540,8 +540,10 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;p
   <form id="profileForm" class="form">
     <div class="full" style="display:flex;flex-direction:column;align-items:center;text-align:center">
       <div class="profile-avatar-preview" id="profileAvatarPreview"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.2"/><path d="M5 20a7 7 0 0 1 14 0"/></svg></div>
+      <label class="btn secondary small-btn" for="profilePhotoFile" style="cursor:pointer">Pilih Foto</label>
+      <input id="profilePhotoFile" type="file" accept="image/*" style="display:none">
       <input id="profilePhotoUrl" placeholder="URL foto profil (opsional)" style="max-width:420px">
-      <div class="profile-help">Untuk sementara foto menggunakan URL gambar. Upload foto langsung bisa kita sambungkan ke Storage Supabase setelah profil dasar aktif.</div>
+      <div class="profile-help">Pilih foto dari komputer atau gunakan URL. Maksimal 2 MB.</div>
     </div>
     <div><label>Nama Lengkap</label><input id="profileName" required placeholder="Nama lengkap"></div>
     <div><label>Nomor WhatsApp</label><input id="profilePhone" placeholder="08xxxxxxxxxx"></div>
@@ -739,11 +741,28 @@ function updateProfilePreview(url){
 document.addEventListener('DOMContentLoaded',()=>{
   const pf=document.getElementById('profileForm');
   if(!pf)return;
-  document.getElementById('profilePhotoUrl').addEventListener('input',e=>updateProfilePreview(e.target.value.trim()));
+  const photoFile=document.getElementById('profilePhotoFile');
+  photoFile.addEventListener('change',e=>{
+    const f=e.target.files?.[0]; if(!f)return;
+    if(!f.type.startsWith('image/')){notice('File harus berupa gambar.','error');photoFile.value='';return}
+    if(f.size>2*1024*1024){notice('Ukuran foto maksimal 2 MB.','error');photoFile.value='';return}
+    const reader=new FileReader(); reader.onload=()=>updateProfilePreview(reader.result); reader.readAsDataURL(f);
+  });
+  document.getElementById('profilePhotoUrl').addEventListener('input',e=>{if(!photoFile.files?.[0])updateProfilePreview(e.target.value.trim())});
   pf.addEventListener('submit',async e=>{
     e.preventDefault();
     if(!currentUser){notice('Sesi login tidak ditemukan.','error');return}
-    const payload={user_id:currentUser.id,nama_lengkap:document.getElementById('profileName').value.trim(),nomor_hp:document.getElementById('profilePhone').value.trim(),jabatan:document.getElementById('profilePosition').value.trim(),foto_url:document.getElementById('profilePhotoUrl').value.trim(),updated_at:new Date().toISOString()};
+    let photoUrl=document.getElementById('profilePhotoUrl').value.trim();
+    const file=photoFile.files?.[0];
+    if(file){
+      const ext=(file.name.split('.').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,'')||'jpg';
+      const path=currentUser.id+'/profile-'+Date.now()+'.'+ext;
+      const up=await sb.storage.from('profile-photos').upload(path,file,{upsert:true,contentType:file.type});
+      if(up.error){notice('Gagal upload foto: '+up.error.message,'error');return}
+      const pub=sb.storage.from('profile-photos').getPublicUrl(path);
+      photoUrl=pub.data.publicUrl||'';
+    }
+    const payload={user_id:currentUser.id,nama_lengkap:document.getElementById('profileName').value.trim(),nomor_hp:document.getElementById('profilePhone').value.trim(),jabatan:document.getElementById('profilePosition').value.trim(),foto_url:photoUrl,updated_at:new Date().toISOString()};
     const {error}=await sb.from('user_profiles').upsert(payload,{onConflict:'user_id'});
     if(error){notice('Gagal menyimpan profil: '+error.message,'error');return}
     closeMyProfile();await loadMyProfile();notice('Profil berhasil diperbarui');
