@@ -1342,7 +1342,7 @@ function renderExpenses(){
   if(body)body.innerHTML=rows.map((x,i)=>{
     const receipt=x.receipt_path
       ? '<button class="btn secondary small-btn" type="button" onclick="openExpenseReceipt(\\''+encodeURIComponent(x.receipt_path)+'\\')">Lihat Bukti</button>'
-      : '<button class="btn secondary small-btn" type="button" onclick="editExpense(\\''+esc(x.id)+'\\');setTimeout(()=>document.getElementById(\\'expenseReceipt\\')?.click(),0)">Upload Bukti</button>';
+      : '<button class="btn secondary small-btn" type="button" onclick="editExpense(\\''+esc(x.id)+'\\');setTimeout(()=>document.getElementById(\\'expenseReceipt\\')?.scrollIntoView({behavior:\\'smooth\\',block:\\'center\\'}),50)">Upload Bukti</button>';
     return '<tr><td style="text-align:center"><input class="bulk-check expense-check" type="checkbox" value="'+esc(x.id)+'" onchange="syncBulkState(\\'expense\\')"></td><td>'+(i+1)+'</td><td>'+formatDate(x.date)+'</td><td>'+esc(x.category)+'</td><td>'+esc(x.description)+'</td><td>'+expenseMoney(x.amount)+'</td><td>'+esc(x.method)+'</td><td>'+esc(x.bank||'-')+'</td><td>'+receipt+'</td><td>'+esc(x.note||'-')+'</td><td><div class="package-actions"><button class="btn secondary small-btn" type="button" onclick="editExpense(\\''+esc(x.id)+'\\')">Edit</button><button class="btn danger small-btn" type="button" onclick="deleteExpense(\\''+esc(x.id)+'\\')">Hapus</button></div></td></tr>';
   }).join('')||'<tr><td colspan="11" style="text-align:center">Belum ada pengeluaran pada periode ini.</td></tr>';
   syncBulkState('expense');
