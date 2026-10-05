@@ -4,7 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Raihan Alya Tour — Management System</title>
-<style>
+<style><style>
+/* Loading state untuk mencegah klik ganda saat proses simpan */
+.is-loading{pointer-events:none!important;opacity:.7;cursor:wait!important}
+.form.is-processing{position:relative}
+.form.is-processing::after{content:'Memuat data...';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.72);color:#173f35;font-weight:700;font-size:14px;z-index:20;backdrop-filter:blur(1px)}
+.btn.is-loading::before{content:'';display:inline-block;width:12px;height:12px;margin-right:7px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;vertical-align:-2px;animation:formSpin .7s linear infinite}
+@keyframes formSpin{to{transform:rotate(360deg)}}
+</style>
 *{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#f4f6f8;color:#20252b}
 .app{display:flex;min-height:100vh}.side{width:225px;background:#173f35;color:#fff;padding:22px 14px;position:fixed;inset:0 auto 0 0;z-index:1000;transition:width .25s ease,transform .25s ease;overflow:hidden}.logo{font-size:15px;font-weight:700;padding:0 44px 25px 12px;white-space:nowrap;letter-spacing:.15px}.logo small{display:block;font-size:11px;font-weight:400;opacity:.7;margin-top:5px}.sidebar-toggle{position:absolute;right:10px;top:18px;width:32px;height:32px;border:0;border-radius:8px;background:rgba(255,255,255,.1);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.2s}.sidebar-toggle:hover{background:rgba(255,255,255,.18)}.sidebar-toggle svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .nav button{width:100%;border:0;background:transparent;color:#dce9e5;text-align:left;padding:11px 12px;border-radius:8px;margin:3px 0;cursor:pointer;font-size:14px;display:flex;align-items:center;gap:11px;transition:background .18s ease,color .18s ease}.nav button.active,.nav button:hover{background:#286253;color:#fff}.nav-icon{width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;flex:none;opacity:.9}.nav-icon svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.nav button.active .nav-icon{opacity:1}.nav-label{white-space:nowrap}
@@ -740,6 +747,20 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;p
 <div class="admin-menu" id="adminMenu"><button onclick="closeAdminMenu()">Tutup</button><button onclick="openMyProfile()"><span class="menu-svg"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.2"/><path d="M5 20a7 7 0 0 1 14 0"/></svg></span> Profil Saya</button><button onclick="openAccessPage()"><span class="menu-svg"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M16 11a3 3 0 1 0 0-6"/><path d="M17 14a5 5 0 0 1 4 6"/></svg></span> Kelola Akses Pengguna</button><button onclick="logout()"><span class="menu-svg"><svg viewBox="0 0 24 24"><path d="M10 5H5v14h5"/><path d="m15 8 4 4-4 4"/><path d="M19 12H9"/></svg></span> Keluar</button></div>
 
 <script>
+function setFormLoading(form,loading,text){
+  if(!form)return;
+  const buttons=form.querySelectorAll('button[type="submit"]');
+  if(loading){
+    form.dataset.originalSubmitText=buttons[0]?.textContent||'Simpan';
+    form.classList.add('is-processing');
+    buttons.forEach(btn=>{btn.disabled=true;btn.classList.add('is-loading');btn.dataset.originalText=btn.textContent;btn.textContent=text||'Memuat data...';});
+  }else{
+    form.classList.remove('is-processing');
+    buttons.forEach(btn=>{btn.disabled=false;btn.classList.remove('is-loading');if(btn.dataset.originalText)btn.textContent=btn.dataset.originalText;});
+  }
+}
+</script>
+<script>
 const SUPABASE_URL='https://hsnvuqnpqgbokdbiwjar.supabase.co';
 const SUPABASE_KEY='sb_publishable_qsYyXhpBu2xT3sGYAv--6w_AqEjU297';
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
@@ -1234,7 +1255,18 @@ function printUangMasuk(){
   }).join('');
   w.document.write(`<!doctype html><html><head><title>Rekap Uang Masuk - Raihan Alya Tour</title><style>
   body{font-family:Arial,sans-serif;margin:30px;color:#222}h1{margin:0 0 4px;font-size:22px}h2{margin:0 0 14px;font-size:15px}p{margin:4px 0 16px;color:#555}.summary{padding:12px;border:1px solid #ddd;margin:15px 0;font-weight:bold}table{width:100%;border-collapse:collapse;font-size:11px}th,td{border:1px solid #bbb;padding:7px;text-align:left}th{background:#f3f3f3}@media print{button{display:none}}
-  </style></head><body><h1>RAIHAN ALYA TOUR</h1><h2>Melayani dengan Sepenuh Hati</h2><p>Rekap Uang Masuk${start||end?' | '+(start?formatDate(start):'Awal')+' s/d '+(end?formatDate(end):'Sekarang'):''}</p><div class="summary">Total Uang Masuk: ${money(total)} &nbsp; | &nbsp; Jumlah Transaksi: ${rows.length}</div><table><thead><tr><th>No</th><th>Tanggal</th><th>Invoice</th><th>Jamaah</th><th>Nominal</th><th>Metode</th><th>Bank</th><th>Keterangan</th></tr></thead><tbody>${body||'<tr><td colspan="8">Tidak ada transaksi.</td></tr>'}</tbody></table>\x3Cscript>window.onload=()=>window.print()<\/script></body></html>`);
+  </style></head><body><h1>RAIHAN ALYA TOUR</h1><h2>Melayani dengan Sepenuh Hati</h2><p>Rekap Uang Masuk${start||end?' | '+(start?formatDate(start):'Awal')+' s/d '+(end?formatDate(end):'Sekarang'):''}</p><div class="summary">Total Uang Masuk: ${money(total)} &nbsp; | &nbsp; Jumlah Transaksi: ${rows.length}</div><table><thead><tr><th>No</th><th>Tanggal</th><th>Invoice</th><th>Jamaah</th><th>Nominal</th><th>Metode</th><th>Bank</th><th>Keterangan</th></tr></thead><tbody>${body||'<tr><td colspan="8">Tidak ada transaksi.</td></tr>'}</tbody></table>\x3Cscript>window.onload=()=>window.print()<\/script><script>
+document.addEventListener('submit',function(e){
+  const form=e.target;
+  if(!form||!form.id||!form.dataset.processing)return;
+  setTimeout(()=>{
+    if(form.dataset.processing==="1"){
+      form.dataset.processing="0";
+      setFormLoading(form,false);
+    }
+  },12000);
+},true);
+</script></body></html>`);
   w.document.close();
 }
 function renderAll(){refreshPackageSelects();renderPackages();renderJamaah();renderPaymentSummary();renderPaymentHistory();renderUangMasuk();renderExpenses();renderDash();fillPaymentJamaah();fillDocumentJamaah();renderDocuments();fillEquipmentJamaah();renderEquipment();renderDepartures();renderReport();}
@@ -1999,6 +2031,9 @@ if(jamaahForm) jamaahForm.addEventListener('submit',async e=>{
 
 document.getElementById('paymentForm').addEventListener('submit',async e=>{
   e.preventDefault();
+  if(e.currentTarget.dataset.processing==="1")return;
+  e.currentTarget.dataset.processing="1";
+  setFormLoading(e.currentTarget,true,"Menyimpan...");
   let jamaah_id=document.getElementById('paymentJamaah').value;
   const selectedJamaah=(data||[]).find(x=>x.id===jamaah_id);
   const selectedGroup=isGroupJamaah(selectedJamaah);
@@ -2344,6 +2379,9 @@ function showDepartureNotice(msg,type='ok'){
 
 document.getElementById('departureForm').addEventListener('submit',async e=>{
   e.preventDefault();
+  if(e.currentTarget.dataset.processing==="1")return;
+  e.currentTarget.dataset.processing="1";
+  setFormLoading(e.currentTarget,true,"Menyimpan...");
   const editId=document.getElementById('depEditId').value;
   const payload={
     name:document.getElementById('depName').value.trim(),
