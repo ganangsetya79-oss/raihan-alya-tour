@@ -1204,13 +1204,19 @@ function printPayment(paymentId){
   if(!p){notice('Transaksi tidak ditemukan.','error');return}
   const j=data.find(x=>x.id===p.jamaah_id);
   if(!j){notice('Data jamaah untuk transaksi ini tidak ditemukan.','error');return}
-  const total=paidFor(j.id);
-  const totalDiscount=discountFor(j.id);
+  const group=isGroupJamaah(j);
+  const groupMembers=group?groupMembersFor(j):[j];
+  const billTotal=group?groupTotalFor(j):Number(j.harga||0);
+  const total=group?groupPaidFor(j):paidFor(j.id);
+  const totalDiscount=group?groupDiscountFor(j):discountFor(j.id);
   const current=Number(p.amount||0);
   const currentDiscount=Number(p.discount||0);
   const previous=Math.max(0,total-current);
-  const remain=Math.max(0,Number(j.harga||0)-totalDiscount-total);
-  const netBill=Math.max(0,Number(j.harga||0)-totalDiscount);
+  const remain=Math.max(0,billTotal-totalDiscount-total);
+  const netBill=Math.max(0,billTotal-totalDiscount);
+  const displayName=group?groupNameFor(j):j.nama;
+  const displayPackage=group?('Rombongan — '+groupMembers.length+' anggota'):(j.paket||'-');
+  const memberNames=group?groupMembers.map(x=>x.nama).join(', '):'';
   const bank=p.method==='Transfer'?(p.bank||'-'):'-';
   const inv=invoiceNumber(p);
   const common=(title,office)=>`
@@ -1220,9 +1226,10 @@ function printPayment(paymentId){
       <div class="line"></div>
       <div class="row"><span>No. Invoice</span><b>${esc(inv)}</b></div>
       <div class="row"><span>Tanggal</span><b>${esc(formatDateID(p.payment_date))}</b></div>
-      <div class="row"><span>Nama Jamaah</span><b>${esc(j.nama)}</b></div>
-      <div class="row"><span>Paket</span><b>${esc(j.paket||'-')}</b></div>
-      <div class="row"><span>Harga Paket</span><b>${rupiah(j.harga)}</b></div>
+      <div class="row"><span>${group?'Nama Rombongan':'Nama Jamaah'}</span><b>${esc(displayName)}</b></div>
+      <div class="row"><span>Paket</span><b>${esc(displayPackage)}</b></div>
+      <div class="row"><span>Harga Paket${group?' (Total Anggota)':''}</span><b>${rupiah(billTotal)}</b></div>
+      ${group?'<div class="row"><span>Anggota</span><b>'+esc(memberNames)+'</b></div>':''}
       <div class="row"><span>Total Diskon</span><b>${rupiah(totalDiscount)}</b></div>
       <div class="row"><span>Total Tagihan Setelah Diskon</span><b>${rupiah(netBill)}</b></div>
       ${office?`<div class="row"><span>Total Sebelum Transaksi</span><b>${rupiah(previous)}</b></div>`:''}
