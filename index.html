@@ -750,9 +750,14 @@ window.saveMyProfile=async function(){
     if(file){
       const ext=(file.name.split('.').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,'')||'jpg';
       const path=currentUser.id+'/profile-'+Date.now()+'.'+ext;
-      const up=await sb.storage.from('profile-photos').upload(path,file,{upsert:true,contentType:file.type});
-      if(up.error)throw new Error('Upload foto gagal: '+up.error.message);
-      photoUrl=sb.storage.from('profile-photos').getPublicUrl(path).data.publicUrl||'';
+      const storage=sb.storage.from('profile-photos');
+      const up=await storage.upload(path,file,{upsert:false,cacheControl:'3600',contentType:file.type});
+      if(up.error){
+        throw new Error('Upload foto gagal. Pastikan bucket "profile-photos" sudah dibuat dan policy Storage sudah aktif. Detail: '+up.error.message);
+      }
+      const publicResult=storage.getPublicUrl(path);
+      photoUrl=publicResult?.data?.publicUrl||'';
+      if(!photoUrl)throw new Error('Foto berhasil diupload tetapi URL foto tidak berhasil dibuat.');
     }
     const payload={user_id:currentUser.id,nama_lengkap:name,nomor_hp:document.getElementById('profilePhone').value.trim(),jabatan:document.getElementById('profilePosition').value.trim(),foto_url:photoUrl,updated_at:new Date().toISOString()};
     const {data:savedProfile,error}=await sb.from('user_profiles').upsert(payload,{onConflict:'user_id'}).select('*').single();
