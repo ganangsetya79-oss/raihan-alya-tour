@@ -23,6 +23,14 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;p
 
 /* Premium dashboard refresh */
 .dashboard-top{margin-bottom:22px}.dashboard-top h1{font-size:28px;letter-spacing:-.5px;color:#172b27}.dashboard-welcome{margin-top:5px;font-size:12px;color:#7a858b}
+.jamaah-category-switch{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.jamaah-category-switch label{display:flex;align-items:center;gap:7px;padding:9px 14px;border:1px solid #d8e2df;border-radius:9px;background:#fff;cursor:pointer;font-size:12px;font-weight:700}
+.jamaah-category-switch input{accent-color:#18745f}
+.jamaah-group-tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.jamaah-select-all{width:16px;height:16px;accent-color:#18745f}
+.jamaah-check{width:16px;height:16px;accent-color:#18745f}
+.jamaah-group-badge{display:inline-flex;padding:3px 8px;border-radius:999px;background:#eef7f3;color:#18745f;font-size:10px;font-weight:700}
+.jamaah-individual-badge{display:inline-flex;padding:3px 8px;border-radius:999px;background:#f3f5f7;color:#687078;font-size:10px;font-weight:700}
 .dashboard-greeting{margin-top:7px;font-size:14px;font-weight:700;color:#1f705d;line-height:1.5}
 .dashboard-greeting .greeting-name{color:#c28a16}
 .dashboard-running{margin-top:11px;width:100%;overflow:hidden;border:1px solid #dce8e3;border-radius:10px;background:#f7fbf9;box-shadow:0 4px 12px rgba(23,63,53,.045)}
@@ -290,9 +298,14 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;p
 </section>
 
 <section id="jamaah" class="hidden">
-  <div class="top"><h1>Data Jamaah</h1><input id="search" class="search" placeholder="Cari nama / HP / paket..." oninput="renderJamaah()"></div>
-  <div class="panel"><div class="panel-head"><h2>Daftar Jamaah</h2><button class="btn" onclick="openForm()">+ Tambah Jamaah</button></div>
-    <table><thead><tr><th>Nama</th><th>Jenis Kelamin</th><th>No. HP</th><th>Paket</th><th>Harga</th><th>Diskon</th><th>Dibayar</th><th>Sisa</th><th>Status</th><th>Aksi</th></tr></thead><tbody id="jamaahBody"></tbody></table>
+  <div class="top"><h1>Data Jamaah</h1><input id="search" class="search" placeholder="Cari nama / HP / paket / rombongan..." oninput="renderJamaah()"></div>
+  <div class="panel">
+    <div class="panel-head">
+      <div><h2>Daftar Jamaah</h2><div class="muted" style="margin-top:4px">Kelola jamaah individu maupun grup/rombongan.</div></div>
+      <div class="jamaah-group-tools"><button class="btn secondary small-btn" type="button" onclick="assignSelectedGroup()">Buat/Atur Rombongan</button><button class="btn" onclick="openForm()">+ Tambah Jamaah</button></div>
+    </div>
+    <div class="muted" style="margin-bottom:10px;font-size:11px">Centang beberapa jamaah untuk memasukkannya ke satu grup/rombongan.</div>
+    <table><thead><tr><th style="width:38px;text-align:center"><input class="jamaah-select-all" id="jamaahSelectAll" type="checkbox" onchange="toggleAllJamaah(this.checked)" title="Pilih semua"></th><th>Nama</th><th>Kategori</th><th>Rombongan</th><th>Jenis Kelamin</th><th>No. HP</th><th>Paket</th><th>Harga</th><th>Diskon</th><th>Dibayar</th><th>Sisa</th><th>Status</th><th>Aksi</th></tr></thead><tbody id="jamaahBody"></tbody></table>
   </div>
 </section>
 
@@ -513,7 +526,12 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;p
   <div class="modal-head"><h2 id="formTitle">Tambah Jamaah</h2><button class="close" onclick="closeForm()">×</button></div>
   <form id="jamaahForm" class="form">
     <input type="hidden" id="editId">
+    <div class="full"><label>Kategori Jamaah</label><div class="jamaah-category-switch">
+      <label><input type="radio" name="jamaahKategori" value="individu" checked onchange="toggleJamaahCategory()"> Individu</label>
+      <label><input type="radio" name="jamaahKategori" value="grup" onchange="toggleJamaahCategory()"> Grup / Rombongan</label>
+    </div></div>
     <div><label>Nama Lengkap</label><input id="nama" required></div>
+    <div id="jamaahGroupWrap" class="hidden"><label>Nama Grup / Rombongan</label><input id="nama_rombongan" placeholder="Contoh: Rombongan Keluarga Bapak Ahmad"></div>
     <div><label>Jenis Kelamin</label><select id="jenis_kelamin"><option value="">-- Pilih --</option><option value="Laki-laki">Laki-laki</option><option value="Perempuan">Perempuan</option></select></div>
     <div><label>No. HP</label><input id="hp" required></div>
     <div><label>NIK</label><input id="nik"></div>
@@ -1093,11 +1111,13 @@ function printReport(){
 
 function renderJamaah(){
   const q=(document.getElementById('search')?.value||'').toLowerCase();
-  const rows=data.filter(x=>(x.nama+' '+(x.hp||'')+' '+(x.paket||'')+' '+(x.jenis_kelamin||'')).toLowerCase().includes(q));
+  const rows=data.filter(x=>(x.nama+' '+(x.hp||'')+' '+(x.paket||'')+' '+(x.jenis_kelamin||'')+' '+(x.nama_rombongan||'')+' '+(x.kategori||'')).toLowerCase().includes(q));
   document.getElementById('jamaahBody').innerHTML=rows.map(x=>{
     const paid=paidFor(x.id), discount=discountFor(x.id), remain=remainFor(x);
-    return `<tr><td>${esc(x.nama)}</td><td>${esc(x.jenis_kelamin||'-')}</td><td>${esc(x.hp||'')}</td><td>${esc(x.paket||'')}</td><td>${rupiah(x.harga)}</td><td>${rupiah(discount)}</td><td>${rupiah(paid)}</td><td>${rupiah(remain)}</td><td>${status(x)}</td><td><button class="btn secondary" onclick="edit('${x.id}')">Edit</button> <button class="btn danger" onclick="hapus('${x.id}')">Hapus</button></td></tr>`;
-  }).join('')||'<tr><td colspan="9">Belum ada data.</td></tr>';
+    const isGroup=x.kategori==='grup';
+    return `<tr><td style="text-align:center"><input class="jamaah-check" type="checkbox" value="${esc(x.id)}" onchange="syncJamaahSelectState()" aria-label="Pilih ${esc(x.nama)}"></td><td>${esc(x.nama)}</td><td>${isGroup?'<span class="jamaah-group-badge">Grup / Rombongan</span>':'<span class="jamaah-individual-badge">Individu</span>'}</td><td>${esc(x.nama_rombongan||'-')}</td><td>${esc(x.jenis_kelamin||'-')}</td><td>${esc(x.hp||'')}</td><td>${esc(x.paket||'')}</td><td>${rupiah(x.harga)}</td><td>${rupiah(discount)}</td><td>${rupiah(paid)}</td><td>${rupiah(remain)}</td><td>${status(x)}</td><td><button class="btn secondary small-btn" onclick="edit('${x.id}')">Edit</button> <button class="btn danger small-btn" onclick="hapus('${x.id}')">Hapus</button></td></tr>`;
+  }).join('')||'<tr><td colspan="13">Belum ada data.</td></tr>';
+  syncJamaahSelectState();
 }
 
 function renderPaymentSummary(){
@@ -1338,15 +1358,50 @@ function syncPaymentJamaahName(){
   }
 }
 
+function toggleJamaahCategory(){
+  const kategori=document.querySelector('input[name="jamaahKategori"]:checked')?.value||'individu';
+  document.getElementById('jamaahGroupWrap')?.classList.toggle('hidden',kategori!=='grup');
+  const group=document.getElementById('nama_rombongan');
+  if(group)group.required=kategori==='grup';
+}
+function syncJamaahSelectState(){
+  const checks=[...document.querySelectorAll('.jamaah-check')];
+  const checked=checks.filter(x=>x.checked);
+  const all=document.getElementById('jamaahSelectAll');
+  if(all){
+    all.checked=checks.length>0&&checked.length===checks.length;
+    all.indeterminate=checked.length>0&&checked.length<checks.length;
+  }
+}
+function toggleAllJamaah(checked){
+  document.querySelectorAll('.jamaah-check').forEach(x=>x.checked=checked);
+  syncJamaahSelectState();
+}
+async function assignSelectedGroup(){
+  const ids=[...document.querySelectorAll('.jamaah-check:checked')].map(x=>x.value);
+  if(ids.length<1){notice('Centang minimal 1 jamaah terlebih dahulu.','error');return}
+  const group=prompt('Masukkan nama grup / rombongan:');
+  if(group===null)return;
+  const nama=group.trim();
+  if(!nama){notice('Nama grup / rombongan wajib diisi.','error');return}
+  const result=await sb.from('jamaah').update({kategori:'grup',nama_rombongan:nama}).in('id',ids);
+  if(result.error){notice('Gagal mengatur rombongan: '+result.error.message,'error');return}
+  await loadData();renderAll();notice(ids.length+' jamaah berhasil dimasukkan ke rombongan '+nama+'.');
+}
 function openForm(id=null){
   document.getElementById('modal').classList.add('show');
   document.getElementById('formTitle').textContent=id?'Edit Jamaah':'Tambah Jamaah';
   document.getElementById('jamaahForm').reset();
   document.getElementById('editId').value=id||'';
+  const radio=document.querySelector('input[name="jamaahKategori"][value="individu"]'); if(radio)radio.checked=true;
   if(id){
     const x=data.find(a=>a.id===id);
-    if(x)for(const k of ['nama','jenis_kelamin','hp','nik','alamat','paket','harga','berangkat','catatan'])document.getElementById(k).value=x[k]??'';
+    if(x){
+      const r=document.querySelector('input[name="jamaahKategori"][value="'+(x.kategori==='grup'?'grup':'individu')+'"]'); if(r)r.checked=true;
+      for(const k of ['nama','jenis_kelamin','hp','nik','alamat','paket','harga','berangkat','catatan','nama_rombongan'])document.getElementById(k).value=x[k]??'';
+    }
   }
+  toggleJamaahCategory();
 }
 function closeForm(){document.getElementById('modal').classList.remove('show')}
 function edit(id){openForm(id)}
@@ -1371,7 +1426,9 @@ document.getElementById('jamaahForm').addEventListener('submit',async e=>{
     paket:document.getElementById('paket').value,
     harga:Number(document.getElementById('harga').value)||0,
     berangkat:document.getElementById('berangkat').value||null,
-    catatan:document.getElementById('catatan').value.trim()
+    catatan:document.getElementById('catatan').value.trim(),
+    kategori:document.querySelector('input[name="jamaahKategori"]:checked')?.value||'individu',
+    nama_rombongan:document.getElementById('nama_rombongan')?.value.trim()||null
   };
   let result;
   if(id) result=await sb.from('jamaah').update(payload).eq('id',id);
