@@ -596,6 +596,7 @@ const SUPABASE_KEY='sb_publishable_qsYyXhpBu2xT3sGYAv--6w_AqEjU297';
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 
 let data=[], payments=[], documents=[], equipment=[], departures=[], currentUser=null, currentAccess=null;
+const APP_VERSION='2026-10-05-invoice-fix'; // force fresh deploy after invoice fix
 
 const rupiah=n=>new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(Number(n)||0);
 const isGroupJamaah=x=>!!(x&&(x.kategori==='grup'||String(x.nama_rombongan||'').trim()));
