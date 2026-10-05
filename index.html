@@ -1393,8 +1393,14 @@ function setJamaahEntryMode(mode){
   document.getElementById('groupForm')?.classList.toggle('hidden',mode!=='grup');
   document.getElementById('tabIndividu')?.classList.toggle('active',mode==='individu');
   document.getElementById('tabGrup')?.classList.toggle('active',mode==='grup');
-  const nama=document.getElementById('nama'),hp=document.getElementById('hp'),harga=document.getElementById('harga');
-  if(nama)nama.required=mode==='individu';if(hp)hp.required=mode==='individu';if(harga)harga.required=mode==='individu';
+  const individualFields=['nama','jenis_kelamin','hp','nik','alamat','paket','harga','berangkat','catatan'];
+  individualFields.forEach(id=>{
+    const el=document.getElementById(id);
+    if(el){
+      el.disabled=mode!=='individu';
+      if(['nama','hp','harga'].includes(id))el.required=mode==='individu';
+    }
+  });
   if(mode==='grup'){
     const box=document.getElementById('jamaahMembers');
     if(box&&!box.querySelector('.jamaah-member-card'))for(let i=0;i<5;i++)addJamaahMember();
