@@ -531,7 +531,10 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;p
       <label><input type="radio" name="jamaahKategori" value="grup" onchange="toggleJamaahCategory()"> Grup / Rombongan</label>
     </div></div>
     <div><label>Nama Lengkap</label><input id="nama" required></div>
-    <div id="jamaahGroupWrap" class="hidden"><label>Nama Grup / Rombongan</label><input id="nama_rombongan" placeholder="Contoh: Rombongan Keluarga Bapak Ahmad"></div>
+    <div id="jamaahGroupWrap" class="hidden">
+      <div><label>Nama Grup / Rombongan</label><input id="nama_rombongan" placeholder="Contoh: Rombongan Keluarga Bapak Ahmad"></div>
+      <div class="full" style="margin-top:10px"><label>Nama Anggota Rombongan</label><textarea id="anggota_rombongan" rows="5" placeholder="Nama 1&#10;Nama 2&#10;Nama 3&#10;Nama 4"></textarea><div class="muted" style="margin-top:5px;font-size:11px">Masukkan satu nama jamaah per baris. Contoh: Ahmad, Siti, Budi. Sistem akan membuat masing-masing nama sebagai data jamaah dalam rombongan yang sama.</div></div>
+    </div>
     <div><label>Jenis Kelamin</label><select id="jenis_kelamin"><option value="">-- Pilih --</option><option value="Laki-laki">Laki-laki</option><option value="Perempuan">Perempuan</option></select></div>
     <div><label>No. HP</label><input id="hp" required></div>
     <div><label>NIK</label><input id="nik"></div>
@@ -1362,7 +1365,9 @@ function toggleJamaahCategory(){
   const kategori=document.querySelector('input[name="jamaahKategori"]:checked')?.value||'individu';
   document.getElementById('jamaahGroupWrap')?.classList.toggle('hidden',kategori!=='grup');
   const group=document.getElementById('nama_rombongan');
+  const members=document.getElementById('anggota_rombongan');
   if(group)group.required=kategori==='grup';
+  if(members)members.required=kategori==='grup';
 }
 function syncJamaahSelectState(){
   const checks=[...document.querySelectorAll('.jamaah-check')];
@@ -1399,6 +1404,8 @@ function openForm(id=null){
     if(x){
       const r=document.querySelector('input[name="jamaahKategori"][value="'+(x.kategori==='grup'?'grup':'individu')+'"]'); if(r)r.checked=true;
       for(const k of ['nama','jenis_kelamin','hp','nik','alamat','paket','harga','berangkat','catatan','nama_rombongan'])document.getElementById(k).value=x[k]??'';
+      const members=document.getElementById('anggota_rombongan');
+      if(members)members.value=x.nama||'';
     }
   }
   toggleJamaahCategory();
@@ -1417,8 +1424,9 @@ async function hapus(id){
 document.getElementById('jamaahForm').addEventListener('submit',async e=>{
   e.preventDefault();
   const id=document.getElementById('editId').value;
-  const payload={
-    nama:document.getElementById('nama').value.trim(),
+  const kategori=document.querySelector('input[name="jamaahKategori"]:checked')?.value||'individu';
+  const nama=document.getElementById('nama').value.trim();
+  const common={
     jenis_kelamin:document.getElementById('jenis_kelamin').value,
     hp:document.getElementById('hp').value.trim(),
     nik:document.getElementById('nik').value.trim(),
@@ -1427,14 +1435,23 @@ document.getElementById('jamaahForm').addEventListener('submit',async e=>{
     harga:Number(document.getElementById('harga').value)||0,
     berangkat:document.getElementById('berangkat').value||null,
     catatan:document.getElementById('catatan').value.trim(),
-    kategori:document.querySelector('input[name="jamaahKategori"]:checked')?.value||'individu',
-    nama_rombongan:document.getElementById('nama_rombongan')?.value.trim()||null
+    kategori:kategori,
+    nama_rombongan:kategori==='grup'?(document.getElementById('nama_rombongan').value.trim()||null):null
   };
   let result;
-  if(id) result=await sb.from('jamaah').update(payload).eq('id',id);
-  else result=await sb.from('jamaah').insert(payload);
+  if(kategori==='grup' && !id){
+    const names=(document.getElementById('anggota_rombongan').value||'').split(/\n|,/).map(x=>x.trim()).filter(Boolean);
+    if(!common.nama_rombongan){notice('Nama grup / rombongan wajib diisi.','error');return}
+    if(!names.length){notice('Masukkan minimal satu nama anggota rombongan.','error');return}
+    const rows=names.map(n=>({...common,nama:n}));
+    result=await sb.from('jamaah').insert(rows);
+  }else{
+    const payload={...common,nama};
+    if(id) result=await sb.from('jamaah').update(payload).eq('id',id);
+    else result=await sb.from('jamaah').insert(payload);
+  }
   if(result.error){notice('Gagal menyimpan jamaah: '+result.error.message,'error');return}
-  closeForm();await loadData();renderAll();notice('Data jamaah berhasil disimpan.');
+  closeForm();await loadData();renderAll();notice(kategori==='grup'&&!id?'Data rombongan berhasil disimpan.':'Data jamaah berhasil disimpan.');
 });
 
 document.getElementById('paymentForm').addEventListener('submit',async e=>{
