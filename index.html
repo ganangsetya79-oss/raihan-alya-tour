@@ -23,6 +23,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;p
 
 /* Premium dashboard refresh */
 .dashboard-top{margin-bottom:22px}.dashboard-top h1{font-size:28px;letter-spacing:-.5px;color:#172b27}.dashboard-welcome{margin-top:5px;font-size:12px;color:#7a858b}
+.jamaah-entry-tabs{display:flex;gap:5px;margin-bottom:10px}.jamaah-entry-tab{border:1px solid #d8e2df;background:#edf4f1;color:#176b58;border-radius:7px;padding:8px 12px;font-size:12px;font-weight:700;cursor:pointer}.jamaah-entry-tab.active{background:#08734f;color:#fff;border-color:#08734f}.jamaah-group-form{background:#f8fbf9;border:1px solid #d7e5df;border-radius:9px;padding:11px}.jamaah-group-head{display:grid;grid-template-columns:1fr 1fr;gap:10px}.jamaah-members-head{display:flex;justify-content:space-between;align-items:center;margin:5px 0 8px}.jamaah-member-card{background:#fff;border:1px solid #d8e2df;border-radius:8px;padding:10px;margin-bottom:9px}.jamaah-member-title{display:flex;align-items:center;gap:8px;margin-bottom:9px;font-size:12px;font-weight:800}.jamaah-member-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.jamaah-member-grid .full{grid-column:1/-1}.jamaah-member-card label{font-size:9px}.jamaah-member-card input,.jamaah-member-card select,.jamaah-member-card textarea{font-size:11px}.jamaah-remove{background:#bd2117!important;color:#fff!important;border:0!important}@media(max-width:800px){.jamaah-group-head,.jamaah-member-grid{grid-template-columns:1fr 1fr}}@media(max-width:520px){.jamaah-group-head,.jamaah-member-grid{grid-template-columns:1fr}}
 .jamaah-category-switch{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
 .jamaah-category-switch label{display:flex;align-items:center;gap:7px;padding:9px 14px;border:1px solid #d8e2df;border-radius:9px;background:#fff;cursor:pointer;font-size:12px;font-weight:700}
 .jamaah-category-switch input{accent-color:#18745f}
@@ -1361,34 +1362,56 @@ function syncPaymentJamaahName(){
   }
 }
 
-function toggleJamaahCategory(){
-  const kategori=document.querySelector('input[name="jamaahKategori"]:checked')?.value||'individu';
-  document.getElementById('jamaahGroupWrap')?.classList.toggle('hidden',kategori!=='grup');
-  const group=document.getElementById('nama_rombongan');
-  const members=document.getElementById('anggota_rombongan');
-  if(group)group.required=kategori==='grup';
-  if(members)members.required=kategori==='grup';
+function jamaahMemberTemplate(index,data={}){
+  return `<div class="jamaah-member-card" data-member-index="${index}">
+    <div class="jamaah-member-title"><span>Anggota ${index}</span>${index>1?'<button type="button" class="btn small-btn jamaah-remove" onclick="removeJamaahMember(this)">Hapus</button>':''}</div>
+    <div class="jamaah-member-grid">
+      <div><label>Nama</label><input data-field="nama" required placeholder="Nama jamaah" value="${esc(data.nama||'')}"></div>
+      <div><label>Jenis Kelamin</label><select data-field="jenis_kelamin"><option value="">- Pilih -</option><option value="Laki-laki" ${data.jenis_kelamin==='Laki-laki'?'selected':''}>Laki-laki</option><option value="Perempuan" ${data.jenis_kelamin==='Perempuan'?'selected':''}>Perempuan</option></select></div>
+      <div><label>HP</label><input data-field="hp" placeholder="Nomor HP" value="${esc(data.hp||'')}"></div>
+      <div><label>NIK</label><input data-field="nik" placeholder="NIK" value="${esc(data.nik||'')}"></div>
+      <div><label>Alamat</label><input data-field="alamat" placeholder="Alamat" value="${esc(data.alamat||'')}"></div>
+      <div><label>Paket</label><select data-field="paket"><option value="Executive" ${data.paket==='Executive'?'selected':''}>Executive</option><option value="Premium" ${data.paket==='Premium'?'selected':''}>Premium</option><option value="Economis" ${data.paket==='Economis'?'selected':''}>Economis</option></select></div>
+      <div><label>Harga</label><input data-field="harga" type="number" min="0" placeholder="Harga paket" value="${data.harga??''}"></div>
+      <div><label>Tanggal Berangkat</label><input data-field="berangkat" type="date" value="${data.berangkat||''}"></div>
+      <div class="full"><label>Catatan</label><textarea data-field="catatan" rows="2" placeholder="Catatan jamaah">${esc(data.catatan||'')}</textarea></div>
+    </div>
+  </div>`;
 }
+function addJamaahMember(data={}){
+  const box=document.getElementById('jamaahMembers'); if(!box)return;
+  const index=box.querySelectorAll('.jamaah-member-card').length+1;
+  box.insertAdjacentHTML('beforeend',jamaahMemberTemplate(index,data));
+}
+function renumberJamaahMembers(){
+  document.querySelectorAll('#jamaahMembers .jamaah-member-card').forEach((card,i)=>{
+    card.dataset.memberIndex=i+1;
+    const title=card.querySelector('.jamaah-member-title');
+    if(title)title.innerHTML='<span>Anggota '+(i+1)+'</span>'+(i>0?'<button type="button" class="btn small-btn jamaah-remove" onclick="removeJamaahMember(this)">Hapus</button>':'');
+  });
+}
+function removeJamaahMember(btn){btn.closest('.jamaah-member-card')?.remove();renumberJamaahMembers()}
+function setJamaahEntryMode(mode){
+  document.getElementById('entryMode').value=mode;
+  document.getElementById('individualForm')?.classList.toggle('hidden',mode!=='individu');
+  document.getElementById('groupForm')?.classList.toggle('hidden',mode!=='grup');
+  document.getElementById('tabIndividu')?.classList.toggle('active',mode==='individu');
+  document.getElementById('tabGrup')?.classList.toggle('active',mode==='grup');
+  const nama=document.getElementById('nama'),hp=document.getElementById('hp'),harga=document.getElementById('harga');
+  if(nama)nama.required=mode==='individu'; if(hp)hp.required=mode==='individu'; if(harga)harga.required=mode==='individu';
+  if(mode==='grup'&&!document.querySelector('#jamaahMembers .jamaah-member-card'))addJamaahMember();
+}
+function toggleJamaahCategory(){setJamaahEntryMode(document.getElementById('entryMode')?.value||'individu')}
 function syncJamaahSelectState(){
-  const checks=[...document.querySelectorAll('.jamaah-check')];
-  const checked=checks.filter(x=>x.checked);
-  const all=document.getElementById('jamaahSelectAll');
-  if(all){
-    all.checked=checks.length>0&&checked.length===checks.length;
-    all.indeterminate=checked.length>0&&checked.length<checks.length;
-  }
+  const checks=[...document.querySelectorAll('.jamaah-check')],checked=checks.filter(x=>x.checked),all=document.getElementById('jamaahSelectAll');
+  if(all){all.checked=checks.length>0&&checked.length===checks.length;all.indeterminate=checked.length>0&&checked.length<checks.length}
 }
-function toggleAllJamaah(checked){
-  document.querySelectorAll('.jamaah-check').forEach(x=>x.checked=checked);
-  syncJamaahSelectState();
-}
+function toggleAllJamaah(checked){document.querySelectorAll('.jamaah-check').forEach(x=>x.checked=checked);syncJamaahSelectState()}
 async function assignSelectedGroup(){
   const ids=[...document.querySelectorAll('.jamaah-check:checked')].map(x=>x.value);
   if(ids.length<1){notice('Centang minimal 1 jamaah terlebih dahulu.','error');return}
-  const group=prompt('Masukkan nama grup / rombongan:');
-  if(group===null)return;
-  const nama=group.trim();
-  if(!nama){notice('Nama grup / rombongan wajib diisi.','error');return}
+  const group=prompt('Masukkan nama grup / rombongan:');if(group===null)return;
+  const nama=group.trim();if(!nama){notice('Nama grup / rombongan wajib diisi.','error');return}
   const result=await sb.from('jamaah').update({kategori:'grup',nama_rombongan:nama}).in('id',ids);
   if(result.error){notice('Gagal mengatur rombongan: '+result.error.message,'error');return}
   await loadData();renderAll();notice(ids.length+' jamaah berhasil dimasukkan ke rombongan '+nama+'.');
@@ -1396,19 +1419,13 @@ async function assignSelectedGroup(){
 function openForm(id=null){
   document.getElementById('modal').classList.add('show');
   document.getElementById('formTitle').textContent=id?'Edit Jamaah':'Tambah Jamaah';
-  document.getElementById('jamaahForm').reset();
-  document.getElementById('editId').value=id||'';
-  const radio=document.querySelector('input[name="jamaahKategori"][value="individu"]'); if(radio)radio.checked=true;
+  document.getElementById('jamaahForm').reset(); document.getElementById('editId').value=id||'';
+  document.getElementById('jamaahMembers').innerHTML='';
   if(id){
     const x=data.find(a=>a.id===id);
-    if(x){
-      const r=document.querySelector('input[name="jamaahKategori"][value="'+(x.kategori==='grup'?'grup':'individu')+'"]'); if(r)r.checked=true;
-      for(const k of ['nama','jenis_kelamin','hp','nik','alamat','paket','harga','berangkat','catatan','nama_rombongan'])document.getElementById(k).value=x[k]??'';
-      const members=document.getElementById('anggota_rombongan');
-      if(members)members.value=x.nama||'';
-    }
-  }
-  toggleJamaahCategory();
+    if(x&&x.kategori==='grup'){setJamaahEntryMode('grup');document.getElementById('nama_rombongan').value=x.nama_rombongan||'';document.getElementById('keterangan_rombongan').value=x.keterangan_rombongan||'';addJamaahMember(x)}
+    else if(x){setJamaahEntryMode('individu');for(const k of ['nama','jenis_kelamin','hp','nik','alamat','paket','harga','berangkat','catatan']){const el=document.getElementById(k);if(el)el.value=x[k]??''}}
+  }else setJamaahEntryMode('individu');
 }
 function closeForm(){document.getElementById('modal').classList.remove('show')}
 function edit(id){openForm(id)}
@@ -1423,35 +1440,22 @@ async function hapus(id){
 
 document.getElementById('jamaahForm').addEventListener('submit',async e=>{
   e.preventDefault();
-  const id=document.getElementById('editId').value;
-  const kategori=document.querySelector('input[name="jamaahKategori"]:checked')?.value||'individu';
-  const nama=document.getElementById('nama').value.trim();
-  const common={
-    jenis_kelamin:document.getElementById('jenis_kelamin').value,
-    hp:document.getElementById('hp').value.trim(),
-    nik:document.getElementById('nik').value.trim(),
-    alamat:document.getElementById('alamat').value.trim(),
-    paket:document.getElementById('paket').value,
-    harga:Number(document.getElementById('harga').value)||0,
-    berangkat:document.getElementById('berangkat').value||null,
-    catatan:document.getElementById('catatan').value.trim(),
-    kategori:kategori,
-    nama_rombongan:kategori==='grup'?(document.getElementById('nama_rombongan').value.trim()||null):null
-  };
+  const id=document.getElementById('editId').value,mode=document.getElementById('entryMode').value||'individu';
   let result;
-  if(kategori==='grup' && !id){
-    const names=(document.getElementById('anggota_rombongan').value||'').split(/\n|,/).map(x=>x.trim()).filter(Boolean);
-    if(!common.nama_rombongan){notice('Nama grup / rombongan wajib diisi.','error');return}
-    if(!names.length){notice('Masukkan minimal satu nama anggota rombongan.','error');return}
-    const rows=names.map(n=>({...common,nama:n}));
+  if(mode==='grup'&&!id){
+    const groupName=document.getElementById('nama_rombongan').value.trim(),groupNote=document.getElementById('keterangan_rombongan').value.trim();
+    const cards=[...document.querySelectorAll('#jamaahMembers .jamaah-member-card')];
+    if(!groupName){notice('Nama rombongan / keluarga wajib diisi.','error');return}
+    if(!cards.length){notice('Tambahkan minimal satu anggota.','error');return}
+    const rows=cards.map(card=>{const get=k=>card.querySelector('[data-field="'+k+'"]')?.value||'';return{nama:get('nama').trim(),jenis_kelamin:get('jenis_kelamin'),hp:get('hp').trim(),nik:get('nik').trim(),alamat:get('alamat').trim(),paket:get('paket'),harga:Number(get('harga'))||0,berangkat:get('berangkat')||null,catatan:get('catatan').trim(),kategori:'grup',nama_rombongan:groupName,keterangan_rombongan:groupNote}});
+    if(rows.some(x=>!x.nama)){notice('Nama semua anggota wajib diisi.','error');return}
     result=await sb.from('jamaah').insert(rows);
   }else{
-    const payload={...common,nama};
-    if(id) result=await sb.from('jamaah').update(payload).eq('id',id);
-    else result=await sb.from('jamaah').insert(payload);
+    const payload={nama:document.getElementById('nama').value.trim(),jenis_kelamin:document.getElementById('jenis_kelamin').value,hp:document.getElementById('hp').value.trim(),nik:document.getElementById('nik').value.trim(),alamat:document.getElementById('alamat').value.trim(),paket:document.getElementById('paket').value,harga:Number(document.getElementById('harga').value)||0,berangkat:document.getElementById('berangkat').value||null,catatan:document.getElementById('catatan').value.trim(),kategori:'individu',nama_rombongan:null,keterangan_rombongan:null};
+    if(id)result=await sb.from('jamaah').update(payload).eq('id',id);else result=await sb.from('jamaah').insert(payload);
   }
   if(result.error){notice('Gagal menyimpan jamaah: '+result.error.message,'error');return}
-  closeForm();await loadData();renderAll();notice(kategori==='grup'&&!id?'Data rombongan berhasil disimpan.':'Data jamaah berhasil disimpan.');
+  closeForm();await loadData();renderAll();notice(mode==='grup'&&!id?'Rombongan berhasil disimpan.':'Data jamaah berhasil disimpan.');
 });
 
 document.getElementById('paymentForm').addEventListener('submit',async e=>{
