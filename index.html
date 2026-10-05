@@ -544,7 +544,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;p
       <div class="jamaah-members-head"><div><h3 style="margin:0">Anggota Jamaah</h3><div class="muted">Isi nama anggota 1 sampai 5.</div></div><button type="button" class="btn" onclick="addJamaahMember()">+ Tambah Anggota</button></div>
       <div id="jamaahMembers"></div>
     </div>
-    <div class="actions full"><button type="button" class="btn secondary" onclick="closeForm()">Batal</button><button class="btn">Simpan Jamaah</button></div>
+    <div class="actions full"><button type="button" class="btn secondary" onclick="closeForm()">Batal</button><button type="submit" class="btn">Simpan Jamaah</button></div>
   </form>
 </div></div>
 
@@ -1366,7 +1366,7 @@ function jamaahMemberTemplate(index,data={}){
   return `<div class="jamaah-member-card">
     <div class="jamaah-member-title"><span>Anggota ${index}</span>${index>1?'<button type="button" class="btn small-btn jamaah-remove" onclick="removeJamaahMember(this)">Hapus</button>':''}</div>
     <div class="jamaah-member-grid">
-      <div><label>Nama Lengkap</label><input data-field="nama" required placeholder="Nama anggota" value="${esc(data.nama||'')}"></div>
+      <div><label>Nama Lengkap</label><input data-field="nama" placeholder="Nama anggota" value="${esc(data.nama||'')}"></div>
       <div><label>Jenis Kelamin</label><select data-field="jenis_kelamin"><option value="">-- Pilih --</option><option value="Laki-laki" ${data.jenis_kelamin==='Laki-laki'?'selected':''}>Laki-laki</option><option value="Perempuan" ${data.jenis_kelamin==='Perempuan'?'selected':''}>Perempuan</option></select></div>
       <div><label>NIK</label><input data-field="nik" placeholder="NIK" value="${esc(data.nik||'')}"></div>
       <div><label>Paket</label><select data-field="paket"><option value="Executive" ${data.paket==='Executive'?'selected':''}>Executive</option><option value="Premium" ${data.paket==='Premium'?'selected':''}>Premium</option><option value="Economis" ${data.paket==='Economis'?'selected':''}>Economis</option></select></div>
