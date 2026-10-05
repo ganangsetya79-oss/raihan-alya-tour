@@ -763,9 +763,9 @@ async function syncToSpreadsheet(sheet,data){
     return false;
   }
 }
-function syncManyToSpreadsheet(sheet,rows){
-  if(!Array.isArray(rows))return;
-  rows.forEach(row=>syncToSpreadsheet(sheet,row));
+async function syncManyToSpreadsheet(sheet,rows){
+  if(!Array.isArray(rows)||!rows.length)return;
+  await Promise.all(rows.map(row=>syncToSpreadsheet(sheet,row)));
 }
 async function syncToSpreadsheet(sheet,data){
   if(!GOOGLE_SHEETS_WEBAPP_URL||!data)return;
@@ -1993,7 +1993,7 @@ if(jamaahForm) jamaahForm.addEventListener('submit',async e=>{
     if(result.error){console.error('Simpan jamaah gagal:',JSON.stringify(result.error,null,2));notice('Gagal menyimpan jamaah: '+(result.error.message||'Kesalahan Supabase')+(result.error.details?' — '+result.error.details:''),'error');return}
   }
   if(result.error){console.error('Simpan jamaah gagal:',JSON.stringify(result.error,null,2));notice('Gagal menyimpan jamaah: '+(result.error.message||'Kesalahan Supabase')+(result.error.details?' — '+result.error.details:''),'error');return}
-  syncManyToSpreadsheet('jamaah',jamaahSheetRows);
+  await syncManyToSpreadsheet('jamaah',jamaahSheetRows);
   closeForm();await loadData();renderAll();notice(mode==='grup'&&!id?'Rombongan berhasil disimpan.':'Data jamaah berhasil disimpan.');
 });
 
@@ -2038,7 +2038,7 @@ document.getElementById('paymentForm').addEventListener('submit',async e=>{
   document.getElementById('paymentNote').value='';
   togglePaymentBank();
 
-  syncToSpreadsheet('pembayaran',inserted||{jamaah_id,amount,discount,payment_date,method,bank:method==='Transfer'?bank:null,note:paymentNote});
+  await syncToSpreadsheet('pembayaran',inserted||{jamaah_id,amount,discount,payment_date,method,bank:method==='Transfer'?bank:null,note:paymentNote});
   await loadData();renderAll();notice('Pembayaran berhasil disimpan.');
   setTimeout(()=>printPayment(inserted.id),250);
 });
@@ -2146,7 +2146,7 @@ async function uploadDocument(type){
     if(updated.error)throw updated.error;
 
     documents=documents.map(x=>x.id===row.id?updated.data:x);
-    syncToSpreadsheet('dokumen',updated.data);
+    await syncToSpreadsheet('dokumen',updated.data);
     renderDocGrid();updateDocSummary();renderDocuments();
     notice(labelForDoc(type)+' berhasil diupload.');
   }catch(err){
@@ -2205,7 +2205,7 @@ async function saveEquipment(){
   const {data:r,error}=await sb.from('equipment').upsert(payload,{onConflict:'jamaah_id'}).select().single();
   if(error){notice('Gagal menyimpan perlengkapan: '+error.message,'error');return}
   const i=equipment.findIndex(x=>x.jamaah_id===id); if(i>=0)equipment[i]=r;else equipment.push(r);
-  syncToSpreadsheet('perlengkapan',r);
+  await syncToSpreadsheet('perlengkapan',r);
   renderEquipment();
   notice('Data pengambilan perlengkapan berhasil disimpan.');
 }
@@ -2360,7 +2360,7 @@ document.getElementById('departureForm').addEventListener('submit',async e=>{
     : sb.from('departures').insert(payload);
   const {error}=await query;
   if(error){notice((editId?'Gagal memperbarui':'Gagal menyimpan')+' grup: '+error.message,'error');return}
-  syncToSpreadsheet('keberangkatan',{...payload,id:editId||undefined});
+  await syncToSpreadsheet('keberangkatan',{...payload,id:editId||undefined});
   cancelDepartureEdit();
   await loadData();renderAll();
   if(editId)openDeparture(editId);
