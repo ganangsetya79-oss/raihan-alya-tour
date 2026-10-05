@@ -245,7 +245,15 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;p
 @media(min-width:769px){.mobile-menu-btn,.mobile-nav-backdrop{display:none!important}}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-</head>
+<style>
+.dashboard-extra-grid{display:grid;grid-template-columns:1.35fr 1fr;gap:16px;margin-bottom:20px}
+.dashboard-alert-list{display:grid;gap:8px}.dashboard-alert-item{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:10px 12px;border:1px solid #e7ecea;border-radius:9px;background:#fafcfb}.dashboard-alert-item strong{font-size:13px}.dashboard-alert-item span{font-size:11px;color:#687078}.dashboard-alert-item button{white-space:nowrap}.dashboard-alert-item.warning{border-left:4px solid #d49a21}.dashboard-alert-item.danger{border-left:4px solid #b84040}.dashboard-alert-item.info{border-left:4px solid #2b78b5}
+.dashboard-finance-grid{display:grid;grid-template-columns:1fr;gap:9px}.dashboard-finance-grid>div{padding:11px;border:1px solid #e6ece9;border-radius:9px;background:#fafcfb;display:flex;justify-content:space-between;gap:8px}.dashboard-finance-grid span{font-size:12px;color:#687078}.dashboard-finance-grid b{font-size:13px}
+.dashboard-checklist-item{border:1px solid #e5ebe8;border-radius:10px;padding:12px;margin-bottom:9px}.dashboard-checklist-head{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:8px}.dashboard-checklist-head strong{font-size:13px}.dashboard-checklist-progress{height:7px;background:#edf1ef;border-radius:99px;overflow:hidden;margin:7px 0}.dashboard-checklist-progress span{display:block;height:100%;background:#1f705d;border-radius:99px}.dashboard-checklist-items{display:flex;flex-wrap:wrap;gap:7px}.dashboard-checklist-items label{font-size:11px;padding:6px 8px;border:1px solid #e1e7e4;border-radius:7px;background:#fff;cursor:pointer}.dashboard-checklist-items input{margin-right:5px}
+.dashboard-activity-item{display:flex;gap:10px;padding:9px 0;border-bottom:1px solid #edf0ef}.dashboard-activity-item:last-child{border-bottom:0}.dashboard-activity-dot{width:7px;height:7px;border-radius:50%;background:#1f705d;margin-top:5px;flex:none}.dashboard-activity-text{font-size:12px}.dashboard-activity-time{font-size:10px;color:#8a9490;margin-top:2px}
+.dashboard-wa-btn{border:0;background:#e7f5ec;color:#1b6a47;border-radius:7px;padding:5px 8px;font-size:11px;cursor:pointer}.dashboard-wa-btn:hover{background:#d9efe2}
+@media(max-width:800px){.dashboard-extra-grid{grid-template-columns:1fr}}
+</style></head>
 <body>
 <button type="button" class="mobile-menu-btn" id="mobileMenuBtn" onclick="toggleMobileNav()" aria-label="Buka menu" title="Buka menu"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"></path></svg></button>
 <div class="mobile-nav-backdrop" id="mobileNavBackdrop" onclick="toggleMobileNav(false)" style="display:none"></div>
@@ -363,6 +371,31 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;p
     </div>
   </div>
 
+  <div class="dashboard-extra-grid">
+    <div class="panel dashboard-alert-panel">
+      <div class="panel-head"><div><h2>Perlu Perhatian</h2><div class="muted">Data yang membutuhkan tindak lanjut admin.</div></div><button class="btn secondary small-btn" type="button" onclick="renderDashboardExtras()">Refresh</button></div>
+      <div id="dashboardAlerts" class="dashboard-alert-list"></div>
+    </div>
+    <div class="panel dashboard-finance-panel">
+      <div class="panel-head"><div><h2>Ringkasan Keuangan</h2><div class="muted">Periode sesuai filter dashboard.</div></div></div>
+      <div class="dashboard-finance-grid">
+        <div><span>Pemasukan</span><b id="dashIncomeExtra">Rp 0</b></div>
+        <div><span>Pengeluaran</span><b id="dashExpenseExtra">Rp 0</b></div>
+        <div><span>Saldo Bersih</span><b id="dashNetExtra">Rp 0</b></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel dashboard-checklist-panel">
+    <div class="panel-head"><div><h2>Checklist Persiapan Keberangkatan</h2><div class="muted">Checklist operasional per jadwal tersimpan di browser admin.</div></div></div>
+    <div id="dashboardDepartureChecklist"></div>
+  </div>
+
+  <div class="panel dashboard-activity-panel">
+    <div class="panel-head"><div><h2>Aktivitas Terakhir</h2><div class="muted">Riwayat aktivitas administrasi dashboard.</div></div><button class="btn secondary small-btn" type="button" onclick="clearActivityLog()">Bersihkan</button></div>
+    <div id="dashboardActivityLog"></div>
+  </div>
+
   <div class="panel">
     <div class="panel-head"><h2>Rekap Jadwal Keberangkatan</h2></div>
     <table>
@@ -373,7 +406,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;p
 
   <div class="panel">
     <div class="panel-head"><h2>Jamaah pada Filter Aktif</h2><button class="btn" onclick="show('jamaah',document.querySelectorAll('.nav button')[1])">Kelola Jamaah</button></div>
-    <table><thead><tr><th>Nama</th><th>Paket</th><th>Keberangkatan</th><th>Total Terbayar</th><th>Sisa</th><th>Status</th></tr></thead><tbody id="recentBody"></tbody></table>
+    <table><thead><tr><th>Nama</th><th>Paket</th><th>Keberangkatan</th><th>Total Terbayar</th><th>Sisa</th><th>Status</th><th>Aksi</th></tr></thead><tbody id="recentBody"></tbody></table>
   </div>
 </section>
 
@@ -1283,7 +1316,25 @@ function printUangMasuk(){
   }).join('');
   w.document.write(`<!doctype html><html><head><title>Rekap Uang Masuk - Raihan Alya Tour</title><style>
   body{font-family:Arial,sans-serif;margin:30px;color:#222}h1{margin:0 0 4px;font-size:22px}h2{margin:0 0 14px;font-size:15px}p{margin:4px 0 16px;color:#555}.summary{padding:12px;border:1px solid #ddd;margin:15px 0;font-weight:bold}table{width:100%;border-collapse:collapse;font-size:11px}th,td{border:1px solid #bbb;padding:7px;text-align:left}th{background:#f3f3f3}@media print{button{display:none}}
-  </style></head><body><h1>RAIHAN ALYA TOUR</h1><h2>Melayani dengan Sepenuh Hati</h2><p>Rekap Uang Masuk${start||end?' | '+(start?formatDate(start):'Awal')+' s/d '+(end?formatDate(end):'Sekarang'):''}</p><div class="summary">Total Uang Masuk: ${money(total)} &nbsp; | &nbsp; Jumlah Transaksi: ${rows.length}</div><table><thead><tr><th>No</th><th>Tanggal</th><th>Invoice</th><th>Jamaah</th><th>Nominal</th><th>Metode</th><th>Bank</th><th>Keterangan</th></tr></thead><tbody>${body||'<tr><td colspan="8">Tidak ada transaksi.</td></tr>'}</tbody></table>\x3Cscript>window.onload=()=>window.print()<\/script></body></html>`);
+  </style></head><body><h1>RAIHAN ALYA TOUR</h1><h2>Melayani dengan Sepenuh Hati</h2><p>Rekap Uang Masuk${start||end?' | '+(start?formatDate(start):'Awal')+' s/d '+(end?formatDate(end):'Sekarang'):''}</p><div class="summary">Total Uang Masuk: ${money(total)} &nbsp; | &nbsp; Jumlah Transaksi: ${rows.length}</div><table><thead><tr><th>No</th><th>Tanggal</th><th>Invoice</th><th>Jamaah</th><th>Nominal</th><th>Metode</th><th>Bank</th><th>Keterangan</th></tr></thead><tbody>${body||'<tr><td colspan="8">Tidak ada transaksi.</td></tr>'}</tbody></table>\x3Cscript>window.onload=()=>window.print()<\/script><script>
+const ACTIVITY_KEY='raihan_alya_activity_log_v1';
+const CHECKLIST_KEY='raihan_alya_departure_checklist_v1';
+const DEFAULT_CHECKLIST=['Tiket','Hotel','Visa','Paspor','Manifest','Bus','Muthawwif','Rooming List','Bagasi'];
+
+function getActivityLog(){try{return JSON.parse(localStorage.getItem(ACTIVITY_KEY)||'[]')||[]}catch(e){return[]}}
+function addActivityLog(text){const rows=getActivityLog();rows.unshift({text,time:new Date().toISOString()});localStorage.setItem(ACTIVITY_KEY,JSON.stringify(rows.slice(0,30)));if(document.getElementById('dashboardActivityLog'))renderActivityLog()}
+function clearActivityLog(){if(!confirm('Bersihkan riwayat aktivitas?'))return;localStorage.removeItem(ACTIVITY_KEY);renderActivityLog()}
+function renderActivityLog(){const el=document.getElementById('dashboardActivityLog');if(!el)return;const rows=getActivityLog();el.innerHTML=rows.length?rows.slice(0,8).map(x=>'<div class="dashboard-activity-item"><span class="dashboard-activity-dot"></span><div><div class="dashboard-activity-text">'+esc(x.text)+'</div><div class="dashboard-activity-time">'+new Date(x.time).toLocaleString('id-ID')+'</div></div></div>').join(''):'<div class="muted">Belum ada aktivitas tercatat.</div>'}
+function getChecklist(){try{return JSON.parse(localStorage.getItem(CHECKLIST_KEY)||'{}')||{}}catch(e){return{}}}
+function setChecklist(depId,key,checked){const all=getChecklist();all[depId]=all[depId]||{};all[depId][key]=checked;localStorage.setItem(CHECKLIST_KEY,JSON.stringify(all));renderDepartureChecklist()}
+function renderDepartureChecklist(){const el=document.getElementById('dashboardDepartureChecklist');if(!el)return;const upcoming=(departures||[]).slice().sort((a,b)=>(a.start_date||'').localeCompare(b.start_date||'')).slice(0,4),all=getChecklist();el.innerHTML=upcoming.length?upcoming.map(d=>{const state=all[d.id]||{},done=DEFAULT_CHECKLIST.filter(k=>state[k]).length,pct=Math.round(done/DEFAULT_CHECKLIST.length*100);return '<div class="dashboard-checklist-item"><div class="dashboard-checklist-head"><strong>'+esc(d.name)+'</strong><span class="muted">'+esc(d.start_date||'-')+' · '+pct+'%</span></div><div class="dashboard-checklist-progress"><span style="width:'+pct+'%"></span></div><div class="dashboard-checklist-items">'+DEFAULT_CHECKLIST.map(k=>'<label><input type="checkbox" '+(state[k]?'checked':'')+' onchange="setChecklist(\''+esc(d.id)+'\',\''+esc(k)+'\',this.checked)">'+esc(k)+'</label>').join('')+'</div></div>'}).join(''):'<div class="muted">Belum ada jadwal keberangkatan.</div>'}
+function waJamaah(id){const j=(data||[]).find(x=>x.id===id);if(!j||!j.hp){notice('Nomor WhatsApp jamaah belum tersedia.','error');return}const text='Assalamu’alaikum '+j.nama+'.%0A%0AKami dari PT Raihan Alya Tour menginformasikan terkait perjalanan Umroh Bapak/Ibu. Silakan hubungi admin apabila membutuhkan informasi lebih lanjut.%0A%0ATerima kasih.';window.open('https://wa.me/'+String(j.hp).replace(/[^0-9]/g,'').replace(/^0/,'62')+'?text='+text,'_blank')}
+function renderDashboardExtras(){const el=document.getElementById('dashboardAlerts');if(!el)return;const alerts=[];const upcoming=(departures||[]).filter(d=>d.start_date).sort((a,b)=>(a.start_date||'').localeCompare(b.start_date||''));const today=new Date();today.setHours(0,0,0,0);
+(data||[]).forEach(j=>{const remain=remainFor(j),d=departureFor(j);if(remain>0)alerts.push({type:'warning',text:j.nama+' masih memiliki sisa '+rupiah(remain),btn:'Hubungi',action:"waJamaah('"+j.id+"')"});if(d&&d.start_date){const days=Math.ceil((new Date(d.start_date)-today)/86400000);if(days>=0&&days<=7)alerts.push({type:'danger',text:j.nama+' berangkat dalam '+days+' hari',btn:'Detail',action:"show('jamaah',document.querySelectorAll('.nav button')[1])"})}});
+const incomplete=(documents||[]).filter(d=>d&&DOC_TYPES&&DOC_TYPES.some(([k])=>!d[k+'_path']));if(incomplete.length)alerts.push({type:'info',text:incomplete.length+' jamaah memiliki dokumen belum lengkap',btn:'Dokumen',action:"show('dokumen',document.querySelectorAll('.nav button')[6])"});
+el.innerHTML=alerts.slice(0,10).map(a=>'<div class="dashboard-alert-item '+a.type+'"><div><strong>'+esc(a.text)+'</strong></div><button class="btn secondary small-btn" type="button" onclick="'+a.action+'">'+a.btn+'</button></div>').join('')||'<div class="muted">Tidak ada perhatian khusus.</div>';
+const month=document.getElementById('dashMonth')?.value||'';const filteredPayments=(payments||[]).filter(p=>!month||monthKey(p.payment_date)===month);const income=filteredPayments.reduce((a,p)=>a+Number(p.amount||0),0);const expense=(expenses||[]).filter(x=>!month||monthKey(x.date)===month).reduce((a,x)=>a+Number(x.amount||0),0);document.getElementById('dashIncomeExtra').textContent=rupiah(income);document.getElementById('dashExpenseExtra').textContent=rupiah(expense);document.getElementById('dashNetExtra').textContent=rupiah(income-expense);renderDepartureChecklist();renderActivityLog()}
+</script></body></html>`);
   w.document.close();
 }
 function renderAll(){refreshPackageSelects();renderPackages();renderJamaah();renderPaymentSummary();renderPaymentHistory();renderUangMasuk();renderExpenses();renderDash();fillPaymentJamaah();fillDocumentJamaah();renderDocuments();fillEquipmentJamaah();renderEquipment();renderDepartures();renderReport();}
@@ -1298,7 +1349,7 @@ function renderExpenses(){const rows=expenseRowsFiltered(),today=expenseToday(),
 function resetExpenseForm(){const f=document.getElementById('expenseForm');if(f)f.reset();const d=document.getElementById('expenseDate');if(d)d.value=expenseToday();if(f)f.dataset.editId=''}
 function resetExpenseFilter(){['expenseStart','expenseEnd'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=''});const c=document.getElementById('expenseFilterCategory');if(c)c.value='';renderExpenses()}
 function setExpensePeriod(type){const s=document.getElementById('expenseStart'),e=document.getElementById('expenseEnd');if(!s||!e)return;const now=new Date(),end=new Date(now),start=new Date(now);if(type==='week')start.setDate(start.getDate()-6);else if(type==='month')start.setDate(1);else if(type==='30days')start.setDate(start.getDate()-29);s.value=localISODate(start);e.value=localISODate(end);renderExpenses()}
-function saveExpenseFromForm(){const date=document.getElementById('expenseDate').value,category=document.getElementById('expenseCategory').value,amount=Number(document.getElementById('expenseAmount').value),method=document.getElementById('expenseMethod').value,description=document.getElementById('expenseDescription').value.trim(),note=document.getElementById('expenseNote').value.trim();if(!date||!category||amount<=0||!method||!description){notice('Lengkapi tanggal, kategori, nominal, metode, dan uraian.','error');return}const form=document.getElementById('expenseForm'),editing=form.dataset.editId||'',row={id:editing||('exp-'+Date.now()+'-'+Math.random().toString(36).slice(2,8)),date,category,amount,method,description,note,created_at:new Date().toISOString()};if(editing){const i=expenses.findIndex(x=>x.id===editing);if(i>=0)expenses[i]=row}else expenses.push(row);if(!saveLocalExpenses())return;syncToSpreadsheet('pengeluaran',row);form.dataset.editId='';document.querySelector('#expenseForm .btn[type="submit"]').textContent='Simpan Pengeluaran';resetExpenseForm();renderExpenses();notice(editing?'Pengeluaran berhasil diperbarui.':'Pengeluaran berhasil disimpan.')}
+function saveExpenseFromForm(){const date=document.getElementById('expenseDate').value,category=document.getElementById('expenseCategory').value,amount=Number(document.getElementById('expenseAmount').value),method=document.getElementById('expenseMethod').value,description=document.getElementById('expenseDescription').value.trim(),note=document.getElementById('expenseNote').value.trim();if(!date||!category||amount<=0||!method||!description){notice('Lengkapi tanggal, kategori, nominal, metode, dan uraian.','error');return}const form=document.getElementById('expenseForm'),editing=form.dataset.editId||'',row={id:editing||('exp-'+Date.now()+'-'+Math.random().toString(36).slice(2,8)),date,category,amount,method,description,note,created_at:new Date().toISOString()};if(editing){const i=expenses.findIndex(x=>x.id===editing);if(i>=0)expenses[i]=row}else expenses.push(row);if(!saveLocalExpenses())return;syncToSpreadsheet('pengeluaran',row);form.dataset.editId='';document.querySelector('#expenseForm .btn[type="submit"]').textContent='Simpan Pengeluaran';resetExpenseForm();renderExpenses();addActivityLog((editing?'Memperbarui':'Mencatat')+' pengeluaran '+expenseMoney(amount)+'.');notice(editing?'Pengeluaran berhasil diperbarui.':'Pengeluaran berhasil disimpan.')}
 function editExpense(id){const x=expenses.find(v=>v.id===id);if(!x)return;const f=document.getElementById('expenseForm');f.dataset.editId=id;document.getElementById('expenseDate').value=x.date||expenseToday();document.getElementById('expenseCategory').value=x.category||'';document.getElementById('expenseAmount').value=x.amount||'';document.getElementById('expenseMethod').value=x.method||'';document.getElementById('expenseDescription').value=x.description||'';document.getElementById('expenseNote').value=x.note||'';document.querySelector('#expenseForm .btn[type="submit"]').textContent='Update Pengeluaran';document.getElementById('expenseDate').scrollIntoView({behavior:'smooth',block:'center'})}
 function deleteExpense(id){const x=expenses.find(v=>v.id===id);if(!x)return;if(!confirm('Hapus pengeluaran "'+(x.description||'')+'"?'))return;expenses=expenses.filter(v=>v.id!==id);saveLocalExpenses();renderExpenses();notice('Pengeluaran berhasil dihapus.')}
 function toggleAllExpenses(checked){document.querySelectorAll('.expense-check').forEach(x=>x.checked=checked);syncBulkState('expense')}
@@ -1798,6 +1849,7 @@ function renderDash(){
   document.getElementById('totalNilai').textContent=rupiah(nilai);
   document.getElementById('totalTerbayar').textContent=rupiah(terbayar);
   document.getElementById('totalSisa').textContent=rupiah(sisa);
+  renderDashboardExtras();
 
   const depBody=document.getElementById('dashDepartureBody');
   const depRows=departures.filter(d=>{
@@ -1817,8 +1869,8 @@ function renderDash(){
   document.getElementById('recentBody').innerHTML=filtered.slice(0,50).map(x=>{
     const d=departureFor(x);
     const paid=paidFor(x.id), remain=remainFor(x);
-    return `<tr><td>${esc(x.nama)}</td><td>${esc(x.paket||'')}</td><td>${d?esc(d.name):esc(x.berangkat||'-')}</td><td>${rupiah(paid)}</td><td>${rupiah(remain)}</td><td>${status(x)}</td></tr>`;
-  }).join('')||'<tr><td colspan="6">Belum ada jamaah pada filter ini.</td></tr>';
+    return `<tr><td>${esc(x.nama)}</td><td>${esc(x.paket||'')}</td><td>${d?esc(d.name):esc(x.berangkat||'-')}</td><td>${rupiah(paid)}</td><td>${rupiah(remain)}</td><td>${status(x)}</td><td><button class="dashboard-wa-btn" type="button" onclick="waJamaah('${esc(x.id)}')">WhatsApp</button></td></tr>`;
+  }).join('')||'<tr><td colspan="7">Belum ada jamaah pada filter ini.</td></tr>';
 }
 
 let paymentDropdownRequest=0;
@@ -2092,7 +2144,7 @@ document.getElementById('paymentForm').addEventListener('submit',async e=>{
 
   await syncToSpreadsheet('pembayaran',inserted||{jamaah_id,amount,discount,payment_date,method,bank:method==='Transfer'?bank:null,note:paymentNote});
   setFormLoading(e.currentTarget,false);e.currentTarget.dataset.processing="0";
-  await loadData();renderAll();notice('Pembayaran berhasil disimpan.');
+  await loadData();renderAll();addActivityLog('Mencatat pembayaran jamaah sebesar '+rupiah(amount)+'.');notice('Pembayaran berhasil disimpan.');
   setTimeout(()=>printPayment(inserted.id),250);
 });
 
@@ -2421,7 +2473,7 @@ document.getElementById('departureForm').addEventListener('submit',async e=>{
   await loadData();renderAll();
   setFormLoading(e.currentTarget,false);e.currentTarget.dataset.processing="0";
   if(editId)openDeparture(editId);
-  notice(editId?'Grup keberangkatan berhasil diperbarui.':'Grup keberangkatan berhasil dibuat.');
+  addActivityLog(editId?'Memperbarui grup keberangkatan '+payload.name+'.':'Membuat grup keberangkatan '+payload.name+'.');notice(editId?'Grup keberangkatan berhasil diperbarui.':'Grup keberangkatan berhasil dibuat.');
 });
 async function deleteDeparture(id){
   const d=departures.find(x=>x.id===id);
