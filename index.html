@@ -1450,11 +1450,15 @@ document.getElementById('jamaahForm').addEventListener('submit',async e=>{
     if(!groupName){notice('Nama rombongan / keluarga wajib diisi.','error');return}
     if(!rows.length){notice('Isi minimal satu nama anggota.','error');return}
     result=await sb.from('jamaah').insert(rows);
+    if(result.error && /keterangan_rombongan|column.*does not exist|schema cache/i.test(result.error.message||'')){
+      const fallbackRows=rows.map(({keterangan_rombongan,...row})=>row);
+      result=await sb.from('jamaah').insert(fallbackRows);
+    }
   }else{
     const payload={nama:document.getElementById('nama').value.trim(),jenis_kelamin:document.getElementById('jenis_kelamin').value,hp:document.getElementById('hp').value.trim(),nik:document.getElementById('nik').value.trim(),alamat:document.getElementById('alamat').value.trim(),paket:document.getElementById('paket').value,harga:Number(document.getElementById('harga').value)||0,berangkat:document.getElementById('berangkat').value||null,catatan:document.getElementById('catatan').value.trim(),kategori:'individu',nama_rombongan:null,keterangan_rombongan:null};
     if(id)result=await sb.from('jamaah').update(payload).eq('id',id);else result=await sb.from('jamaah').insert(payload);
   }
-  if(result.error){notice('Gagal menyimpan jamaah: '+result.error.message,'error');return}
+  if(result.error){console.error('Simpan jamaah gagal:',result.error);notice('Gagal menyimpan jamaah: '+(result.error.message||'Kesalahan Supabase')+(result.error.details?' — '+result.error.details:''),'error');return}
   closeForm();await loadData();renderAll();notice(mode==='grup'&&!id?'Rombongan berhasil disimpan.':'Data jamaah berhasil disimpan.');
 });
 
