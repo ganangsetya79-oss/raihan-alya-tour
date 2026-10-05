@@ -553,7 +553,10 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;p
     <form id="expenseForm" class="form" onsubmit="return handleExpenseSubmit(event)">
       <div><label>Tanggal</label><input id="expenseDate" type="date" required></div>
       <div><label>Kategori</label><select id="expenseCategory" required><option value="">-- Pilih Kategori --</option><option>Operasional Kantor</option><option>Transportasi</option><option>Konsumsi</option><option>Perlengkapan</option><option>Promosi</option><option>Administrasi</option><option>Gaji / Honor</option><option>Hotel</option><option>Lainnya</option></select></div>
-      <div><label>Nominal</label><input id="expenseAmount" type="number" min="1" step="1" required placeholder="Contoh: 50000"></div>
+      <div><label>Mata Uang</label><select id="expenseCurrency" required onchange="toggleExpenseCurrency()"><option value="IDR">IDR — Rupiah</option><option value="USD">USD — Dollar AS</option><option value="SAR">SAR — Riyal Saudi</option></select></div>
+      <div><label>Nominal</label><input id="expenseAmount" type="number" min="0.01" step="0.01" required placeholder="Contoh: 50000" oninput="updateExpenseCurrencyTotal()"></div>
+      <div id="expenseRateWrap" class="hidden"><label>Kurs ke Rupiah</label><input id="expenseRate" type="number" min="0.01" step="0.01" placeholder="Contoh: 16500" oninput="updateExpenseCurrencyTotal()"><div class="muted" style="margin-top:5px">Masukkan kurs yang digunakan pada transaksi.</div></div>
+      <div><label>Nilai Rupiah</label><input id="expenseAmountIdr" type="text" readonly placeholder="Rp 0"></div>
       <div><label>Metode</label><select id="expenseMethod" required onchange="toggleExpenseBank()"><option value="">-- Pilih Metode --</option><option>Cash</option><option>Transfer</option></select></div>
       <div id="expenseBankWrap" class="hidden"><label>Bank</label><select id="expenseBank"><option value="">-- Pilih Bank --</option><option>BSI</option><option>Bank Muamalat</option></select></div>
       <div class="full"><label>Uraian Pengeluaran</label><input id="expenseDescription" required placeholder="Contoh: Beli ATK kantor"></div>
@@ -573,7 +576,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;p
       <div><label>Kategori</label><select id="expenseFilterCategory" onchange="renderExpenses()"><option value="">Semua Kategori</option><option>Operasional Kantor</option><option>Transportasi</option><option>Konsumsi</option><option>Perlengkapan</option><option>Promosi</option><option>Administrasi</option><option>Gaji / Honor</option><option>Hotel</option><option>Lainnya</option></select></div>
     </div>
     <div class="actions" style="margin:0 0 12px;flex-wrap:wrap"><button type="button" class="btn secondary" onclick="setExpensePeriod('today')">Hari Ini</button><button type="button" class="btn secondary" onclick="setExpensePeriod('week')">7 Hari</button><button type="button" class="btn secondary" onclick="setExpensePeriod('month')">Bulan Ini</button><button type="button" class="btn secondary" onclick="setExpensePeriod('30days')">30 Hari</button></div>
-    <div class="table-wrap"><table><thead><tr><th style="width:38px;text-align:center"><input class="bulk-select-all" id="expenseSelectAll" type="checkbox" onchange="toggleAllExpenses(this.checked)" title="Pilih semua"></th><th>No</th><th>Tanggal</th><th>Kategori</th><th>Uraian</th><th>Nominal</th><th>Metode</th><th>Bank</th><th>Bukti</th><th>Keterangan</th><th>Aksi</th></tr></thead><tbody id="expenseBody"></tbody></table></div>
+    <div class="table-wrap"><table><thead><tr><th style="width:38px;text-align:center"><input class="bulk-select-all" id="expenseSelectAll" type="checkbox" onchange="toggleAllExpenses(this.checked)" title="Pilih semua"></th><th>No</th><th>Tanggal</th><th>Kategori</th><th>Uraian</th><th>Mata Uang</th><th>Nominal</th><th>Kurs</th><th>Nilai Rupiah</th><th>Metode</th><th>Bank</th><th>Bukti</th><th>Keterangan</th><th>Aksi</th></tr></thead><tbody id="expenseBody"></tbody></table></div>
   </div>
 </section>
 
@@ -1330,7 +1333,8 @@ function expenseMoney(n){return new Intl.NumberFormat('id-ID',{style:'currency',
 function expenseToday(){return localISODate(new Date())}
 function expenseRowsFiltered(){const start=document.getElementById('expenseStart')?.value||'',end=document.getElementById('expenseEnd')?.value||'',cat=document.getElementById('expenseFilterCategory')?.value||'';return (expenses||[]).filter(x=>(!start||(x.date||'')>=start)&&(!end||(x.date||'')<=end)&&(!cat||x.category===cat)).sort((a,b)=>(b.date||'').localeCompare(a.date||'')||(b.created_at||'').localeCompare(a.created_at||''))}
 function expenseIncomeForPeriod(){const start=document.getElementById('expenseStart')?.value||'',end=document.getElementById('expenseEnd')?.value||'';return (payments||[]).filter(p=>(!start||(p.payment_date||'')>=start)&&(!end||(p.payment_date||'')<=end)).reduce((a,p)=>a+Number(p.amount||0),0)}
-function renderExpenses(){
+function expenseCurrencyInfo(code){
+  const map={IDR:{name:'Rupiah',symbol:'Rp'},USD:{name:'Dollar AS',symbol:'
   const rows=expenseRowsFiltered(),today=expenseToday(),now=new Date(),mk=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0'),todayTotal=(expenses||[]).filter(x=>x.date===today).reduce((a,x)=>a+Number(x.amount||0),0),monthTotal=(expenses||[]).filter(x=>String(x.date||'').startsWith(mk)).reduce((a,x)=>a+Number(x.amount||0),0),periodTotal=rows.reduce((a,x)=>a+Number(x.amount||0),0),income=expenseIncomeForPeriod(),el=id=>document.getElementById(id);
   if(el('expenseTodayTotal'))el('expenseTodayTotal').textContent=expenseMoney(todayTotal);
   if(el('expenseMonthTotal'))el('expenseMonthTotal').textContent=expenseMoney(monthTotal);
@@ -1351,6 +1355,1299 @@ function renderExpenses(){
         <td><div class="package-actions"><button class="btn secondary small-btn" type="button" onclick="editExpense('${esc(x.id)}')">Edit</button><button class="btn danger small-btn" type="button" onclick="deleteExpense('${esc(x.id)}')">Hapus</button></div></td>
       </tr>`;
     }).join('')||'<tr><td colspan="11" style="text-align:center">Belum ada pengeluaran pada periode ini.</td></tr>';
+  }
+  syncBulkState('expense');
+}
+function resetExpenseForm(){const f=document.getElementById('expenseForm');if(f)f.reset();const d=document.getElementById('expenseDate');if(d)d.value=expenseToday();if(f)f.dataset.editId='';toggleExpenseBank();toggleExpenseCurrency()}
+function resetExpenseFilter(){['expenseStart','expenseEnd'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=''});const c=document.getElementById('expenseFilterCategory');if(c)c.value='';renderExpenses()}
+function setExpensePeriod(type){const s=document.getElementById('expenseStart'),e=document.getElementById('expenseEnd');if(!s||!e)return;const now=new Date(),end=new Date(now),start=new Date(now);if(type==='week')start.setDate(start.getDate()-6);else if(type==='month')start.setDate(1);else if(type==='30days')start.setDate(start.getDate()-29);s.value=localISODate(start);e.value=localISODate(end);renderExpenses()}
+async function handleExpenseSubmit(e){
+  if(e)e.preventDefault();
+  const form=document.getElementById('expenseForm');
+  if(!form||form.dataset.processing==='1')return false;
+  form.dataset.processing='1';
+  setFormLoading(form,true,form.dataset.editId?'Memperbarui...':'Menyimpan...');
+  try{
+    await saveExpenseFromForm();
+  }finally{
+    setFormLoading(form,false);
+    form.dataset.processing='0';
+  }
+  return false;
+}
+function toggleExpenseBank(){
+  const method=document.getElementById('expenseMethod')?.value||'';
+  const wrap=document.getElementById('expenseBankWrap');
+  const bank=document.getElementById('expenseBank');
+  const transfer=method==='Transfer';
+  if(wrap)wrap.classList.toggle('hidden',!transfer);
+  if(bank)bank.required=transfer;
+  if(!transfer&&bank)bank.value='';
+}
+async function saveExpenseFromForm(){
+  const date=document.getElementById('expenseDate').value;
+  const category=document.getElementById('expenseCategory').value;
+  const currency=document.getElementById('expenseCurrency')?.value||'IDR';
+  const amount=Number(document.getElementById('expenseAmount').value);
+  const rate=currency==='IDR'?1:Number(document.getElementById('expenseRate')?.value||0);
+  const amount_idr=amount*rate;
+  const method=document.getElementById('expenseMethod').value;
+  const bank=document.getElementById('expenseBank')?.value||'';
+  const description=document.getElementById('expenseDescription').value.trim();
+  const note=document.getElementById('expenseNote').value.trim();
+  const receiptInput=document.getElementById('expenseReceipt');
+  const file=receiptInput?.files?.[0];
+  if(!date||!category||amount<=0||!method||!description||(currency!=='IDR'&&rate<=0)||(method==='Transfer'&&!bank)){
+    notice('Lengkapi tanggal, mata uang, nominal, kurs (jika mata uang asing), metode, bank (jika transfer), dan uraian.','error');return
+  }
+  if(file){
+    if(!['application/pdf','image/jpeg','image/png'].includes(file.type)){notice('Bukti transaksi harus PDF, JPG, JPEG, atau PNG.','error');return}
+    if(file.size>10*1024*1024){notice('Ukuran bukti transaksi maksimal 10 MB.','error');return}
+  }
+  const form=document.getElementById('expenseForm'),editing=form.dataset.editId||'',existing=editing?expenses.find(x=>x.id===editing):null;
+  let receipt_path=existing?.receipt_path||'',receipt_name=existing?.receipt_name||'';
+  if(file){
+    try{
+      const safe=file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
+      receipt_path='expenses/'+(editing||('exp-'+Date.now()))+'/receipt_'+Date.now()+'_'+safe;
+      const upload=await sb.storage.from('document').upload(receipt_path,file,{upsert:true,contentType:file.type});
+      if(upload.error)throw upload.error;
+      receipt_name=file.name;
+    }catch(err){notice('Upload bukti transaksi gagal: '+(err?.message||err),'error');return}
+  }
+  const row={id:editing||('exp-'+Date.now()+'-'+Math.random().toString(36).slice(2,8)),date,category,currency,amount,rate,amount_idr,method,bank:method==='Transfer'?bank:'',description,note,receipt_path,receipt_name,created_at:existing?.created_at||new Date().toISOString()};
+  if(editing){const i=expenses.findIndex(x=>x.id===editing);if(i>=0)expenses[i]=row}else expenses.push(row);
+  if(!saveLocalExpenses())return;
+  await syncToSpreadsheet('pengeluaran',row);
+  form.dataset.editId='';
+  document.querySelector('#expenseForm .btn[type="submit"]').textContent='Simpan Pengeluaran';
+  resetExpenseForm();renderExpenses();
+  addActivityLog((editing?'Memperbarui':'Mencatat')+' pengeluaran '+formatExpenseOriginal(row)+' ('+expenseMoney(amount_idr)+').');
+  notice(editing?'Pengeluaran berhasil diperbarui.':'Pengeluaran berhasil disimpan.');
+}
+function editExpense(id){const x=expenses.find(v=>v.id===id);if(!x)return;const f=document.getElementById('expenseForm');f.dataset.editId=id;document.getElementById('expenseDate').value=x.date||expenseToday();document.getElementById('expenseCategory').value=x.category||'';document.getElementById('expenseCurrency').value=x.currency||'IDR';document.getElementById('expenseAmount').value=x.amount||'';document.getElementById('expenseRate').value=x.rate||((x.currency||'IDR')==='IDR'?1:'');toggleExpenseCurrency();document.getElementById('expenseMethod').value=(x.method==='BSI'||x.method==='Bank Muamalat')?'Transfer':(x.method||'');document.getElementById('expenseBank').value=x.bank||(x.method==='BSI'?'BSI':x.method==='Bank Muamalat'?'Bank Muamalat':'');toggleExpenseBank();document.getElementById('expenseDescription').value=x.description||'';document.getElementById('expenseNote').value=x.note||'';const rf=document.getElementById('expenseReceipt');if(rf)rf.value='';document.querySelector('#expenseForm .btn[type="submit"]').textContent='Update Pengeluaran';document.getElementById('expenseDate').scrollIntoView({behavior:'smooth',block:'center'})}
+async function openExpenseReceipt(encodedPath){
+  try{
+    const path=decodeURIComponent(encodedPath);
+    const {data,error}=await sb.storage.from('document').createSignedUrl(path,3600);
+    if(error)throw error;
+    window.open(data.signedUrl,'_blank','noopener');
+  }catch(err){notice('Bukti transaksi tidak bisa dibuka: '+(err?.message||err),'error')}
+}
+function deleteExpense(id){const x=expenses.find(v=>v.id===id);if(!x)return;if(!confirm('Hapus pengeluaran "'+(x.description||'')+'"?'))return;expenses=expenses.filter(v=>v.id!==id);saveLocalExpenses();renderExpenses();notice('Pengeluaran berhasil dihapus.')}
+function toggleAllExpenses(checked){document.querySelectorAll('.expense-check').forEach(x=>x.checked=checked);syncBulkState('expense')}
+function deleteSelectedExpenses(){const ids=[...document.querySelectorAll('.expense-check:checked')].map(x=>x.value);if(!ids.length){notice('Pilih pengeluaran yang ingin dihapus.','error');return}if(!confirm('Hapus '+ids.length+' pengeluaran terpilih?'))return;expenses=expenses.filter(x=>!ids.includes(x.id));saveLocalExpenses();renderExpenses();notice(ids.length+' pengeluaran berhasil dihapus.')}
+function exportExpensesCSV(){const rows=expenseRowsFiltered(),lines=[['No','Tanggal','Kategori','Mata Uang','Nominal Asli','Kurs','Nilai IDR','Metode','Bank','Bukti','Keterangan']];rows.forEach((x,i)=>lines.push([i+1,x.date||'',x.category||'',x.currency||'IDR',Number(x.amount||0),Number(x.rate||1),expenseAmountIdr(x),x.method||'',x.bank||'',x.receipt_name||'',x.note||'']));const csv=lines.map(r=>r.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\n'),blob=new Blob(["\ufeff"+csv],{type:'text/csv;charset=utf-8;'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='rekap-pengeluaran-harian.csv';a.click();URL.revokeObjectURL(a.href)}
+function printExpenses(){const rows=expenseRowsFiltered(),st=document.getElementById('expenseStart')?.value||'',en=document.getElementById('expenseEnd')?.value||'',total=rows.reduce((a,x)=>a+Number(x.amount||0),0),w=window.open('','_blank');if(!w){alert('Izinkan pop-up browser untuk mencetak laporan.');return}const body=rows.map((x,i)=>'<tr><td>'+(i+1)+'</td><td>'+formatDate(x.date)+'</td><td>'+esc(x.category)+'</td><td>'+esc(x.description)+'</td><td>'+expenseMoney(x.amount)+'</td><td>'+esc(x.method)+'</td><td>'+esc(x.note||'-')+'</td></tr>').join('');w.document.write('<!doctype html><html><head><title>Rekap Pengeluaran - Raihan Alya Tour</title><style>body{font-family:Arial,sans-serif;margin:30px;color:#222}table{width:100%;border-collapse:collapse;font-size:11px}th,td{border:1px solid #bbb;padding:7px;text-align:left}th{background:#f3f3f3}.summary{padding:12px;border:1px solid #ddd;margin:15px 0;font-weight:bold}</style></head><body><h1>RAIHAN ALYA TOUR</h1><h2>Rekap Pengeluaran Harian</h2><p>'+((st||en)?'Periode '+(st?formatDate(st):'awal')+' s/d '+(en?formatDate(en):'sekarang'):'Seluruh periode')+'</p><div class="summary">Total Pengeluaran: '+expenseMoney(total)+' · Jumlah Transaksi: '+rows.length+'</div><table><thead><tr><th>No</th><th>Tanggal</th><th>Kategori</th><th>Uraian</th><th>Nominal</th><th>Metode</th><th>Bank</th><th>Bukti</th><th>Keterangan</th></tr></thead><tbody>'+(body||'<tr><td colspan="7">Tidak ada data.</td></tr>')+'</tbody></table><script>window.onload=()=>window.print()<\\/script></body></html>');w.document.close()}
+function fillReportFilters(){
+  const m=document.getElementById('reportMonth'), d=document.getElementById('reportDeparture'); if(!m||!d)return;
+  const oldM=m.value, oldD=d.value;
+  const months=[...new Set([
+    ...data.map(j=>monthKey(dashDateFor(j))).filter(Boolean),
+    ...payments.map(p=>monthKey(p.payment_date)).filter(Boolean),
+    ...departures.map(x=>monthKey(x.start_date)).filter(Boolean)
+  ])].sort().reverse();
+  m.innerHTML='<option value="">Semua Bulan</option>'+months.map(x=>`<option value="${x}">${monthLabel(x)}</option>`).join('');
+  if(months.includes(oldM))m.value=oldM;
+  d.innerHTML='<option value="">Semua Jadwal</option>'+departures.slice().sort((a,b)=>(a.start_date||'').localeCompare(b.start_date||'')).map(x=>`<option value="${x.id}">${esc(x.name)} — ${esc(x.start_date||'-')}</option>`).join('');
+  if(departures.some(x=>x.id===oldD))d.value=oldD;
+}
+function reportJamaahRows(){
+  const month=document.getElementById('reportMonth')?.value||'', dep=document.getElementById('reportDeparture')?.value||'', pack=document.getElementById('reportPackage')?.value||'';
+  return data.filter(j=>{const dt=dashDateFor(j);return (!month||monthKey(dt)===month)&&(!dep||j.departure_id===dep)&&(!pack||j.paket===pack)});
+}
+function reportPaymentRows(){
+  const month=document.getElementById('reportMonth')?.value||'', dep=document.getElementById('reportDeparture')?.value||'', pack=document.getElementById('reportPackage')?.value||'';
+  return payments.filter(p=>{const j=data.find(x=>x.id===p.jamaah_id);return (!month||monthKey(p.payment_date)===month)&&(!dep||j?.departure_id===dep)&&(!pack||j?.paket===pack)});
+}
+function reportDepartureRows(){
+  const month=document.getElementById('reportMonth')?.value||'', dep=document.getElementById('reportDeparture')?.value||'';
+  return departures.filter(x=>(!month||monthKey(x.start_date)===month)&&(!dep||x.id===dep));
+}
+function reportDocumentRows(){
+  const month=document.getElementById('reportMonth')?.value||'', dep=document.getElementById('reportDeparture')?.value||'', pack=document.getElementById('reportPackage')?.value||'';
+  return data.filter(j=>{const dt=dashDateFor(j);return (!month||monthKey(dt)===month)&&(!dep||j.departure_id===dep)&&(!pack||j.paket===pack)});
+}
+function reportDocStatus(doc){
+  const keys=[['ktp','KTP'],['kk','KK'],['passport','Passport'],['bpjs','BPJS'],['vaccine','Vaksin'],['visa','Visa'],['ticket','Tiket']];
+  const missing=keys.filter(([k])=>!doc?.[k]).map(([,n])=>n); return missing.length?`<span class="badge unpaid">Belum Lengkap (${missing.length})</span>`:'<span class="badge paid">Lengkap</span>';
+}
+function reportEquipmentRows(){
+  const month=document.getElementById('reportMonth')?.value||'', dep=document.getElementById('reportDeparture')?.value||'', pack=document.getElementById('reportPackage')?.value||'';
+  return data.filter(j=>{
+    const dt=dashDateFor(j), x=getEquipment(j.id)||{};
+    return (!month||monthKey(dt)===month)&&(!dep||j.departure_id===dep)&&(!pack||j.paket===pack);
+  });
+}
+function renderReport(){
+  fillReportFilters();
+  const type=document.getElementById('reportType')?.value||'jamaah';
+  const head=document.getElementById('reportHead'), body=document.getElementById('reportBody'), sum=document.getElementById('reportSummary');
+  let rows=[], headers=[], html='', title='';
+  if(type==='jamaah'){
+    rows=reportJamaahRows(); title='Laporan Jamaah'; headers=['No','Nama Jamaah','No. HP','Paket','Harga Paket','Keberangkatan','Terbayar','Sisa','Status'];
+    html=rows.map((j,i)=>{const paid=paidFor(j.id),s=remainFor(j),d=departureFor(j);return `<tr><td>${i+1}</td><td>${esc(j.nama)}</td><td>${esc(j.hp||'-')}</td><td>${esc(j.paket||'-')}</td><td>${rupiah(j.harga)}</td><td>${esc(d?.name||j.berangkat||'-')}</td><td>${rupiah(paid)}</td><td>${rupiah(s)}</td><td>${status(j)}</td></tr>`}).join('');
+    const total=rows.reduce((a,j)=>a+Number(j.harga||0),0), paid=rows.reduce((a,j)=>a+paidFor(j.id),0); sum.innerHTML=reportCards([['Jumlah Jamaah',rows.length],['Total Paket',rupiah(total)],['Terbayar',rupiah(paid)],['Sisa',rupiah(Math.max(0,total-paid))]]);
+  } else if(type==='payment'){
+    rows=reportPaymentRows(); title='Laporan Pembayaran'; headers=['No','Invoice','Tanggal','Jamaah','Jumlah','Diskon','Metode','Bank','Keterangan'];
+    html=rows.map((p,i)=>{const j=data.find(x=>x.id===p.jamaah_id);return `<tr><td>${i+1}</td><td>${esc(p.invoice_no||'-')}</td><td>${esc(p.payment_date||'-')}</td><td>${esc(j?.nama||'-')}</td><td>${rupiah(p.amount)}</td><td>${rupiah(p.discount||0)}</td><td>${esc(p.method||'-')}</td><td>${esc(p.bank||'-')}</td><td>${esc(p.note||'-')}</td></tr>`}).join('');
+    const total=rows.reduce((a,p)=>a+Number(p.amount||0),0), cash=rows.filter(p=>p.method==='Cash').reduce((a,p)=>a+Number(p.amount||0),0), transfer=rows.filter(p=>p.method==='Transfer').reduce((a,p)=>a+Number(p.amount||0),0); sum.innerHTML=reportCards([['Transaksi',rows.length],['Total Pembayaran',rupiah(total)],['Cash',rupiah(cash)],['Transfer',rupiah(transfer)]]);
+  } else if(type==='departure'){
+    rows=reportDepartureRows(); title='Laporan Keberangkatan'; headers=['No','Grup','Tanggal','Maskapai','PNR','Jamaah','Lunas','Belum Lunas','Total Paket','Terbayar','Sisa'];
+    html=rows.map((d,i)=>{const js=data.filter(j=>j.departure_id===d.id),value=js.reduce((a,j)=>a+Number(j.harga||0),0),paid=js.reduce((a,j)=>a+paidFor(j.id),0),lunas=js.filter(j=>paidFor(j.id)>=Number(j.harga||0)).length;return `<tr><td>${i+1}</td><td>${esc(d.name)}</td><td>${esc(d.start_date||'-')}${d.end_date?' s/d '+esc(d.end_date):''}</td><td>${esc(d.airline||'-')}</td><td>${esc(d.pnr||'-')}</td><td>${js.length}</td><td>${lunas}</td><td>${js.length-lunas}</td><td>${rupiah(value)}</td><td>${rupiah(paid)}</td><td>${rupiah(js.reduce((a,j)=>a+remainFor(j),0))}</td></tr>`}).join('');
+    const js=rows.flatMap(d=>data.filter(j=>j.departure_id===d.id)), value=js.reduce((a,j)=>a+Number(j.harga||0),0), paid=js.reduce((a,j)=>a+paidFor(j.id),0); sum.innerHTML=reportCards([['Jadwal',rows.length],['Jamaah',js.length],['Total Paket',rupiah(value)],['Sisa',rupiah(js.reduce((a,j)=>a+remainFor(j),0))]]);
+  } else if(type==='equipment'){
+    rows=reportEquipmentRows(); title='Laporan Perlengkapan'; headers=['No','Nama Jamaah','Keberangkatan','Mukena / Ihram','Batik','Koper','Buku Manasik','Tanggal','Keterangan'];
+    html=rows.map((j,i)=>{const x=getEquipment(j.id)||{},dep=departureFor(j),cell=k=>x[k]?'<span class="badge paid">✓ Diambil</span>':'<span class="badge unpaid">Belum</span>';return `<tr><td>${i+1}</td><td>${esc(j.nama)}</td><td>${esc(dep?.name||j.berangkat||'-')}</td><td>${cell('mukena_ihram')}</td><td>${cell('batik')}</td><td>${cell('koper')}</td><td>${cell('buku')}</td><td>${esc(x.taken_date||'-')}</td><td>${esc(x.note||'-')}</td></tr>`}).join('');
+    const cnt=k=>rows.filter(j=>(getEquipment(j.id)||{})[k]).length; sum.innerHTML=reportCards([['Jamaah',rows.length],['Mukena / Ihram',cnt('mukena_ihram')],['Batik',cnt('batik')],['Koper',cnt('koper')]]);
+  } else {
+    rows=reportDocumentRows(); title='Laporan Dokumen'; headers=['No','Nama Jamaah','Keberangkatan','KTP','KK','Passport','BPJS','Vaksin','Visa','Tiket','Status'];
+    html=rows.map((j,i)=>{const x=documents.find(d=>d.jamaah_id===j.id)||{},dep=departureFor(j), cell=k=>x[k]?'<span class="badge paid">✓</span>':'<span class="badge unpaid">✕</span>';return `<tr><td>${i+1}</td><td>${esc(j.nama)}</td><td>${esc(dep?.name||j.berangkat||'-')}</td><td>${cell('ktp')}</td><td>${cell('kk')}</td><td>${cell('passport')}</td><td>${cell('bpjs')}</td><td>${cell('vaccine')}</td><td>${cell('visa')}</td><td>${cell('ticket')}</td><td>${reportDocStatus(x)}</td></tr>`}).join('');
+    const complete=rows.filter(j=>{const x=documents.find(d=>d.jamaah_id===j.id);return x&&['ktp','kk','passport','bpjs','vaccine','visa','ticket'].every(k=>x[k])}).length; sum.innerHTML=reportCards([['Jamaah',rows.length],['Dokumen Lengkap',complete],['Belum Lengkap',rows.length-complete],['Kelengkapan',rows.length?Math.round(complete/rows.length*100)+'%':'0%']]);
+  }
+  document.querySelector('#reportTablePanel')?.setAttribute('data-report-title',title); head.innerHTML='<tr>'+headers.map(h=>`<th>${h}</th>`).join('')+'</tr>'; body.innerHTML=html||`<tr><td colspan="${headers.length}">Tidak ada data pada filter ini.</td></tr>`;
+}
+function reportCards(items){return '<div class="report-summary-grid">'+items.map(x=>`<div class="report-summary-card"><div class="label">${x[0]}</div><div class="value">${x[1]}</div></div>`).join('')+'</div>';}
+function reportExportData(){
+  const type=document.getElementById('reportType')?.value||'jamaah';
+  if(type==='jamaah')return {name:'Laporan Jamaah',head:['No','Nama Jamaah','No. HP','Paket','Harga Paket','Keberangkatan','Terbayar','Sisa','Status'],rows:reportJamaahRows().map((j,i)=>{const p=paidFor(j.id),d=departureFor(j);return [i+1,j.nama,j.hp||'',j.paket||'',Number(j.harga||0),d?.name||j.berangkat||'',p,Math.max(0,Number(j.harga||0)-p),p>=netBillFor(j)?'Lunas':'Belum Lunas']})};
+  if(type==='payment')return {name:'Laporan Pembayaran',head:['No','Invoice','Tanggal','Jamaah','Jumlah','Diskon','Metode','Bank','Keterangan'],rows:reportPaymentRows().map((p,i)=>{const j=data.find(x=>x.id===p.jamaah_id);return [i+1,p.invoice_no||'',p.payment_date||'',j?.nama||'',Number(p.amount||0),Number(p.discount||0),p.method||'',p.bank||'',p.note||'']})};
+  if(type==='departure')return {name:'Laporan Keberangkatan',head:['No','Grup','Tanggal','Maskapai','PNR','Jamaah','Lunas','Belum Lunas','Total Paket','Terbayar','Sisa'],rows:reportDepartureRows().map((d,i)=>{const js=data.filter(j=>j.departure_id===d.id),v=js.reduce((a,j)=>a+Number(j.harga||0),0),p=js.reduce((a,j)=>a+paidFor(j.id),0),l=js.filter(j=>paidFor(j.id)>=Number(j.harga||0)).length;return [i+1,d.name,(d.start_date||'')+(d.end_date?' s/d '+d.end_date:''),d.airline||'',d.pnr||'',js.length,l,js.length-l,v,p,Math.max(0,v-p)]})};
+  if(type==='equipment')return {name:'Laporan Perlengkapan',head:['No','Nama Jamaah','Keberangkatan','Mukena / Ihram','Batik','Koper','Buku Manasik','Tanggal','Keterangan'],rows:reportEquipmentRows().map((j,i)=>{const x=getEquipment(j.id)||{},d=departureFor(j),ok=k=>x[k]?'Diambil':'Belum';return [i+1,j.nama,d?.name||j.berangkat||'',ok('mukena_ihram'),ok('batik'),ok('koper'),ok('buku'),x.taken_date||'',x.note||'']})};
+  return {name:'Laporan Dokumen',head:['No','Nama Jamaah','Keberangkatan','KTP','KK','Passport','BPJS','Vaksin','Visa','Tiket','Status'],rows:reportDocumentRows().map((j,i)=>{const x=documents.find(d=>d.jamaah_id===j.id)||{},dep=departureFor(j),ok=k=>x[k]?'Lengkap':'Belum';return [i+1,j.nama,dep?.name||j.berangkat||'',ok('ktp'),ok('kk'),ok('passport'),ok('bpjs'),ok('vaccine'),ok('visa'),ok('ticket'),['ktp','kk','passport','bpjs','vaccine','visa','ticket'].every(k=>x[k])?'Lengkap':'Belum Lengkap']})};
+}
+function exportReportCSV(){
+  const r=reportExportData(), csv=[r.head,...r.rows].map(row=>row.map(v=>`"${String(v??'').replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob=new Blob(['\\ufeff'+csv],{type:'text/csv;charset=utf-8;'}), url=URL.createObjectURL(blob), a=document.createElement('a'); a.href=url; a.download=r.name.replace(/\\s+/g,'_')+'_'+new Date().toISOString().slice(0,10)+'.csv'; a.click(); URL.revokeObjectURL(url);
+}
+function getPrintLogo(){
+  const img=document.querySelector('.dashboard-brand-logo img');
+  return img?.src||'';
+}
+function openPrintWindow(title,bodyHtml){
+  const w=window.open('','_blank','width=760,height=850');
+  if(!w){notice('Pop-up diblokir browser. Izinkan pop-up untuk mencetak.','error');return null}
+  w.document.open();
+  w.document.write('<!doctype html><html lang="id"><head><meta charset="utf-8"><title>'+esc(title)+'</title><style>'+
+    'body{font-family:Arial,sans-serif;color:#222;margin:0}.page{max-width:760px;margin:auto;padding:28px}.head{display:flex;align-items:center;gap:12px;border-bottom:2px solid #173f35;padding-bottom:10px}.head img{width:58px;height:58px;object-fit:contain}.logo-mark{width:52px;height:52px;border:2px solid #173f35;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;color:#173f35;font-size:16px;flex:none}.company{font-size:18px;font-weight:700;color:#173f35}.sub{font-size:11px;color:#666;margin-top:3px}.title{text-align:center;font-size:17px;font-weight:700;margin:18px 0}.meta{font-size:12px;line-height:1.7;margin-bottom:12px}.box{border:1px solid #ddd;border-radius:6px;padding:10px;margin-top:10px}table{width:100%;border-collapse:collapse;font-size:11px}th,td{border:1px solid #ddd;padding:6px}th{background:#f3f6f4;text-align:left}.right{text-align:right}.sum div{display:flex;justify-content:space-between;padding:4px 0}.grand{font-weight:700;border-top:2px solid #173f35;margin-top:4px;padding-top:6px}.sign{margin-top:35px;display:grid;grid-template-columns:1fr 1fr;gap:30px;text-align:center;font-size:11px}.space{height:42px}.foot{text-align:center;margin-top:16px;font-size:9px;color:#777}@media print{@page{size:A4;margin:0}.page{padding:10mm}}' +
+    '</style></head><body><div class="page">'+bodyHtml+'</div></body></html>');
+  w.document.close();
+  w.focus();
+  setTimeout(()=>w.print(),400);
+  return w;
+}
+function printReport(){
+  const r=reportExportData();
+  const logo=getPrintLogo();
+  const table='<table><thead><tr>'+r.head.map(h=>'<th>'+esc(h)+'</th>').join('')+'</tr></thead><tbody>'+
+    r.rows.map(row=>'<tr>'+row.map(v=>'<td>'+esc(v)+'</td>').join('')+'</tr>').join('')+
+    '</tbody></table>';
+  openPrintWindow(r.name,(logo?'<div class="head"><img src="'+logo+'" alt="Logo"><div><div class="company">PT RAIHAN ALYA TOUR</div><div class="sub">Melayani dengan Sepenuh Hati</div></div></div>':'<div class="head"><div><div class="company">PT RAIHAN ALYA TOUR</div></div></div>')+
+    '<div class="title">'+esc(r.name)+'</div>'+table);
+}
+function printInvoice(jamaahId){
+  const j=data.find(x=>x.id===jamaahId);
+  if(!j){notice('Data jamaah tidak ditemukan.','error');return}
+  const group=isGroupJamaah(j);
+  const members=group?groupMembersFor(j):[j];
+  const totalBill=group?groupTotalFor(j):Number(j.harga||0);
+  const totalPaid=group?groupPaidFor(j):paidFor(j.id);
+  const totalDiscount=group?groupDiscountFor(j):discountFor(j.id);
+  const remain=Math.max(0,totalBill-totalDiscount-totalPaid);
+  const name=group?groupNameFor(j):(j.nama||'-');
+  const inv='RAT/INV/'+String(j.id||'').slice(0,8).toUpperCase();
+  const rows=members.map((m,i)=>'<tr><td>'+(i+1)+'</td><td>'+esc(m.nama||'-')+'</td><td>'+esc(m.paket||'-')+'</td><td class="right">'+rupiah(m.harga)+'</td></tr>').join('');
+  const head='<div class="head"><div class="logo-mark">RA</div><div><div class="company">PT RAIHAN ALYA TOUR</div><div class="sub">Palangka Raya, Kalimantan Tengah</div></div></div>';
+  const memberBox=group?'<div class="box"><b>Rincian Anggota</b><table><thead><tr><th>No</th><th>Nama</th><th>Paket</th><th class="right">Harga</th></tr></thead><tbody>'+rows+'</tbody></table></div>':'';
+  const body=head+
+    '<div class="title">'+(group?'INVOICE TAGIHAN ROMBONGAN':'INVOICE TAGIHAN')+'</div>'+
+    '<div class="meta"><b>No. Invoice:</b> '+esc(inv)+'<br><b>Tanggal:</b> '+esc(new Date().toLocaleDateString('id-ID'))+'<br><b>'+(group?'Rombongan':'Jamaah')+':</b> '+esc(name)+'</div>'+
+    memberBox+
+    '<div class="box sum"><b>Ringkasan Tagihan</b><div><span>Total Tagihan</span><b>'+rupiah(totalBill)+'</b></div><div><span>Diskon</span><b>'+rupiah(totalDiscount)+'</b></div><div><span>Sudah Dibayar</span><b>'+rupiah(totalPaid)+'</b></div><div class="grand"><span>SISA TAGIHAN</span><b>'+rupiah(remain)+'</b></div></div>'+
+    '<div class="sign"><div>Admin / Petugas<div class="space"></div>(________________)</div><div>Jamaah<div class="space"></div>(________________)</div></div>';
+  openPrintWindow(inv,body);
+}
+const PACKAGE_KEY='raihan_alya_packages_v1';
+const defaultPackages=[{id:'pkg-executive',name:'Executive',price:'',hotel:'',duration:'',departure:'',returnDate:'',notes:''},{id:'pkg-premium',name:'Premium',price:'',hotel:'',duration:'',departure:'',returnDate:'',notes:''},{id:'pkg-economis',name:'Economis',price:'',hotel:'',duration:'',departure:'',returnDate:'',notes:''}];
+function getPackages(){try{const r=localStorage.getItem(PACKAGE_KEY);const a=r?JSON.parse(r):defaultPackages;return Array.isArray(a)&&a.length?a:defaultPackages}catch(e){return defaultPackages}}
+function savePackages(a){localStorage.setItem(PACKAGE_KEY,JSON.stringify(a))}
+function packageOptions(selected=''){return getPackages().map(p=>'<option value="'+esc(p.name)+'" '+(p.name===selected?'selected':'')+'>'+esc(p.name)+'</option>').join('')}
+function refreshPackageSelects(){const s=document.getElementById('jPaketSelect');if(s){const old=s.value;s.innerHTML=packageOptions(old);if(old)s.value=old}document.querySelectorAll('#jamaahMembers select[data-field="paket"]').forEach(s=>{const old=s.value;s.innerHTML=packageOptions(old);if(old)s.value=old});const r=document.getElementById('reportPackage');if(r){const old=r.value;r.innerHTML='<option value="">Semua Paket</option>'+getPackages().map(p=>'<option value="'+esc(p.name)+'">'+esc(p.name)+'</option>').join('');if(old)r.value=old}}
+function packageByName(name){return getPackages().find(p=>p.name===name)}
+function syncPackagePrice(selectId,priceId){const s=document.getElementById(selectId),p=document.getElementById(priceId);const item=packageByName(s?.value);if(item&&item.price!==''&&p)p.value=item.price}
+function syncPackageMemberPrice(s){const item=packageByName(s.value),card=s.closest('.jamaah-member-card'),p=card?.querySelector('[data-field="harga"]');if(item&&item.price!==''&&p)p.value=item.price}
+function renderPackages(){const b=document.getElementById('packageBody');if(!b)return;const a=getPackages();document.getElementById('packageCount').textContent=a.length+' paket';b.innerHTML=a.map(p=>'<tr><td><b>'+esc(p.name)+'</b><div class="muted">'+esc(p.notes||'')+'</div></td><td>'+rupiah(p.price||0)+'</td><td>'+esc(p.hotel||'-')+'</td><td>'+esc(p.duration||'-')+'</td><td>'+esc(p.departure||'-')+'</td><td>'+esc(p.returnDate||'-')+'</td><td><div class="package-actions"><button type="button" class="btn" onclick="editPackage(\''+esc(p.id)+'\')">Edit</button><button type="button" class="btn danger" onclick="deletePackage(\''+esc(p.id)+'\')">Hapus</button></div></td></tr>').join('')}
+function resetPackageForm(){document.getElementById('packageForm')?.reset();document.getElementById('packageEditId').value='';document.getElementById('packageFormTitle').textContent='Tambah Paket'}
+function savePackage(e){e.preventDefault();const name=document.getElementById('packageName').value.trim();if(!name){notice('Nama paket wajib diisi.','error');return}const a=getPackages(),id=document.getElementById('packageEditId').value||'pkg-'+Date.now();const item={id,name,price:document.getElementById('packagePrice').value,hotel:document.getElementById('packageHotel').value.trim(),duration:document.getElementById('packageDuration').value.trim(),departure:document.getElementById('packageDeparture').value.trim(),returnDate:document.getElementById('packageReturn').value.trim(),notes:document.getElementById('packageNotes').value.trim()};if(a.some(p=>p.name.toLowerCase()===name.toLowerCase()&&p.id!==id)){notice('Nama paket sudah ada.','error');return}const i=a.findIndex(p=>p.id===id);if(i>=0)a[i]=item;else a.push(item);savePackages(a);syncToSpreadsheet('paket',item);renderPackages();refreshPackageSelects();resetPackageForm();notice('Paket berhasil disimpan.')}
+function editPackage(id){const p=getPackages().find(x=>x.id===id);if(!p)return;document.getElementById('packageEditId').value=p.id;document.getElementById('packageName').value=p.name||'';document.getElementById('packagePrice').value=p.price||'';document.getElementById('packageHotel').value=p.hotel||'';document.getElementById('packageDuration').value=p.duration||'';document.getElementById('packageDeparture').value=p.departure||'';document.getElementById('packageReturn').value=p.returnDate||'';document.getElementById('packageNotes').value=p.notes||'';document.getElementById('packageFormTitle').textContent='Edit Paket';document.getElementById('packageName').focus()}
+function deletePackage(id){const p=getPackages().find(x=>x.id===id);if(!p)return;if(!confirm('Hapus paket '+p.name+'? Data jamaah yang sudah memakai paket ini tidak ikut terhapus.'))return;const a=getPackages().filter(x=>x.id!==id);savePackages(a.length?a:[{id:'pkg-default',name:'Paket Baru',price:'',hotel:'',duration:'',departure:'',returnDate:'',notes:''}]);renderPackages();refreshPackageSelects();notice('Paket berhasil dihapus.')}
+function printPayment(paymentId){
+  const p=payments.find(x=>x.id===paymentId);
+  if(!p){notice('Transaksi tidak ditemukan.','error');return}
+  const j=data.find(x=>x.id===p.jamaah_id);
+  if(!j){notice('Data jamaah untuk transaksi ini tidak ditemukan.','error');return}
+  const group=isGroupJamaah(j);
+  const members=group?groupMembersFor(j):[j];
+  const label=group?groupNameFor(j):(j.nama||'-');
+  const total=group?groupTotalFor(j):Number(j.harga||0);
+  const rows=members.map((m,i)=>'<tr><td>'+(i+1)+'</td><td>'+esc(m.nama||'-')+'</td><td>'+esc(m.paket||'-')+'</td><td class="right">'+rupiah(m.harga)+'</td></tr>').join('');
+  const inv=invoiceNumber(p);
+  const head='<div class="head"><div class="logo-mark">RA</div><div><div class="company">PT RAIHAN ALYA TOUR</div><div class="sub">Palangka Raya, Kalimantan Tengah</div></div></div>';
+  const body=head+
+    '<div class="title">BUKTI PEMBAYARAN</div>'+
+    '<div class="meta"><b>No. Nota:</b> '+esc(inv)+'<br><b>Tanggal:</b> '+esc(formatDateID(p.payment_date))+'<br><b>'+(group?'Rombongan':'Jamaah')+':</b> '+esc(label)+'</div>'+
+    (group?'<div class="box"><table><thead><tr><th>No</th><th>Nama</th><th>Paket</th><th class="right">Harga</th></tr></thead><tbody>'+rows+'</tbody></table></div>':'')+
+    '<div class="box sum"><div><span>Total Tagihan</span><b>'+rupiah(total)+'</b></div><div><span>Pembayaran Ini</span><b>'+rupiah(p.amount)+'</b></div><div><span>Metode</span><b>'+esc(p.method||'-')+'</b></div><div><span>Bank</span><b>'+esc(p.bank||'-')+'</b></div><div><span>Keterangan</span><b>'+esc(p.note||'-')+'</b></div><div class="grand"><span>Terima Pembayaran</span><b>'+rupiah(p.amount)+'</b></div></div>'+
+    '<div class="sign"><div>Admin / Petugas<div class="space"></div>(________________)</div><div>Jamaah<div class="space"></div>(________________)</div></div>';
+  openPrintWindow(inv,body);
+}
+
+function renderJamaah(){
+  const q=(document.getElementById('search')?.value||'').toLowerCase();
+  const rows=data.filter(x=>(x.nama+' '+(x.hp||'')+' '+(x.paket||'')+' '+(x.jenis_kelamin||'')+' '+(x.nama_rombongan||'')+' '+(x.kategori||'')).toLowerCase().includes(q));
+  document.getElementById('jamaahBody').innerHTML=rows.map(x=>{
+    const paid=paidFor(x.id), discount=discountFor(x.id), remain=remainFor(x);
+    const isGroup=x.kategori==='grup';
+    return `<tr><td style="text-align:center"><input class="jamaah-check" type="checkbox" value="${esc(x.id)}" onchange="syncJamaahSelectState()" aria-label="Pilih ${esc(x.nama)}"></td><td>${esc(x.nama)}</td><td>${isGroup?'<span class="jamaah-group-badge">Grup / Rombongan</span>':'<span class="jamaah-individual-badge">Individu</span>'}</td><td>${esc(x.nama_rombongan||'-')}</td><td>${esc(x.jenis_kelamin||'-')}</td><td>${esc(x.hp||'')}</td><td>${esc(x.paket||'')}</td><td>${rupiah(x.harga)}</td><td>${rupiah(discount)}</td><td>${rupiah(paid)}</td><td>${rupiah(remain)}</td><td>${status(x)}</td><td><button class="btn secondary small-btn" onclick="edit('${x.id}')">Edit</button> <button class="btn small-btn" onclick="printInvoice('${x.id}')">🧾 Invoice</button> <button class="btn danger small-btn" onclick="hapus('${x.id}')">Hapus</button></td></tr>`;
+  }).join('')||'<tr><td colspan="13">Belum ada data.</td></tr>';
+  syncJamaahSelectState();
+}
+
+function renderPaymentSummary(){
+  const body=document.getElementById('paymentSummaryBody');
+  if(!body)return;
+  const seen=new Set();
+  const rows=[];
+  data.forEach(x=>{
+    if(isGroupJamaah(x)){
+      const name=groupNameFor(x);
+      if(!name||seen.has(name))return;
+      seen.add(name);
+      const members=groupMembersFor(x);
+      const total=groupTotalFor(x),discount=groupDiscountFor(x),paid=groupPaidFor(x),remain=Math.max(0,total-discount-paid);
+      const groupStatus=paid>=Math.max(0,total-discount)?'<span class="badge paid">Lunas</span>':'<span class="badge unpaid">Belum Lunas</span>';
+      rows.push(`<tr><td>👥 <b>${esc(name)}</b><div class="muted">${members.length} anggota</div></td><td>${rupiah(total)}</td><td>${rupiah(discount)}</td><td>${rupiah(paid)}</td><td>${rupiah(remain)}</td><td>${groupStatus}</td></tr>`);
+    }else{
+      const paid=paidFor(x.id),discount=discountFor(x.id),remain=remainFor(x);
+      rows.push(`<tr><td>${esc(x.nama)}</td><td>${rupiah(x.harga)}</td><td>${rupiah(discount)}</td><td>${rupiah(paid)}</td><td>${rupiah(remain)}</td><td>${status(x)}</td></tr>`);
+    }
+  });
+  body.innerHTML=rows.join('')||'<tr><td colspan="6">Belum ada data jamaah.</td></tr>';
+}
+
+function renderPaymentHistory(){
+  const body=document.getElementById('historyBody');
+  body.innerHTML=payments.map(p=>{
+    const j=data.find(x=>x.id===p.jamaah_id);
+    const group=isGroupJamaah(j), groupName=group?groupNameFor(j):'';
+    const jamaahLabel=group?'👥 '+groupName+' ('+groupMembersFor(j).length+' anggota)':(j?.nama||'Jamaah tidak ditemukan');
+    const bank=p.method==='Transfer'?(p.bank||'-'):'-';
+    return `<tr>
+      <td style="text-align:center"><input class="bulk-check payment-check" type="checkbox" value="${esc(p.id)}" onchange="syncBulkState('payment')"></td><td>${esc(p.invoice_no||'-')}</td>
+      <td>${p.payment_date||'-'}</td>
+      <td>${esc(jamaahLabel)}</td>
+      <td>${rupiah(p.amount)}</td>
+      <td>${rupiah(p.discount||0)}</td>
+      <td>${esc(p.method||'-')}</td>
+      <td>${esc(bank)}</td>
+      <td>${esc(p.note||'-')}</td>
+      <td><button class="btn small-btn" type="button" onclick="printInvoice('${p.jamaah_id}')">🧾 Invoice Tagihan</button> <button class="btn secondary small-btn" type="button" onclick="printPayment('${p.id}')">🖨️ Cetak 2 Nota</button> <button class="btn danger small-btn" type="button" onclick="deletePayment('${p.id}')">Hapus</button></td>
+    </tr>`;
+  }).join('')||'<tr><td colspan="10">Belum ada pembayaran.</td></tr>';
+}
+
+function formatDate(v){ return formatDateID(v); }
+function formatDateID(v){
+  if(!v)return '-';
+  const d=new Date(v+'T00:00:00');
+  return d.toLocaleDateString('id-ID',{day:'2-digit',month:'2-digit',year:'numeric'});
+}
+
+function invoiceNumber(p){ return p.invoice_no || ('RAT/INV/'+String(p.id||'').slice(0,8).toUpperCase()); }
+
+function printInvoice(jamaahId){
+  const j=data.find(x=>x.id===jamaahId);
+  if(!j){notice('Data jamaah tidak ditemukan.','error');return}
+  const group=isGroupJamaah(j);
+  const members=group?groupMembersFor(j):[j];
+  const totalBill=group?groupTotalFor(j):Number(j.harga||0);
+  const totalPaid=group?groupPaidFor(j):paidFor(j.id);
+  const totalDiscount=group?groupDiscountFor(j):discountFor(j.id);
+  const netBill=Math.max(0,totalBill-totalDiscount);
+  const remain=Math.max(0,netBill-totalPaid);
+  const inv='RAT/INV/'+String(j.id||'').slice(0,8).toUpperCase();
+  const title=group?'INVOICE TAGIHAN ROMBONGAN':'INVOICE TAGIHAN';
+  const name=group?groupNameFor(j):(j.nama||'-');
+  const today=new Date().toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'});
+  const logoHtml='<div class="logo-mark">RA</div>';
+  const memberRows=members.map((m,i)=>'<tr><td>'+(i+1)+'</td><td>'+esc(m.nama||'-')+'</td><td>'+esc(m.paket||'-')+'</td><td class="right">'+rupiah(m.harga)+'</td></tr>').join('');
+  const w=window.open('','_blank','width=760,height=850');
+  if(!w){notice('Pop-up diblokir browser. Izinkan pop-up untuk membuka invoice.','error');return}
+  w.document.open();
+  w.document.write('<!doctype html><html lang="id"><head><meta charset="utf-8"><title>'+esc(inv)+'</title><style>'+
+    '*{box-sizing:border-box}body{margin:0;background:#fff;font-family:Arial,sans-serif;color:#222}.page{width:190mm;margin:0 auto;padding:12mm}.head{display:flex;align-items:center;gap:12px;border-bottom:2px solid #173f35;padding-bottom:9px}.logo-mark{width:52px;height:52px;border:2px solid #173f35;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;color:#173f35;font-size:16px;flex:none}.company{font-size:18px;font-weight:800;color:#173f35}.sub{font-size:11px;color:#666;margin-top:3px}.title{text-align:center;font-size:17px;font-weight:800;margin:15px 0}.meta{display:grid;grid-template-columns:1fr 1fr;gap:5px 18px;font-size:11px;margin-bottom:12px}.meta div{padding:4px 0}.meta span{color:#666}.box{border:1px solid #ddd;border-radius:6px;padding:9px;margin-top:9px}.box h3{font-size:12px;margin:0 0 7px}table{width:100%;border-collapse:collapse;font-size:10px}th,td{border:1px solid #ddd;padding:5px 6px}th{background:#f3f6f4;text-align:left}.right{text-align:right}.total{font-size:11px}.total div{display:flex;justify-content:space-between;padding:4px 0}.grand{font-size:13px;font-weight:800;border-top:2px solid #173f35;margin-top:3px;padding-top:6px}.status{margin-top:7px;padding:6px;background:#f3f6f4;border-radius:5px;font-weight:700;font-size:11px}.sign{margin-top:35px;display:grid;grid-template-columns:1fr 1fr;gap:40px;text-align:center;font-size:10px}.space{height:45px}.foot{text-align:center;margin-top:14px;font-size:9px;color:#777}@media print{.page{width:auto;padding:8mm}@page{size:A4;margin:0}}</style></head><body><div class="page">'+
+    '<div class="head">'+logoHtml+'<div><div class="company">PT RAIHAN ALYA TOUR</div><div class="sub">Palangka Raya, Kalimantan Tengah</div></div></div>'+
+    '<div class="title">'+title+'</div>'+
+    '<div class="meta"><div><span>No. Invoice</span><br><b>'+esc(inv)+'</b></div><div><span>Tanggal</span><br><b>'+esc(today)+'</b></div><div><span>'+(group?'Nama Rombongan':'Nama Jamaah')+'</span><br><b>'+esc(name)+'</b></div><div><span>Paket</span><br><b>'+esc(group?'Sesuai anggota':(j.paket||'-'))+'</b></div></div>'+
+    (group?'<div class="box"><h3>Rincian Anggota</h3><table><thead><tr><th>No</th><th>Nama Jamaah</th><th>Paket</th><th class="right">Harga</th></tr></thead><tbody>'+memberRows+'</tbody></table></div>':'')+
+    '<div class="box"><h3>Ringkasan Tagihan</h3><div class="total"><div><span>Total Tagihan</span><b>'+rupiah(totalBill)+'</b></div><div><span>Diskon</span><b>'+rupiah(totalDiscount)+'</b></div><div><span>Sudah Dibayar</span><b>'+rupiah(totalPaid)+'</b></div><div class="grand"><span>SISA TAGIHAN</span><b>'+rupiah(remain)+'</b></div></div><div class="status">Status: '+(remain<=0?'LUNAS':'BELUM LUNAS')+'</div></div>'+
+    '<div class="sign"><div>Admin / Petugas<div class="space"></div>(________________)</div><div>Jamaah<div class="space"></div>(________________)</div></div>'+
+    '<div class="foot">Invoice ini merupakan dokumen tagihan PT Raihan Alya Tour.</div></div>'+
+    '</body></html>');
+  w.document.close();
+  w.focus();
+  setTimeout(()=>w.print(),300);
+}
+
+function printPayment(paymentId){
+  const p=payments.find(x=>x.id===paymentId);
+  if(!p){notice('Transaksi tidak ditemukan.','error');return}
+  const j=data.find(x=>x.id===p.jamaah_id);
+  if(!j){notice('Data jamaah untuk transaksi ini tidak ditemukan.','error');return}
+  const group=isGroupJamaah(j);
+  const members=group?groupMembersFor(j):[j];
+  const label=group?groupNameFor(j):(j.nama||'-');
+  const w=window.open('','_blank','width=700,height=800');
+  if(!w){notice('Pop-up diblokir browser. Izinkan pop-up untuk mencetak nota.','error');return}
+  const rows=members.map((m,i)=>'<tr><td>'+(i+1)+'</td><td>'+esc(m.nama||'-')+'</td><td>'+esc(m.paket||'-')+'</td><td style="text-align:right">'+rupiah(m.harga)+'</td></tr>').join('');
+  const total=group?groupTotalFor(j):Number(j.harga||0);
+  const paid=Number(p.amount||0);
+  const inv=invoiceNumber(p);
+  w.document.write('<!doctype html><html><head><meta charset="utf-8"><title>'+esc(inv)+'</title><style>*{box-sizing:border-box}body{font-family:Arial,sans-serif;margin:0;color:#222}.page{width:180mm;margin:auto;padding:12mm}.head{border-bottom:2px solid #173f35;padding-bottom:8px;margin-bottom:12px}.company{font-size:18px;font-weight:800;color:#173f35}.sub{font-size:11px;color:#666;margin-top:3px}.title{text-align:center;font-weight:800;font-size:16px;margin:14px 0}.meta{font-size:11px;line-height:1.7;margin-bottom:10px}table{width:100%;border-collapse:collapse;font-size:10px}th,td{border:1px solid #ccc;padding:5px}th{background:#f3f6f4;text-align:left}.right{text-align:right}.summary{margin-top:12px;border:1px solid #ddd;padding:9px;font-size:11px}.summary div{display:flex;justify-content:space-between;padding:3px 0}.grand{font-weight:800;border-top:1px solid #173f35;margin-top:4px;padding-top:5px}.sign{margin-top:30px;display:grid;grid-template-columns:1fr 1fr;text-align:center;font-size:10px}.space{height:42px}@media print{@page{size:A5;margin:0}.page{width:auto;padding:9mm}}</style></head><body><div class="page"><div class="head"><div class="company">PT RAIHAN ALYA TOUR</div><div class="sub">Palangka Raya, Kalimantan Tengah</div></div><div class="title">BUKTI PEMBAYARAN</div><div class="meta"><b>No. Nota:</b> '+esc(inv)+'<br><b>Tanggal:</b> '+esc(formatDateID(p.payment_date))+'<br><b>'+ (group?'Rombongan':'Jamaah') +':</b> '+esc(label)+'</div>'+ (group?'<table><thead><tr><th>No</th><th>Nama Jamaah</th><th>Paket</th><th class="right">Harga</th></tr></thead><tbody>'+rows+'</tbody></table>':'') +'<div class="summary"><div><span>Total Tagihan</span><b>'+rupiah(total)+'</b></div><div><span>Pembayaran Ini</span><b>'+rupiah(paid)+'</b></div><div><span>Metode</span><b>'+esc(p.method||'-')+'</b></div><div><span>Bank</span><b>'+esc(p.bank||'-')+'</b></div><div><span>Keterangan</span><b>'+esc(p.note||'-')+'</b></div><div class="grand"><span>Terima Pembayaran</span><b>'+rupiah(paid)+'</b></div></div><div class="sign"><div>Admin / Petugas<div class="space"></div>(________________)</div><div>Jamaah<div class="space"></div>(________________)</div></div></div></body></html>');
+  w.document.close();
+  w.focus();
+  setTimeout(()=>w.print(),250);
+}
+
+function togglePaymentBank(){
+  const method=document.getElementById('paymentMethod').value;
+  const wrap=document.getElementById('paymentBankWrap');
+  const bank=document.getElementById('paymentBank');
+  if(method==='Transfer'){
+    wrap.classList.remove('hidden');
+    bank.required=true;
+  }else{
+    wrap.classList.add('hidden');
+    bank.required=false;
+    bank.value='';
+  }
+}
+
+function syncBulkState(type){
+  const map={payment:['.payment-check','paymentSelectAll'],doc:['.doc-check','docSelectAll'],equipment:['.equipment-check','equipmentSelectAll'],departure:['.departure-check','departureSelectAll'],uangmasuk:['.uang-masuk-check','uangMasukSelectAll']};
+  const cfg=map[type]; if(!cfg)return;
+  const checks=[...document.querySelectorAll(cfg[0])], all=document.getElementById(cfg[1]);
+  const checked=checks.filter(x=>x.checked);
+  if(all){all.checked=checks.length>0&&checked.length===checks.length;all.indeterminate=checked.length>0&&checked.length<checks.length}
+}
+function toggleAllUangMasuk(v){document.querySelectorAll('.uang-masuk-check').forEach(x=>x.checked=v);syncBulkState('uangmasuk')}
+async function deleteSelectedPaymentsFromUangMasuk(){
+  const ids=[...document.querySelectorAll('.uang-masuk-check:checked')].map(x=>x.value).filter(Boolean);
+  if(!ids.length){notice('Centang minimal satu transaksi uang masuk.','error');return}
+  if(!confirm('Hapus '+ids.length+' transaksi terpilih? Transaksi yang dihapus juga akan hilang dari Pembayaran dan Laporan.'))return;
+  const {error}=await sb.from('payments').delete().in('id',ids);
+  if(error){notice('Gagal menghapus transaksi: '+error.message,'error');return}
+  await loadData();renderAll();notice(ids.length+' transaksi uang masuk berhasil dihapus.');
+}
+function toggleAllPayments(v){document.querySelectorAll('.payment-check').forEach(x=>x.checked=v);syncBulkState('payment')}
+function toggleAllDocuments(v){document.querySelectorAll('.doc-check').forEach(x=>x.checked=v);syncBulkState('doc')}
+function toggleAllEquipment(v){document.querySelectorAll('.equipment-check').forEach(x=>x.checked=v);syncBulkState('equipment')}
+function toggleAllDepartures(v){document.querySelectorAll('.departure-check').forEach(x=>x.checked=v);syncBulkState('departure')}
+
+async function deleteSelectedPayments(){
+  const ids=[...document.querySelectorAll('.payment-check:checked')].map(x=>x.value).filter(Boolean);
+  if(!ids.length){notice('Centang minimal satu transaksi pembayaran.','error');return}
+  if(!confirm('Hapus '+ids.length+' transaksi pembayaran terpilih? Tindakan ini akan mengurangi riwayat pembayaran dan perhitungan uang masuk.'))return;
+  const {error}=await sb.from('payments').delete().in('id',ids);
+  if(error){notice('Gagal menghapus pembayaran terpilih: '+error.message,'error');return}
+  await loadData();renderAll();notice(ids.length+' transaksi pembayaran berhasil dihapus.');
+}
+async function deleteSelectedDocuments(){
+  const ids=[...document.querySelectorAll('.doc-check:checked')].map(x=>x.value).filter(Boolean);
+  if(!ids.length){notice('Centang minimal satu data dokumen.','error');return}
+  if(!confirm('Hapus seluruh data dokumen yang tersimpan untuk '+ids.length+' jamaah terpilih? File dokumen di Storage yang tercatat juga akan dihapus.'))return;
+  for(const jamaahId of ids){
+    const d=getDoc(jamaahId)||{};
+    const paths=DOC_TYPES.map(([k])=>d[k+'_path']).filter(Boolean);
+    if(paths.length)await sb.storage.from('document').remove(paths);
+    const result=await sb.from('documents').delete().eq('jamaah_id',jamaahId);
+    if(result.error){notice('Gagal menghapus dokumen '+jamaahId+': '+result.error.message,'error');return}
+  }
+  await loadData();renderAll();notice(ids.length+' data dokumen berhasil dihapus.');
+}
+async function deleteSelectedEquipment(){
+  const ids=[...document.querySelectorAll('.equipment-check:checked')].map(x=>x.value).filter(Boolean);
+  if(!ids.length){notice('Centang minimal satu rekap perlengkapan.','error');return}
+  if(!confirm('Hapus rekap perlengkapan untuk '+ids.length+' jamaah terpilih?'))return;
+  const {error}=await sb.from('equipment').delete().in('jamaah_id',ids);
+  if(error){notice('Gagal menghapus rekap perlengkapan: '+error.message,'error');return}
+  await loadData();renderAll();notice(ids.length+' rekap perlengkapan berhasil dihapus.');
+}
+async function deleteSelectedDepartures(){
+  const ids=[...document.querySelectorAll('.departure-check:checked')].map(x=>x.value).filter(Boolean);
+  if(!ids.length){notice('Centang minimal satu grup keberangkatan.','error');return}
+  const selected=(departures||[]).filter(x=>ids.includes(String(x.id)));
+  const names=selected.slice(0,4).map(x=>x.name||'Grup').join(', ');
+  if(!confirm('Hapus '+ids.length+' grup keberangkatan terpilih? Data jamaah tidak akan dihapus, tetapi penugasan keberangkatannya dapat tetap menyimpan ID lama.\\n\\n'+names))return;
+  const {error}=await sb.from('departures').delete().in('id',ids);
+  if(error){notice('Gagal menghapus grup keberangkatan: '+error.message,'error');return}
+  document.getElementById('departureDetailPanel')?.classList.add('hidden');
+  await loadData();renderAll();notice(ids.length+' grup keberangkatan berhasil dihapus.');
+}
+
+async function deletePayment(id){
+  if(!confirm('Hapus transaksi pembayaran ini?'))return;
+  const {error}=await sb.from('payments').delete().eq('id',id);
+  if(error){notice('Gagal menghapus pembayaran: '+error.message,'error');return}
+  await loadData();renderAll();notice('Transaksi pembayaran berhasil dihapus.');
+}
+
+function departureFor(j){
+  return departures.find(d=>d.id===j.departure_id)||null;
+}
+function dashDateFor(j){
+  const d=departureFor(j);
+  return d?.start_date || j.berangkat || '';
+}
+function monthKey(dateStr){
+  return dateStr ? dateStr.slice(0,7) : '';
+}
+function monthLabel(key){
+  if(!key)return 'Semua Bulan';
+  const [y,m]=key.split('-');
+  return new Date(Number(y),Number(m)-1,1).toLocaleDateString('id-ID',{month:'long',year:'numeric'});
+}
+function fillDashFilters(){
+  const monthSel=document.getElementById('dashMonth');
+  const depSel=document.getElementById('dashDeparture');
+  if(!monthSel||!depSel)return;
+  const oldMonth=monthSel.value, oldDep=depSel.value;
+  const months=[...new Set(departures.map(d=>monthKey(d.start_date)).filter(Boolean))].sort().reverse();
+  monthSel.innerHTML='<option value="">Semua Bulan</option>'+months.map(m=>`<option value="${m}">${monthLabel(m)}</option>`).join('');
+  monthSel.value=months.includes(oldMonth)?oldMonth:'';
+  const selectedMonth=monthSel.value;
+  const deps=departures.filter(d=>!selectedMonth||monthKey(d.start_date)===selectedMonth);
+  depSel.innerHTML='<option value="">Semua Jadwal</option>'+deps.map(d=>`<option value="${d.id}">${esc(d.name)} — ${d.start_date||'-'}</option>`).join('');
+  depSel.value=deps.some(d=>d.id===oldDep)?oldDep:'';
+}
+const DASH_CALENDAR_NOTE_KEY='raihan_alya_calendar_notes_v1';
+let dashboardCalendarDate=new Date();
+let dashboardCalendarSelected=localISODate(new Date());
+
+function calendarDateKey(y,m,d){return y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0')}
+function calendarNotes(){try{const x=JSON.parse(localStorage.getItem(DASH_CALENDAR_NOTE_KEY)||'{}');return x&&typeof x==='object'?x:{}}catch(e){return{}}}
+function calendarFormatLong(dateStr){
+  const [y,m,d]=dateStr.split('-').map(Number);
+  return new Date(y,m-1,d).toLocaleDateString('id-ID',{weekday:'long',day:'2-digit',month:'long'});
+}
+function toggleDashboardCalendar(){
+  const panel=document.getElementById('dashboardCalendarPanel'),wrap=document.getElementById('dashboardCalendarToggleWrap');
+  if(!panel||!wrap)return;
+  const hidden=panel.style.display==='none';
+  panel.style.display=hidden?'':'none';
+  wrap.style.display=hidden?'none':'block';
+}
+function calendarRender(){
+  const grid=document.getElementById('dashboardCalendarGrid'),label=document.getElementById('calendarMonthLabel'),selectedLabel=document.getElementById('calendarSelectedLabel'),note=document.getElementById('calendarNote');
+  if(!grid||!label)return;
+  const y=dashboardCalendarDate.getFullYear(),m=dashboardCalendarDate.getMonth();
+  label.textContent=new Date(y,m,1).toLocaleDateString('id-ID',{month:'long',year:'numeric'});
+  if(selectedLabel)selectedLabel.textContent=calendarFormatLong(dashboardCalendarSelected);
+  const notes=calendarNotes();
+  if(note)note.value=notes[dashboardCalendarSelected]||'';
+  const first=new Date(y,m,1),start=first.getDay(),days=new Date(y,m+1,0).getDate(),prevDays=new Date(y,m,0).getDate();
+  let html='';
+  for(let i=0;i<42;i++){
+    const n=i-start+1;
+    let day=n,cm=m,cy=y,other=false;
+    if(n<1){day=prevDays+n;cm=m-1;other=true}
+    else if(n>days){day=n-days;cm=m+1;other=true}
+    if(cm<0){cm=11;cy--}else if(cm>11){cm=0;cy++}
+    const key=calendarDateKey(cy,cm,day),today=localISODate(new Date());
+    const cls=['calendar-day'];if(other)cls.push('other-month');if(key===today)cls.push('today');if(key===dashboardCalendarSelected)cls.push('selected');if(notes[key])cls.push('has-note');
+    html+='<div class="calendar-cell"><button type="button" class="'+cls.join(' ')+'" onclick="calendarSelectDate(\''+key+'\')" aria-label="'+calendarFormatLong(key)+'">'+day+'</button></div>';
+  }
+  grid.innerHTML=html;
+}
+function calendarSelectDate(key){
+  dashboardCalendarSelected=key;
+  const [y,m]=key.split('-').map(Number);dashboardCalendarDate=new Date(y,m-1,1);
+  calendarRender();
+}
+function calendarMoveMonth(delta){
+  dashboardCalendarDate=new Date(dashboardCalendarDate.getFullYear(),dashboardCalendarDate.getMonth()+delta,1);
+  calendarRender();
+}
+function calendarGoToday(){
+  const now=new Date();dashboardCalendarDate=new Date(now.getFullYear(),now.getMonth(),1);dashboardCalendarSelected=localISODate(now);calendarRender();
+}
+function saveCalendarNote(){
+  const note=document.getElementById('calendarNote');if(!note)return;
+  const notes=calendarNotes(),value=note.value.trim();
+  if(value)notes[dashboardCalendarSelected]=value;else delete notes[dashboardCalendarSelected];
+  localStorage.setItem(DASH_CALENDAR_NOTE_KEY,JSON.stringify(notes));
+  calendarRender();
+  if(typeof notice==='function')notice(value?'Catatan kalender berhasil disimpan.':'Catatan kalender dihapus.');
+}
+calendarRender();
+
+function toggleMobileNav(force){
+  const app=document.querySelector('.app'),back=document.getElementById('mobileNavBackdrop');
+  if(!app)return;
+  const open=typeof force==='boolean'?force:!app.classList.contains('mobile-nav-open');
+  app.classList.toggle('mobile-nav-open',open);
+  if(back)back.style.display=open?'block':'none';
+}
+function updateDashboardLiveDateTime(){
+  const now=new Date(),dateEl=document.getElementById('dashboardLiveDate'),timeEl=document.getElementById('dashboardLiveTime');
+  if(!dateEl&&!timeEl)return;
+  const dateText=now.toLocaleDateString('id-ID',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
+  const timeText=now.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false,timeZone:'Asia/Pontianak'});
+  if(dateEl)dateEl.textContent=dateText;
+  if(timeEl)timeEl.textContent=timeText+' WIB';
+}
+updateDashboardLiveDateTime();
+setInterval(updateDashboardLiveDateTime,1000);
+
+function renderDash(){
+  fillDashFilters();
+  const month=document.getElementById('dashMonth')?.value||'';
+  const depId=document.getElementById('dashDeparture')?.value||'';
+  let filtered=data.filter(j=>{
+    const d=departureFor(j);
+    const date=d?.start_date || j.berangkat || '';
+    const byMonth=!month||monthKey(date)===month;
+    const byDep=!depId||j.departure_id===depId;
+    return byMonth&&byDep;
+  });
+
+  const lunas=filtered.filter(x=>paidFor(x.id)>=netBillFor(x)).length;
+  const nilai=filtered.reduce((a,x)=>a+Number(x.harga||0),0);
+  const terbayar=filtered.reduce((a,x)=>a+paidFor(x.id),0);
+  const sisa=filtered.reduce((a,x)=>a+remainFor(x),0);
+
+  document.getElementById('totalJamaah').textContent=filtered.length;
+  document.getElementById('totalLunas').textContent=lunas;
+  document.getElementById('totalBelum').textContent=filtered.length-lunas;
+  document.getElementById('totalNilai').textContent=rupiah(nilai);
+  document.getElementById('totalTerbayar').textContent=rupiah(terbayar);
+  document.getElementById('totalSisa').textContent=rupiah(sisa);
+  renderDashboardExtras();
+
+  const depBody=document.getElementById('dashDepartureBody');
+  const depRows=departures.filter(d=>{
+    const inMonth=!month||monthKey(d.start_date)===month;
+    const selected=!depId||d.id===depId;
+    return inMonth&&selected;
+  }).map(d=>{
+    const rows=filtered.filter(j=>j.departure_id===d.id);
+    const paid=rows.reduce((a,j)=>a+paidFor(j.id),0);
+    const value=rows.reduce((a,j)=>a+Number(j.harga||0),0);
+    const remain=rows.reduce((a,j)=>a+remainFor(j),0);
+    const lunasCount=rows.filter(j=>paidFor(j.id)>=netBillFor(j)).length;
+    return `<tr><td>${esc(d.name)}</td><td>${d.start_date||'-'}${d.end_date?' s/d '+d.end_date:''}</td><td>${rows.length}</td><td>${lunasCount}</td><td>${rupiah(value)}</td><td>${rupiah(paid)}</td><td>${rupiah(remain)}</td></tr>`;
+  }).join('');
+  depBody.innerHTML=depRows||'<tr><td colspan="7">Belum ada jadwal pada filter ini.</td></tr>';
+
+  document.getElementById('recentBody').innerHTML=filtered.slice(0,50).map(x=>{
+    const d=departureFor(x);
+    const paid=paidFor(x.id), remain=remainFor(x);
+    return `<tr><td>${esc(x.nama)}</td><td>${esc(x.paket||'')}</td><td>${d?esc(d.name):esc(x.berangkat||'-')}</td><td>${rupiah(paid)}</td><td>${rupiah(remain)}</td><td>${status(x)}</td><td><button class="dashboard-wa-btn" type="button" onclick="waJamaah('${esc(x.id)}')">WhatsApp</button></td></tr>`;
+  }).join('')||'<tr><td colspan="7">Belum ada jamaah pada filter ini.</td></tr>';
+}
+
+let paymentDropdownRequest=0;
+async function fillPaymentJamaah(){
+  const searchInput=document.getElementById('paymentJamaahSearch');
+  const sel=document.getElementById('paymentJamaah');
+  if(!sel)return;
+  const old=sel.value;
+  let rows=(Array.isArray(data)?data:[])
+    .filter(x=>x&&x.id&&x.nama)
+    .slice();
+
+  // Jika data lokal kosong, ambil langsung dari tabel jamaah.
+  // Ini hanya fallback satu kali saat dropdown memang belum punya data.
+  if(rows.length===0){
+    sel.innerHTML='<option value="">-- Mengambil data jamaah... --</option>';
+    sel.disabled=true;
+    try{
+      const result=await sb.from('jamaah').select('id,nama').order('nama',{ascending:true});
+      if(result.error) throw result.error;
+      const fresh=Array.isArray(result.data)?result.data:[];
+      if(fresh.length){
+        const known=new Set(rows.map(x=>x.id));
+        fresh.forEach(x=>{if(x&&x.id&&!known.has(x.id)){data.push(x);known.add(x.id)}});
+        rows=fresh.filter(x=>x&&x.id&&x.nama);
+      }else{
+        sel.innerHTML='<option value="">-- Belum ada data jamaah --</option>';
+        sel.disabled=false;
+        return;
+      }
+    }catch(err){
+      sel.innerHTML='<option value="">-- Gagal memuat jamaah --</option>';
+      sel.disabled=false;
+      console.error('Gagal memuat dropdown jamaah:',err);
+      notice('Dropdown jamaah gagal dimuat: '+(err?.message||err),'error');
+      return;
+    }
+  }
+
+  rows=rows.filter(x=>x&&x.id&&x.nama).sort((a,b)=>String(a.nama||'').localeCompare(String(b.nama||''),'id'));
+  sel.innerHTML='<option value="">-- Pilih Jamaah / Rombongan --</option>';
+  const seenGroups=new Set();
+  rows.forEach(x=>{
+    if(isGroupJamaah(x)){
+      const groupName=groupNameFor(x);
+      if(!groupName||seenGroups.has(groupName))return;
+      const members=groupMembersFor(x);
+      const rep=members[0]||x;
+      seenGroups.add(groupName);
+      const opt=document.createElement('option');
+      opt.value=rep.id;
+      opt.textContent='Rombongan: '+groupName+' — '+members.length+' anggota';
+      sel.appendChild(opt);
+    }else{
+      const opt=document.createElement('option');
+      opt.value=x.id;
+      opt.textContent=x.nama||'-';
+      sel.appendChild(opt);
+    }
+  });
+  sel.disabled=false;
+  if(rows.some(x=>x.id===old))sel.value=old;
+  if(searchInput)searchInput.value='';
+  [...sel.options].forEach(o=>o.hidden=false);
+  const date=document.getElementById('paymentDate');
+  if(date&&!date.value)date.value=new Date().toISOString().slice(0,10);
+}
+
+function filterPaymentJamaahOptions(){
+  const sel=document.getElementById('paymentJamaah'),input=document.getElementById('paymentJamaahSearch');
+  if(!sel||!input)return;
+  const q=String(input.value||'').trim().toLowerCase();
+  const current=sel.value;
+  [...sel.options].forEach(opt=>{
+    if(!opt.value){opt.hidden=false;return}
+    opt.hidden=!!q&&!String(opt.textContent||'').toLowerCase().includes(q);
+  });
+  if(current&&[...sel.options].some(o=>o.value===current&&!o.hidden))sel.value=current;
+}
+function syncPaymentJamaahSearch(){
+  const sel=document.getElementById('paymentJamaah'),input=document.getElementById('paymentJamaahSearch');
+  if(sel&&input){
+    const opt=sel.options[sel.selectedIndex];
+    input.value=opt&&opt.value?String(opt.textContent||'').replace(/^👥\s*/,''): '';
+  }
+}
+function clearPaymentJamaahSearch(){
+  const input=document.getElementById('paymentJamaahSearch'),sel=document.getElementById('paymentJamaah');
+  if(input)input.value='';
+  if(sel)[...sel.options].forEach(o=>o.hidden=false);
+}
+function syncPaymentJamaahName(){
+  const sel=document.getElementById('paymentJamaah');
+  if(sel && sel.value){
+    const found=(data||[]).find(x=>x.id===sel.value);
+    if(!found){
+      const opt=sel.options[sel.selectedIndex];
+      if(opt) data.push({id:sel.value,nama:opt.textContent});
+    }
+  }
+}
+
+function jamaahMemberTemplate(index,data={}){
+  return `<div class="jamaah-member-card">
+    <div class="jamaah-member-title"><span>Anggota ${index}</span>${index>1?'<button type="button" class="btn small-btn jamaah-remove" onclick="removeJamaahMember(this)">Hapus</button>':''}</div>
+    <div class="jamaah-member-grid">
+      <div><label>Nama Lengkap</label><input data-field="nama" placeholder="Nama anggota" value="${esc(data.nama||'')}"></div>
+      <div><label>Jenis Kelamin</label><select data-field="jenis_kelamin"><option value="">-- Pilih --</option><option value="Laki-laki" ${data.jenis_kelamin==='Laki-laki'?'selected':''}>Laki-laki</option><option value="Perempuan" ${data.jenis_kelamin==='Perempuan'?'selected':''}>Perempuan</option></select></div>
+      <div><label>NIK</label><input data-field="nik" placeholder="NIK" value="${esc(data.nik||'')}"></div>
+      <div><label>Paket</label><select data-field="paket" onchange="syncPackageMemberPrice(this)">${packageOptions(data.paket||'')}</select></div>
+      <div><label>Harga Paket</label><input data-field="harga" type="number" min="0" placeholder="Harga" value="${data.harga??''}"></div>
+    </div>
+  </div>`;
+}
+function addJamaahMember(data={}){
+  const box=document.getElementById('jamaahMembers');if(!box)return;
+  const index=box.querySelectorAll('.jamaah-member-card').length+1;
+  box.insertAdjacentHTML('beforeend',jamaahMemberTemplate(index,data));
+}
+function renumberJamaahMembers(){
+  document.querySelectorAll('#jamaahMembers .jamaah-member-card').forEach((card,i)=>{
+    card.dataset.memberIndex=i+1;
+    const title=card.querySelector('.jamaah-member-title');
+    if(title)title.innerHTML='<span>Anggota '+(i+1)+'</span>'+(i>0?'<button type="button" class="btn small-btn jamaah-remove" onclick="removeJamaahMember(this)">Hapus</button>':'');
+  });
+}
+function removeJamaahMember(btn){btn.closest('.jamaah-member-card')?.remove();renumberJamaahMembers()}
+function setJamaahEntryMode(mode){
+  document.getElementById('entryMode').value=mode;
+  document.getElementById('individualForm')?.classList.toggle('hidden',mode!=='individu');
+  document.getElementById('groupForm')?.classList.toggle('hidden',mode!=='grup');
+  document.getElementById('tabIndividu')?.classList.toggle('active',mode==='individu');
+  document.getElementById('tabGrup')?.classList.toggle('active',mode==='grup');
+  const individualFields=['nama','jenis_kelamin','hp','nik','alamat','paket','harga','berangkat','catatan'];
+  individualFields.forEach(id=>{
+    const el=document.getElementById(id);
+    if(el){
+      el.disabled=mode!=='individu';
+      if(['nama','hp','harga'].includes(id))el.required=mode==='individu';
+    }
+  });
+  if(mode==='grup'){
+    const box=document.getElementById('jamaahMembers');
+    if(box&&!box.querySelector('.jamaah-member-card'))for(let i=0;i<5;i++)addJamaahMember();
+  }
+}
+function toggleJamaahCategory(){setJamaahEntryMode(document.getElementById('entryMode')?.value||'individu')}
+function syncJamaahSelectState(){
+  const checks=[...document.querySelectorAll('.jamaah-check')],checked=checks.filter(x=>x.checked),all=document.getElementById('jamaahSelectAll');
+  if(all){all.checked=checks.length>0&&checked.length===checks.length;all.indeterminate=checked.length>0&&checked.length<checks.length}
+}
+function toggleAllJamaah(checked){document.querySelectorAll('.jamaah-check').forEach(x=>x.checked=checked);syncJamaahSelectState()}
+async function hapusTerpilihJamaah(){
+  const ids=[...document.querySelectorAll('.jamaah-check:checked')].map(x=>x.value).filter(Boolean);
+  if(!ids.length){notice('Centang minimal satu data jamaah yang ingin dihapus.','error');return}
+  const selected=(data||[]).filter(x=>ids.includes(String(x.id)));
+  const names=selected.slice(0,5).map(x=>x.nama||'Jamaah').join(', ');
+  const extra=selected.length>5?' dan '+(selected.length-5)+' lainnya':'';
+  if(!confirm('Hapus '+selected.length+' data jamaah terpilih?\\n\\n'+names+extra+'\\n\\nData yang dicentang saja yang akan dihapus.'))return;
+  const {error}=await sb.from('jamaah').delete().in('id',ids);
+  if(error){notice('Gagal menghapus data terpilih: '+error.message,'error');return}
+  await loadData();renderAll();
+  const all=document.getElementById('jamaahSelectAll');
+  if(all){all.checked=false;all.indeterminate=false}
+  notice(selected.length+' data jamaah berhasil dihapus.');
+}
+async function assignSelectedGroup(){
+  const ids=[...document.querySelectorAll('.jamaah-check:checked')].map(x=>x.value);
+  if(ids.length<1){notice('Centang minimal 1 jamaah terlebih dahulu.','error');return}
+  const group=prompt('Masukkan nama grup / rombongan:');if(group===null)return;
+  const nama=group.trim();if(!nama){notice('Nama grup / rombongan wajib diisi.','error');return}
+  const result=await sb.from('jamaah').update({kategori:'grup',nama_rombongan:nama}).in('id',ids);
+  if(result.error){notice('Gagal mengatur rombongan: '+result.error.message,'error');return}
+  await loadData();renderAll();notice(ids.length+' jamaah berhasil dimasukkan ke rombongan '+nama+'.');
+}
+function openForm(id=null){
+  document.getElementById('modal').classList.add('show');
+  document.getElementById('formTitle').textContent=id?'Edit Jamaah':'Tambah Jamaah';
+  document.getElementById('jamaahForm').reset(); document.getElementById('editId').value=id||'';
+  document.getElementById('jamaahMembers').innerHTML='';
+  if(id){
+    const x=data.find(a=>a.id===id);
+    if(x&&x.kategori==='grup'){setJamaahEntryMode('grup');document.getElementById('nama_rombongan').value=x.nama_rombongan||'';document.getElementById('keterangan_rombongan').value=x.keterangan_rombongan||'';addJamaahMember(x)}
+    else if(x){setJamaahEntryMode('individu');for(const k of ['nama','jenis_kelamin','hp','nik','alamat','paket','harga','berangkat','catatan']){const el=document.getElementById(k);if(el)el.value=x[k]??''}}
+  }else setJamaahEntryMode('individu');
+}
+function closeForm(){document.getElementById('modal').classList.remove('show')}
+function edit(id){openForm(id)}
+
+async function hapus(id){
+  const x=data.find(a=>a.id===id);
+  if(!x||!confirm('Hapus data '+x.nama+' beserta riwayat pembayarannya?'))return;
+  const {error}=await sb.from('jamaah').delete().eq('id',id);
+  if(error){notice('Gagal menghapus: '+error.message,'error');return}
+  await loadData();renderAll();notice('Data jamaah berhasil dihapus.');
+}
+
+const jamaahForm=document.getElementById('jamaahForm');
+if(jamaahForm) jamaahForm.addEventListener('submit',async e=>{
+  e.preventDefault();
+  const id=document.getElementById('editId').value,mode=document.getElementById('entryMode').value||'individu';let result, jamaahSheetRows=[];
+  if(mode==='grup'&&!id){
+    const groupName=document.getElementById('nama_rombongan').value.trim(),groupNote=document.getElementById('keterangan_rombongan').value.trim();
+    const cards=[...document.querySelectorAll('#jamaahMembers .jamaah-member-card')];
+    const rows=cards.map(card=>{const get=k=>card.querySelector('[data-field="'+k+'"]')?.value||'';return{
+      nama:get('nama').trim(),jenis_kelamin:get('jenis_kelamin'),nik:get('nik').trim(),paket:get('paket')||'Executive',harga:Number(get('harga'))||0,
+      hp:'',alamat:'',berangkat:null,catatan:'',kategori:'grup',nama_rombongan:groupName,keterangan_rombongan:groupNote
+    }}).filter(x=>x.nama);
+    if(!groupName){notice('Nama rombongan / keluarga wajib diisi.','error');return}
+    if(!rows.length){notice('Isi minimal satu nama anggota.','error');return}
+    jamaahSheetRows=rows;
+    result=await sb.from('jamaah').insert(rows);
+    if(result.error && /keterangan_rombongan|column.*does not exist|schema cache/i.test(result.error.message||'')){
+      const fallbackRows=rows.map(({keterangan_rombongan,...row})=>row);
+      result=await sb.from('jamaah').insert(fallbackRows);
+    }
+  }else{
+    const payload={nama:document.getElementById('nama').value.trim(),jenis_kelamin:document.getElementById('jenis_kelamin').value,hp:document.getElementById('hp').value.trim(),nik:document.getElementById('nik').value.trim(),alamat:document.getElementById('alamat').value.trim(),paket:document.getElementById('jPaketSelect').value,harga:Number(document.getElementById('harga').value)||0,berangkat:document.getElementById('berangkat').value||null,catatan:document.getElementById('catatan').value.trim()};
+    jamaahSheetRows=[{...payload,id:id||undefined}];
+    if(id)result=await sb.from('jamaah').update(payload).eq('id',id);else result=await sb.from('jamaah').insert(payload);
+    if(result.error){console.error('Simpan jamaah gagal:',JSON.stringify(result.error,null,2));notice('Gagal menyimpan jamaah: '+(result.error.message||'Kesalahan Supabase')+(result.error.details?' — '+result.error.details:''),'error');return}
+  }
+  if(result.error){console.error('Simpan jamaah gagal:',JSON.stringify(result.error,null,2));notice('Gagal menyimpan jamaah: '+(result.error.message||'Kesalahan Supabase')+(result.error.details?' — '+result.error.details:''),'error');return}
+  await syncManyToSpreadsheet('jamaah',jamaahSheetRows);
+  closeForm();await loadData();renderAll();notice(mode==='grup'&&!id?'Rombongan berhasil disimpan.':'Data jamaah berhasil disimpan.');
+});
+
+document.getElementById('paymentForm').addEventListener('submit',async e=>{
+  e.preventDefault();
+  if(e.currentTarget.dataset.processing==="1")return;
+  e.currentTarget.dataset.processing="1";
+  setFormLoading(e.currentTarget,true,"Menyimpan...");
+  let jamaah_id=document.getElementById('paymentJamaah').value;
+  const selectedJamaah=(data||[]).find(x=>x.id===jamaah_id);
+  const selectedGroup=isGroupJamaah(selectedJamaah);
+  if(selectedGroup){
+    const members=groupMembersFor(selectedJamaah);
+    if(members.length)jamaah_id=members[0].id;
+  }
+  const amount=Number(document.getElementById('paymentAmount').value);
+  const discount=Math.max(0,Number(document.getElementById('paymentDiscount').value)||0);
+  const payment_date=document.getElementById('paymentDate').value;
+  const method=document.getElementById('paymentMethod').value;
+  const bank=document.getElementById('paymentBank').value;
+  const note=document.getElementById('paymentNote').value.trim();
+
+  if(!jamaah_id||amount<=0||!payment_date||!method){
+    notice('Lengkapi nama, nominal, tanggal, dan metode pembayaran.','error');return
+  }
+  if(discount<0){notice('Diskon tidak boleh negatif.','error');return}
+  if(method==='Transfer'&&!bank){
+    notice('Pilih bank transfer: Bank Muamalat atau BSI.','error');return
+  }
+
+  const paymentNote=selectedGroup
+    ? ('Pembayaran Rombongan: '+groupNameFor(selectedJamaah)+(note?' — '+note:''))
+    : note;
+  const {data:inserted,error}=await sb.from('payments').insert({
+    jamaah_id, amount, discount, payment_date, method,
+    bank: method==='Transfer'?bank:null,
+    note:paymentNote
+  }).select('*').single();
+  if(error){notice('Gagal menyimpan pembayaran: '+error.message,'error');return}
+
+  document.getElementById('paymentAmount').value='';
+  document.getElementById('paymentDiscount').value='0';
+  document.getElementById('paymentMethod').value='';
+  document.getElementById('paymentBank').value='';
+  document.getElementById('paymentNote').value='';
+  togglePaymentBank();
+
+  await syncToSpreadsheet('pembayaran',inserted||{jamaah_id,amount,discount,payment_date,method,bank:method==='Transfer'?bank:null,note:paymentNote});
+  setFormLoading(e.currentTarget,false);e.currentTarget.dataset.processing="0";
+  await loadData();renderAll();addActivityLog('Mencatat pembayaran jamaah sebesar '+rupiah(amount)+'.');notice('Pembayaran berhasil disimpan.');
+  setTimeout(()=>printPayment(inserted.id),250);
+});
+
+
+
+const DOC_TYPES=[
+  ['ktp','KTP'],
+  ['kk','KK'],
+  ['passport','Paspor'],
+  ['bpjs','BPJS'],
+  ['vaccine','Vaksin'],
+  ['visa','Visa'],
+  ['ticket','Tiket'],
+  ['other','Dokumen Lainnya']
+];
+
+function fillDocumentJamaah(){
+  const sel=document.getElementById('docJamaah');
+  if(!sel)return;
+  const old=sel.value;
+  sel.innerHTML='<option value="">-- Pilih Jamaah --</option>'+data.map(x=>`<option value="${x.id}">${esc(x.nama)}</option>`).join('');
+  if(data.some(x=>x.id===old))sel.value=old;
+  if(sel.value)loadDocumentForm();
+  else document.getElementById('docFormArea').classList.add('hidden');
+}
+
+function getDoc(id){return documents.find(d=>d.jamaah_id===id)}
+
+function renderDocGrid(){
+  const grid=document.getElementById('docGrid');
+  const id=document.getElementById('docJamaah').value;
+  if(!id){grid.innerHTML='';return}
+  const d=getDoc(id)||{};
+  grid.innerHTML=DOC_TYPES.map(([key,label])=>{
+    const fileUrl=d[key+'_url'];
+    const filePath=d[key+'_path'];
+    const fileName=d[key+'_name'];
+    return `<div class="doc-card">
+      <div class="doc-card-title">${label}</div>
+      <input type="file" id="file_${key}" accept=".pdf,.jpg,.jpeg,.png">
+      <div class="doc-card-actions">
+        <button class="btn" type="button" onclick="uploadDocument('${key}')">📤 Upload</button>
+        ${d[key+'_path']?`<button class="btn secondary" type="button" onclick="openStoredFile('${encodeURIComponent(d[key+'_path'])}')">👁 Lihat</button>`:''}
+      </div>
+      <div class="file-name">${fileName?`✓ ${esc(fileName)}`:'Belum ada file'}</div>
+    </div>`;
+  }).join('');
+}
+
+function loadDocumentForm(){
+  const id=document.getElementById('docJamaah').value;
+  const area=document.getElementById('docFormArea');
+  if(!id){area.classList.add('hidden');return}
+  area.classList.remove('hidden');
+  renderDocGrid();
+  updateDocSummary();
+}
+
+function updateDocSummary(){
+  const id=document.getElementById('docJamaah').value;
+  const d=getDoc(id)||{};
+  const n=DOC_TYPES.filter(([k])=>d[k+'_path']).length;
+  const el=document.getElementById('docSummary');
+  if(el)el.innerHTML=n===DOC_TYPES.length
+    ? '<span class="complete">✓ 8/8 dokumen lengkap</span>'
+    : `<span class="incomplete">${n}/8 dokumen sudah diupload</span>`;
+}
+
+async function ensureDocRow(jamaah_id){
+  const existing=getDoc(jamaah_id);
+  if(existing)return existing;
+  const {data:row,error}=await sb.from('documents').insert({jamaah_id}).select().single();
+  if(error)throw error;
+  documents.push(row);
+  return row;
+}
+
+async function uploadDocument(type){
+  const jamaah_id=document.getElementById('docJamaah').value;
+  const input=document.getElementById('file_'+type);
+  const file=input?.files?.[0];
+  if(!jamaah_id){notice('Pilih jamaah terlebih dahulu.','error');return}
+  if(!file){notice('Pilih file terlebih dahulu.','error');return}
+  if(!['application/pdf','image/jpeg','image/png'].includes(file.type)){
+    notice('Format harus PDF, JPG, JPEG, atau PNG.','error');return
+  }
+  if(file.size>10*1024*1024){
+    notice('Ukuran file maksimal 10 MB.','error');return
+  }
+
+  try{
+    const row=await ensureDocRow(jamaah_id);
+    const safe=file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
+    const path=`${jamaah_id}/${type}_${Date.now()}_${safe}`;
+    const upload=await sb.storage.from('document').upload(path,file,{upsert:true,contentType:file.type});
+    if(upload.error)throw upload.error;
+
+    const payload={};
+    payload[type+'_url']='';
+    payload[type+'_name']=file.name;
+    payload[type+'_path']=path;
+
+    const updated=await sb.from('documents').update(payload).eq('id',row.id).select().single();
+    if(updated.error)throw updated.error;
+
+    documents=documents.map(x=>x.id===row.id?updated.data:x);
+    await syncToSpreadsheet('dokumen',updated.data);
+    renderDocGrid();updateDocSummary();renderDocuments();
+    notice(labelForDoc(type)+' berhasil diupload.');
+  }catch(err){
+    notice('Upload gagal: '+err.message,'error');
+  }
+}
+
+function labelForDoc(type){
+  const item=DOC_TYPES.find(x=>x[0]===type);
+  return item?item[1]:'Dokumen';
+}
+
+async function openStoredFile(encodedPath){
+  try{
+    const path=decodeURIComponent(encodedPath);
+    const {data,error}=await sb.storage.from('document').createSignedUrl(path,3600);
+    if(error)throw error;
+    window.open(data.signedUrl,'_blank','noopener');
+  }catch(err){
+    notice('File tidak bisa dibuka: '+err.message,'error');
+  }
+}
+
+
+function fillEquipmentJamaah(){
+  const s=document.getElementById('equipmentJamaah'); if(!s)return;
+  const old=s.value;
+  s.innerHTML='<option value="">-- Pilih Jamaah --</option>'+data.slice().sort((a,b)=>(a.nama||'').localeCompare(b.nama||'')).map(j=>`<option value="${j.id}">${esc(j.nama)} — ${esc(j.paket||'-')}</option>`).join('');
+  if(data.some(j=>j.id===old))s.value=old;
+}
+function getEquipment(id){return equipment.find(x=>x.jamaah_id===id)}
+function equipmentDateToday(){return new Date().toISOString().slice(0,10)}
+function loadEquipmentForm(){
+  const id=document.getElementById('equipmentJamaah')?.value, area=document.getElementById('equipmentFormArea');
+  if(!area)return;
+  if(!id){area.classList.add('hidden');return}
+  area.classList.remove('hidden');
+  const x=getEquipment(id)||{};
+  ['ihram','mukena','batik','koper','buku'].forEach(k=>{const el=document.getElementById('eq_'+k);if(el)el.checked=!!x[k]});
+  const dt=document.getElementById('equipmentDate'); if(dt)dt.value=x.taken_date||equipmentDateToday();
+  const note=document.getElementById('equipmentNote'); if(note)note.value=x.note||'';
+}
+function resetEquipmentForm(){loadEquipmentForm()}
+async function saveEquipment(){
+  const id=document.getElementById('equipmentJamaah')?.value;
+  if(!id){notice('Pilih jamaah terlebih dahulu.','error');return}
+  const payload={
+    jamaah_id:id,
+    mukena_ihram:document.getElementById('eq_mukena_ihram').checked,
+    batik:document.getElementById('eq_batik').checked,
+    koper:document.getElementById('eq_koper').checked,
+    buku:document.getElementById('eq_buku').checked,
+    taken_date:document.getElementById('equipmentDate').value||equipmentDateToday(),
+    note:document.getElementById('equipmentNote').value.trim()
+  };
+  const {data:r,error}=await sb.from('equipment').upsert(payload,{onConflict:'jamaah_id'}).select().single();
+  if(error){notice('Gagal menyimpan perlengkapan: '+error.message,'error');return}
+  const i=equipment.findIndex(x=>x.jamaah_id===id); if(i>=0)equipment[i]=r;else equipment.push(r);
+  await syncToSpreadsheet('perlengkapan',r);
+  renderEquipment();
+  notice('Data pengambilan perlengkapan berhasil disimpan.');
+}
+function eqCell(ok){return ok?'<span class="eq-ok">✓ Diambil</span>':'<span class="eq-no">— Belum</span>'}
+function renderEquipment(){
+  const body=document.getElementById('equipmentBody'); if(!body)return;
+  body.innerHTML=data.slice().sort((a,b)=>(a.nama||'').localeCompare(b.nama||'')).map((j,i)=>{
+    const x=getEquipment(j.id)||{}, dep=departureFor(j);
+    return `<tr><td style="text-align:center"><input class="bulk-check equipment-check" type="checkbox" value="${esc(j.id)}" onchange="syncBulkState('equipment')"></td><td>${i+1}</td><td><b>${esc(j.nama)}</b></td><td>${esc(dep?.name||j.berangkat||'-')}</td><td>${eqCell(x.ihram)}</td><td>${eqCell(x.mukena)}</td><td>${eqCell(x.batik)}</td><td>${eqCell(x.koper)}</td><td>${eqCell(x.buku)}</td><td>${esc(x.taken_date||'-')}</td><td>${esc(x.note||'-')}</td></tr>`;
+  }).join('')||'<tr><td colspan="11">Belum ada data jamaah.</td></tr>';
+}
+function renderDocuments(){
+  const body=document.getElementById('docBody');
+  if(!body)return;
+  body.innerHTML=data.map(j=>{
+    const d=getDoc(j.id)||{};
+    const n=DOC_TYPES.filter(([k])=>d[k+'_path']).length;
+    return `<tr><td style="text-align:center"><input class="bulk-check doc-check" type="checkbox" value="${esc(j.id)}" onchange="syncBulkState('doc')"></td><td>${esc(j.nama)}</td><td>${n}/8</td><td>${n===8?'<span class="badge paid">Lengkap</span>':'<span class="badge unpaid">Belum Lengkap</span>'}</td></tr>`;
+  }).join('')||'<tr><td colspan="4">Belum ada data jamaah.</td></tr>';
+}
+
+
+function renderDepartures(){
+  const body=document.getElementById('departureBody');
+  if(!body)return;
+  body.innerHTML=departures.map(d=>{
+    const rows=data.filter(j=>j.departure_id===d.id);
+    const count=rows.length;
+    const paid=rows.reduce((a,j)=>a+paidFor(j.id),0);
+    const value=rows.reduce((a,j)=>a+Number(j.harga||0),0);
+    const remain=rows.reduce((a,j)=>a+remainFor(j),0);
+    const lunas=rows.filter(j=>paidFor(j.id)>=Number(j.harga||0)).length;
+    return `<tr>
+      <td style="text-align:center"><input class="bulk-check departure-check" type="checkbox" value="${esc(d.id)}" onchange="syncBulkState('departure')"></td><td><b>${esc(d.name)}</b></td>
+      <td>${d.start_date||'-'}</td>
+      <td>${d.end_date||'-'}</td>
+      <td>${esc(d.airline||'-')}</td>
+      <td>${esc(d.pnr||'-')}</td>
+      <td>${count} <span class="muted">(${lunas} lunas)</span></td>
+      <td>
+        <button class="btn secondary" type="button" onclick="openDeparture('${d.id}')">Kelola Jamaah</button>
+        <button class="btn secondary" type="button" onclick="editDeparture('${d.id}')">Edit</button>
+        <button class="btn danger" type="button" onclick="deleteDeparture('${d.id}')">Hapus</button>
+      </td>
+    </tr>`;
+  }).join('')||'<tr><td colspan="8">Belum ada grup keberangkatan.</td></tr>';
+}
+async function openDeparture(id){
+  const d=departures.find(x=>x.id===id);
+  if(!d)return;
+  const panel=document.getElementById('departureDetailPanel');
+  panel.classList.remove('hidden');
+  panel.dataset.departureId=id;
+  document.getElementById('departureDetailTitle').textContent=`Jamaah — ${d.name}`;
+  const rows=data.filter(j=>j.departure_id===id);
+  const value=rows.reduce((a,j)=>a+Number(j.harga||0),0);
+  const paid=rows.reduce((a,j)=>a+paidFor(j.id),0);
+  const remain=rows.reduce((a,j)=>a+remainFor(j),0);
+  const lunas=rows.filter(j=>paidFor(j.id)>=Number(j.harga||0)).length;
+  document.getElementById('departureDetailSummary').innerHTML=
+    `<div class="card"><div class="label">Jamaah</div><div class="num">${rows.length}</div></div>
+     <div class="card"><div class="label">Lunas</div><div class="num">${lunas}</div></div>
+     <div class="card"><div class="label">Total Paket</div><div class="num">${rupiah(value)}</div></div>
+     <div class="card"><div class="label">Terbayar</div><div class="num">${rupiah(paid)}</div></div>
+     <div class="card"><div class="label">Sisa</div><div class="num">${rupiah(remain)}</div></div>`;
+  document.getElementById('departureDetailInfo').innerHTML=
+    `<b>${esc(d.start_date||'-')}${d.end_date?' s/d '+esc(d.end_date):''}</b> · ${esc(d.airline||'Maskapai belum diisi')} · PNR ${esc(d.pnr||'-')}<br>
+     Makkah: ${esc(d.hotel_makkah||'-')} · Madinah: ${esc(d.hotel_madinah||'-')}<br>
+     ${esc(d.note||'')}`;
+  const sel=document.getElementById('assignJamaah');
+  const available=data.filter(j=>!j.departure_id || j.departure_id===id);
+  sel.innerHTML='<option value="">-- Pilih Jamaah --</option>'+available.filter(j=>j.departure_id!==id).map(j=>`<option value="${j.id}">${esc(j.nama)}</option>`).join('');
+  renderDepartureJamaah(id);
+}
+function closeDepartureDetail(){
+  document.getElementById('departureDetailPanel').classList.add('hidden');
+}
+function renderDepartureJamaah(id){
+  const body=document.getElementById('departureJamaahBody');
+  const rows=data.filter(j=>j.departure_id===id);
+  body.innerHTML=rows.map(j=>{
+    const paid=paidFor(j.id), remain=Math.max(0,Number(j.harga||0)-paid);
+    return `<tr>
+      <td>${esc(j.nama)}</td><td>${esc(j.hp||'')}</td><td>${esc(j.paket||'')}</td>
+      <td>${rupiah(paid)}</td><td>${rupiah(remain)}</td><td>${status(j)}</td>
+      <td><button class="btn secondary" type="button" onclick="removeFromDeparture('${j.id}')">Keluarkan</button></td>
+    </tr>`;
+  }).join('')||'<tr><td colspan="7">Belum ada jamaah dalam grup ini.</td></tr>';
+}
+function editDeparture(id){
+  const d=departures.find(x=>x.id===id);
+  if(!d)return;
+  document.getElementById('depEditId').value=d.id;
+  document.getElementById('depName').value=d.name||'';
+  document.getElementById('depAirline').value=d.airline||'';
+  document.getElementById('depStart').value=d.start_date||'';
+  document.getElementById('depEnd').value=d.end_date||'';
+  document.getElementById('depPnr').value=d.pnr||'';
+  document.getElementById('depMakkah').value=d.hotel_makkah||'';
+  document.getElementById('depMadinah').value=d.hotel_madinah||'';
+  document.getElementById('depNote').value=d.note||'';
+  document.getElementById('departureFormTitle').textContent='Edit Grup Keberangkatan';
+  document.getElementById('depSubmitBtn').textContent='Update Grup';
+  document.getElementById('depCancelEdit').classList.remove('hidden');
+  document.getElementById('depName').focus();
+  window.scrollTo({top:document.getElementById('departureForm').getBoundingClientRect().top+window.scrollY-80,behavior:'smooth'});
+}
+function cancelDepartureEdit(){
+  document.getElementById('departureForm').reset();
+  document.getElementById('depEditId').value='';
+  document.getElementById('departureFormTitle').textContent='Tambah Grup Keberangkatan';
+  document.getElementById('depSubmitBtn').textContent='Simpan Grup';
+  document.getElementById('depCancelEdit').classList.add('hidden');
+}
+async function assignJamaah(){
+  const depId=document.getElementById('departureDetailPanel').dataset.departureId;
+  const jamaahId=document.getElementById('assignJamaah').value;
+  if(!depId||!jamaahId){showDepartureNotice('Pilih jamaah terlebih dahulu.','error');return}
+  const {error}=await sb.from('jamaah').update({departure_id:depId}).eq('id',jamaahId);
+  if(error){showDepartureNotice('Gagal menambahkan jamaah: '+error.message,'error');return}
+  await loadData();renderAll();openDeparture(depId);showDepartureNotice('Jamaah berhasil ditambahkan.');
+}
+
+async function removeFromDeparture(jamaahId){
+  const depId=document.getElementById('departureDetailPanel').dataset.departureId;
+  const {error}=await sb.from('jamaah').update({departure_id:null}).eq('id',jamaahId);
+  if(error){showDepartureNotice('Gagal mengeluarkan jamaah: '+error.message,'error');return}
+  await loadData();renderAll();openDeparture(depId);showDepartureNotice('Jamaah dikeluarkan dari grup.');
+}
+
+function showDepartureNotice(msg,type='ok'){
+  const el=document.getElementById('departureAssignNotice');
+  el.innerHTML=`<div class="notice ${type}">${msg}</div>`;
+  setTimeout(()=>el.innerHTML='',3000);
+}
+
+document.getElementById('departureForm').addEventListener('submit',async e=>{
+  e.preventDefault();
+  if(e.currentTarget.dataset.processing==="1")return;
+  e.currentTarget.dataset.processing="1";
+  setFormLoading(e.currentTarget,true,"Menyimpan...");
+  const editId=document.getElementById('depEditId').value;
+  const payload={
+    name:document.getElementById('depName').value.trim(),
+    airline:document.getElementById('depAirline').value.trim(),
+    start_date:document.getElementById('depStart').value,
+    end_date:document.getElementById('depEnd').value||null,
+    pnr:document.getElementById('depPnr').value.trim(),
+    hotel_makkah:document.getElementById('depMakkah').value.trim(),
+    hotel_madinah:document.getElementById('depMadinah').value.trim(),
+    note:document.getElementById('depNote').value.trim()
+  };
+  const query=editId
+    ? sb.from('departures').update(payload).eq('id',editId)
+    : sb.from('departures').insert(payload);
+  const {error}=await query;
+  if(error){notice((editId?'Gagal memperbarui':'Gagal menyimpan')+' grup: '+error.message,'error');return}
+  await syncToSpreadsheet('keberangkatan',{...payload,id:editId||undefined});
+  cancelDepartureEdit();
+  await loadData();renderAll();
+  setFormLoading(e.currentTarget,false);e.currentTarget.dataset.processing="0";
+  if(editId)openDeparture(editId);
+  addActivityLog(editId?'Memperbarui grup keberangkatan '+payload.name+'.':'Membuat grup keberangkatan '+payload.name+'.');notice(editId?'Grup keberangkatan berhasil diperbarui.':'Grup keberangkatan berhasil dibuat.');
+});
+async function deleteDeparture(id){
+  const d=departures.find(x=>x.id===id);
+  if(!d||!confirm(`Hapus grup "${d.name}"? Jamaah tidak akan dihapus.`))return;
+  const {error}=await sb.from('departures').delete().eq('id',id);
+  if(error){notice('Gagal menghapus grup: '+error.message,'error');return}
+  document.getElementById('departureDetailPanel').classList.add('hidden');
+  cancelDepartureEdit();
+  await loadData();renderAll();notice('Grup keberangkatan berhasil dihapus.');
+}
+
+function esc(v){
+  return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
+}
+
+resetExpenseForm();
+initSidebar();
+sb.auth.getSession().then(({data})=>{
+  if(data.session)startApp();
+});
+const ACTIVITY_KEY='raihan_alya_activity_log_v1';
+const CHECKLIST_KEY='raihan_alya_departure_checklist_v1';
+const DEFAULT_CHECKLIST=['Tiket','Hotel','Visa','Paspor','Manifest','Bus','Muthawwif','Rooming List','Bagasi'];
+
+function getActivityLog(){try{return JSON.parse(localStorage.getItem(ACTIVITY_KEY)||'[]')||[]}catch(e){return[]}}
+function addActivityLog(text){const rows=getActivityLog();rows.unshift({text,time:new Date().toISOString()});localStorage.setItem(ACTIVITY_KEY,JSON.stringify(rows.slice(0,30)));if(document.getElementById('dashboardActivityLog'))renderActivityLog()}
+function clearActivityLog(){if(!confirm('Bersihkan riwayat aktivitas?'))return;localStorage.removeItem(ACTIVITY_KEY);renderActivityLog()}
+function renderActivityLog(){const el=document.getElementById('dashboardActivityLog');if(!el)return;const rows=getActivityLog();el.innerHTML=rows.length?rows.slice(0,8).map(x=>'<div class="dashboard-activity-item"><span class="dashboard-activity-dot"></span><div><div class="dashboard-activity-text">'+esc(x.text)+'</div><div class="dashboard-activity-time">'+new Date(x.time).toLocaleString('id-ID')+'</div></div></div>').join(''):'<div class="muted">Belum ada aktivitas tercatat.</div>'}
+function getChecklist(){try{return JSON.parse(localStorage.getItem(CHECKLIST_KEY)||'{}')||{}}catch(e){return{}}}
+function setChecklist(depId,key,checked){const all=getChecklist();all[depId]=all[depId]||{};all[depId][key]=checked;localStorage.setItem(CHECKLIST_KEY,JSON.stringify(all));renderDepartureChecklist()}
+function renderDepartureChecklist(){const el=document.getElementById('dashboardDepartureChecklist');if(!el)return;const upcoming=(departures||[]).slice().sort((a,b)=>(a.start_date||'').localeCompare(b.start_date||'')).slice(0,4),all=getChecklist();el.innerHTML=upcoming.length?upcoming.map(d=>{const state=all[d.id]||{},done=DEFAULT_CHECKLIST.filter(k=>state[k]).length,pct=Math.round(done/DEFAULT_CHECKLIST.length*100);return '<div class="dashboard-checklist-item"><div class="dashboard-checklist-head"><strong>'+esc(d.name)+'</strong><span class="muted">'+esc(d.start_date||'-')+' · '+pct+'%</span></div><div class="dashboard-checklist-progress"><span style="width:'+pct+'%"></span></div><div class="dashboard-checklist-items">'+DEFAULT_CHECKLIST.map(k=>'<label><input type="checkbox" '+(state[k]?'checked':'')+' onchange="setChecklist(\''+esc(d.id)+'\',\''+esc(k)+'\',this.checked)">'+esc(k)+'</label>').join('')+'</div></div>'}).join(''):'<div class="muted">Belum ada jadwal keberangkatan.</div>'}
+function waJamaah(id){const j=(data||[]).find(x=>x.id===id);if(!j||!j.hp){notice('Nomor WhatsApp jamaah belum tersedia.','error');return}const text='Assalamu’alaikum '+j.nama+'.%0A%0AKami dari PT Raihan Alya Tour menginformasikan terkait perjalanan Umroh Bapak/Ibu. Silakan hubungi admin apabila membutuhkan informasi lebih lanjut.%0A%0ATerima kasih.';window.open('https://wa.me/'+String(j.hp).replace(/[^0-9]/g,'').replace(/^0/,'62')+'?text='+text,'_blank')}
+function renderDashboardExtras(){const el=document.getElementById('dashboardAlerts');if(!el)return;const alerts=[];const upcoming=(departures||[]).filter(d=>d.start_date).sort((a,b)=>(a.start_date||'').localeCompare(b.start_date||''));const today=new Date();today.setHours(0,0,0,0);
+(data||[]).forEach(j=>{const remain=remainFor(j),d=departureFor(j);if(remain>0)alerts.push({type:'warning',text:j.nama+' masih memiliki sisa '+rupiah(remain),btn:'Hubungi',action:"waJamaah('"+j.id+"')"});if(d&&d.start_date){const days=Math.ceil((new Date(d.start_date)-today)/86400000);if(days>=0&&days<=7)alerts.push({type:'danger',text:j.nama+' berangkat dalam '+days+' hari',btn:'Detail',action:"show('jamaah',document.querySelectorAll('.nav button')[1])"})}});
+const incomplete=(documents||[]).filter(d=>d&&DOC_TYPES&&DOC_TYPES.some(([k])=>!d[k+'_path']));if(incomplete.length)alerts.push({type:'info',text:incomplete.length+' jamaah memiliki dokumen belum lengkap',btn:'Dokumen',action:"show('dokumen',document.querySelectorAll('.nav button')[6])"});
+el.innerHTML=alerts.slice(0,10).map(a=>'<div class="dashboard-alert-item '+a.type+'"><div><strong>'+esc(a.text)+'</strong></div><button class="btn secondary small-btn" type="button" onclick="'+a.action+'">'+a.btn+'</button></div>').join('')||'<div class="muted">Tidak ada perhatian khusus.</div>';
+const month=document.getElementById('dashMonth')?.value||'';const filteredPayments=(payments||[]).filter(p=>!month||monthKey(p.payment_date)===month);const income=filteredPayments.reduce((a,p)=>a+Number(p.amount||0),0);const expense=(expenses||[]).filter(x=>!month||monthKey(x.date)===month).reduce((a,x)=>a+Number(x.amount||0),0);document.getElementById('dashIncomeExtra').textContent=rupiah(income);document.getElementById('dashExpenseExtra').textContent=rupiah(expense);document.getElementById('dashNetExtra').textContent=rupiah(income-expense);renderDepartureChecklist();renderActivityLog()}
+</script>
+</body>
+</html>
+},SAR:{name:'Riyal Saudi',symbol:'SAR'}};
+  return map[code]||map.IDR;
+}
+function formatExpenseOriginal(x){
+  const cur=x.currency||'IDR',info=expenseCurrencyInfo(cur),n=Number(x.amount)||0;
+  return cur==='IDR'?expenseMoney(n):info.symbol+' '+new Intl.NumberFormat('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}).format(n);
+}
+function expenseAmountIdr(x){return Number(x.amount_idr??x.amount)||0}
+function toggleExpenseCurrency(){
+  const cur=document.getElementById('expenseCurrency')?.value||'IDR';
+  const wrap=document.getElementById('expenseRateWrap'),rate=document.getElementById('expenseRate');
+  const isForeign=cur!=='IDR';
+  if(wrap)wrap.classList.toggle('hidden',!isForeign);
+  if(rate)rate.required=isForeign;
+  if(!isForeign&&rate)rate.value='1';
+  updateExpenseCurrencyTotal();
+}
+function updateExpenseCurrencyTotal(){
+  const cur=document.getElementById('expenseCurrency')?.value||'IDR';
+  const amount=Number(document.getElementById('expenseAmount')?.value)||0;
+  const rate=cur==='IDR'?1:(Number(document.getElementById('expenseRate')?.value)||0);
+  const total=amount*rate;
+  const out=document.getElementById('expenseAmountIdr');
+  if(out)out.value=total?expenseMoney(total):'Rp 0';
+}
+function renderExpenses(){
+  const rows=expenseRowsFiltered(),today=expenseToday(),now=new Date(),mk=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0'),
+    todayTotal=(expenses||[]).filter(x=>x.date===today).reduce((a,x)=>a+expenseAmountIdr(x),0),
+    monthTotal=(expenses||[]).filter(x=>String(x.date||'').startsWith(mk)).reduce((a,x)=>a+expenseAmountIdr(x),0),
+    periodTotal=rows.reduce((a,x)=>a+expenseAmountIdr(x),0),income=expenseIncomeForPeriod(),el=id=>document.getElementById(id);
+  if(el('expenseTodayTotal'))el('expenseTodayTotal').textContent=expenseMoney(todayTotal);
+  if(el('expenseMonthTotal'))el('expenseMonthTotal').textContent=expenseMoney(monthTotal);
+  if(el('expensePeriodTotal'))el('expensePeriodTotal').textContent=expenseMoney(periodTotal);
+  if(el('expenseNetTotal'))el('expenseNetTotal').textContent=expenseMoney(income-periodTotal);
+  const st=el('expenseStart')?.value||'',en=el('expenseEnd')?.value||'';
+  if(el('expensePeriodText'))el('expensePeriodText').textContent=(st||en)?'Periode: '+(st?formatDate(st):'awal')+' s/d '+(en?formatDate(en):'sekarang')+' · '+rows.length+' transaksi':'Menampilkan seluruh pengeluaran · '+rows.length+' transaksi';
+  const body=el('expenseBody');
+  if(body){
+    body.innerHTML=rows.map((x,i)=>{
+      const receipt=x.receipt_path
+        ? `<button class="btn secondary small-btn" type="button" onclick="openExpenseReceipt('${encodeURIComponent(x.receipt_path)}')">Lihat Bukti</button>`
+        : `<button class="btn secondary small-btn" type="button" onclick="editExpense('${esc(x.id)}')">Upload Bukti</button>`;
+      const cur=x.currency||'IDR',rate=cur==='IDR'?1:Number(x.rate||1);
+      return `<tr>
+        <td style="text-align:center"><input class="bulk-check expense-check" type="checkbox" value="${esc(x.id)}" onchange="syncBulkState('expense')"></td>
+        <td>${i+1}</td><td>${formatDate(x.date)}</td><td>${esc(x.category)}</td><td>${esc(x.description)}</td>
+        <td><b>${esc(cur)}</b></td><td>${formatExpenseOriginal(x)}</td><td>${cur==='IDR'?'—':expenseMoney(rate)}</td><td><b>${expenseMoney(expenseAmountIdr(x))}</b></td>
+        <td>${esc(x.method)}</td><td>${esc(x.bank||'-')}</td><td>${receipt}</td><td>${esc(x.note||'-')}</td>
+        <td><div class="package-actions"><button class="btn secondary small-btn" type="button" onclick="editExpense('${esc(x.id)}')">Edit</button><button class="btn danger small-btn" type="button" onclick="deleteExpense('${esc(x.id)}')">Hapus</button></div></td>
+      </tr>`;
+    }).join('')||'<tr><td colspan="14" style="text-align:center">Belum ada pengeluaran pada periode ini.</td></tr>';
   }
   syncBulkState('expense');
 }
