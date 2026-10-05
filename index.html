@@ -867,6 +867,10 @@ async function loadData(){
 function toggleSidebar(){
   const app=document.getElementById('mainApp');
   if(!app)return;
+  if(window.innerWidth<=768){
+    toggleMobileNav(false);
+    return;
+  }
   app.classList.toggle('sidebar-collapsed');
   const collapsed=app.classList.contains('sidebar-collapsed');
   const btn=document.getElementById('sidebarToggle');
