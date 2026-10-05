@@ -1227,7 +1227,7 @@ function printInvoice(jamaahId){
   <div class="box"><b>Rincian Tagihan</b><table><thead><tr><th>No</th><th>Nama</th><th>NIK</th><th>Paket</th><th class="num">Harga</th></tr></thead><tbody>${rows}</tbody><tfoot><tr class="total"><td colspan="4">TOTAL TAGIHAN</td><td class="num">${rupiah(totalBill)}</td></tr></tfoot></table></div>
   <div class="box"><div class="summary"><div><div class="label">Total Tagihan</div><div class="value">${rupiah(totalBill)}</div></div><div><div class="label">Diskon</div><div class="value">${rupiah(totalDiscount)}</div></div><div><div class="label">Sudah Dibayar</div><div class="value">${rupiah(totalPaid)}</div></div><div><div class="label">Sisa Tagihan</div><div class="value">${rupiah(remain)}</div></div></div><div class="status">${remain<=0?'LUNAS':'BELUM LUNAS'}</div></div>
   <div class="box"><b>Riwayat Pembayaran</b><table><thead><tr><th>No</th><th>Tanggal</th><th>Invoice</th><th>Nominal</th><th>Metode</th><th>Keterangan</th></tr></thead><tbody>${history}</tbody></table></div>
-  <div class="footer">Invoice ini merupakan tagihan administrasi PT Raihan Alya Tour.</div><script>window.onload=()=>setTimeout(()=>window.print(),300)</script></body></html>`);
+  <div class="footer">Invoice ini merupakan tagihan administrasi PT Raihan Alya Tour.</div><script>window.onload=()=>setTimeout(()=>window.print(),300)<\/script></body></html>`);
   w.document.close();
 }
 
