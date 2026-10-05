@@ -1462,20 +1462,9 @@ if(jamaahForm) jamaahForm.addEventListener('submit',async e=>{
       result=await sb.from('jamaah').insert(fallbackRows);
     }
   }else{
-    const payload={nama:document.getElementById('nama').value.trim(),jenis_kelamin:document.getElementById('jenis_kelamin').value,hp:document.getElementById('hp').value.trim(),nik:document.getElementById('nik').value.trim(),alamat:document.getElementById('alamat').value.trim(),paket:document.getElementById('paket').value,harga:Number(document.getElementById('harga').value)||0,berangkat:document.getElementById('berangkat').value||null,catatan:document.getElementById('catatan').value.trim(),kategori:'individu',nama_rombongan:null,keterangan_rombongan:null};
+    const payload={nama:document.getElementById('nama').value.trim(),jenis_kelamin:document.getElementById('jenis_kelamin').value,hp:document.getElementById('hp').value.trim(),nik:document.getElementById('nik').value.trim(),alamat:document.getElementById('alamat').value.trim(),paket:document.getElementById('paket').value,harga:Number(document.getElementById('harga').value)||0,berangkat:document.getElementById('berangkat').value||null,catatan:document.getElementById('catatan').value.trim()};
     if(id)result=await sb.from('jamaah').update(payload).eq('id',id);else result=await sb.from('jamaah').insert(payload);
-    if(result.error && /keterangan_rombongan|nama_rombongan|kategori|column.*does not exist|schema cache/i.test(result.error.message||'')){
-      const fallback={...payload};
-      delete fallback.keterangan_rombongan;
-      if(id)result=await sb.from('jamaah').update(fallback).eq('id',id);else result=await sb.from('jamaah').insert(fallback);
-    }
-    if(result.error && /nama_rombongan|kategori|column.*does not exist|schema cache/i.test(result.error.message||'')){
-      const fallback={...payload};
-      delete fallback.keterangan_rombongan;
-      delete fallback.nama_rombongan;
-      delete fallback.kategori;
-      if(id)result=await sb.from('jamaah').update(fallback).eq('id',id);else result=await sb.from('jamaah').insert(fallback);
-    }
+    if(result.error){console.error('Simpan jamaah gagal:',JSON.stringify(result.error,null,2));notice('Gagal menyimpan jamaah: '+(result.error.message||'Kesalahan Supabase')+(result.error.details?' — '+result.error.details:''),'error');return}
   }
   if(result.error){console.error('Simpan jamaah gagal:',JSON.stringify(result.error,null,2));notice('Gagal menyimpan jamaah: '+(result.error.message||'Kesalahan Supabase')+(result.error.details?' — '+result.error.details:''),'error');return}
   closeForm();await loadData();renderAll();notice(mode==='grup'&&!id?'Rombongan berhasil disimpan.':'Data jamaah berhasil disimpan.');
