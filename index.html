@@ -974,11 +974,12 @@ function renderUangMasuk(){
   if(el('uangMasukBody')){
     el('uangMasukBody').innerHTML=rows.map((p,i)=>{
       const j=(data||[]).find(x=>x.id===p.jamaah_id);
+      const label=isGroupJamaah(j)?('👥 '+groupNameFor(j)+' ('+groupMembersFor(j).length+' anggota)'):(j?.nama||'-');
       return `<tr>
         <td>${i+1}</td>
         <td>${formatDate(p.payment_date)}</td>
         <td>${esc(p.invoice_no||'-')}</td>
-        <td>${esc(j?.nama||'-')}</td>
+        <td>${esc(label)}</td>
         <td>${money(p.amount)}</td>
         <td>${esc(p.method||'-')}</td>
         <td>${esc(p.bank||'-')}</td>
@@ -1023,7 +1024,8 @@ function exportUangMasukCSV(){
   const lines=[['No','Tanggal','Invoice','Jamaah','Nominal','Metode','Bank','Keterangan']];
   rows.forEach((p,i)=>{
     const j=(data||[]).find(x=>x.id===p.jamaah_id);
-    lines.push([i+1,p.payment_date||'',p.invoice_no||'',j?.nama||'',money(p.amount),p.method||'',p.bank||'',p.note||'']);
+    const label=isGroupJamaah(j)?('Rombongan: '+groupNameFor(j)+' ('+groupMembersFor(j).length+' anggota)'):(j?.nama||'');
+    lines.push([i+1,p.payment_date||'',p.invoice_no||'',label,money(p.amount),p.method||'',p.bank||'',p.note||'']);
   });
   const csv=lines.map(r=>r.map(v=>`"${String(v??'').replace(/"/g,'""')}"`).join(',')).join('\n');
   const blob=new Blob(["\ufeff"+csv],{type:'text/csv;charset=utf-8;'});
@@ -1039,7 +1041,8 @@ function printUangMasuk(){
   if(!w){alert('Izinkan pop-up browser untuk mencetak laporan.');return}
   const body=rows.map((p,i)=>{
     const j=(data||[]).find(x=>x.id===p.jamaah_id);
-    return `<tr><td>${i+1}</td><td>${formatDate(p.payment_date)}</td><td>${esc(p.invoice_no||'-')}</td><td>${esc(j?.nama||'-')}</td><td>${money(p.amount)}</td><td>${esc(p.method||'-')}</td><td>${esc(p.bank||'-')}</td><td>${esc(p.note||'-')}</td></tr>`;
+    const label=isGroupJamaah(j)?('👥 '+groupNameFor(j)+' ('+groupMembersFor(j).length+' anggota)'):(j?.nama||'-');
+    return `<tr><td>${i+1}</td><td>${formatDate(p.payment_date)}</td><td>${esc(p.invoice_no||'-')}</td><td>${esc(label)}</td><td>${money(p.amount)}</td><td>${esc(p.method||'-')}</td><td>${esc(p.bank||'-')}</td><td>${esc(p.note||'-')}</td></tr>`;
   }).join('');
   w.document.write(`<!doctype html><html><head><title>Rekap Uang Masuk - Raihan Alya Tour</title><style>
   body{font-family:Arial,sans-serif;margin:30px;color:#222}h1{margin:0 0 4px;font-size:22px}h2{margin:0 0 14px;font-size:15px}p{margin:4px 0 16px;color:#555}.summary{padding:12px;border:1px solid #ddd;margin:15px 0;font-weight:bold}table{width:100%;border-collapse:collapse;font-size:11px}th,td{border:1px solid #bbb;padding:7px;text-align:left}th{background:#f3f3f3}@media print{button{display:none}}
