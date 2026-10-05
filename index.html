@@ -395,14 +395,14 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;p
 
   <div class="panel">
     <div class="panel-head">
-      <h2>Transaksi Dalam Periode</h2>
-      <div class="actions">
+      <div><h2>Transaksi Dalam Periode</h2></div>
+      <div class="actions"><button class="btn danger small-btn" type="button" onclick="deleteSelectedPaymentsFromUangMasuk()">🗑️ Hapus Terpilih</button>
         <button class="btn secondary" onclick="printUangMasuk()">🖨️ Cetak</button>
         <button class="btn" onclick="exportUangMasukCSV()">📥 Export CSV</button>
       </div>
     </div>
     <table>
-      <thead><tr><th>No</th><th>Tanggal</th><th>Invoice</th><th>Jamaah</th><th>Nominal</th><th>Metode</th><th>Bank</th><th>Keterangan</th></tr></thead>
+      <thead><tr><th style="width:38px;text-align:center"><input class="bulk-select-all" id="uangMasukSelectAll" type="checkbox" onchange="toggleAllUangMasuk(this.checked)" title="Pilih semua"></th><th>No</th><th>Tanggal</th><th>Invoice</th><th>Jamaah</th><th>Nominal</th><th>Metode</th><th>Bank</th><th>Keterangan</th></tr></thead>
       <tbody id="uangMasukBody"></tbody>
     </table>
   </div>
@@ -596,7 +596,7 @@ const SUPABASE_KEY='sb_publishable_qsYyXhpBu2xT3sGYAv--6w_AqEjU297';
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 
 let data=[], payments=[], documents=[], equipment=[], departures=[], currentUser=null, currentAccess=null;
-const APP_VERSION='2026-10-05-bulk-delete-1'; // force fresh deploy after invoice fix
+const APP_VERSION='2026-10-05-bulk-delete-2'; // force fresh deploy after invoice fix
 
 const rupiah=n=>new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(Number(n)||0);
 const isGroupJamaah=x=>!!(x&&(x.kategori==='grup'||String(x.nama_rombongan||'').trim()));
@@ -977,6 +977,7 @@ function renderUangMasuk(){
       const j=(data||[]).find(x=>x.id===p.jamaah_id);
       const label=isGroupJamaah(j)?('👥 '+groupNameFor(j)+' ('+groupMembersFor(j).length+' anggota)'):(j?.nama||'-');
       return `<tr>
+        <td style="text-align:center"><input class="bulk-check uang-masuk-check" type="checkbox" value="${esc(p.id)}" onchange="syncBulkState('uangmasuk')"></td>
         <td>${i+1}</td>
         <td>${formatDate(p.payment_date)}</td>
         <td>${esc(p.invoice_no||'-')}</td>
@@ -986,7 +987,7 @@ function renderUangMasuk(){
         <td>${esc(p.bank||'-')}</td>
         <td>${esc(p.note||'-')}</td>
       </tr>`;
-    }).join('') || '<tr><td colspan="8" style="text-align:center">Tidak ada transaksi pada periode ini.</td></tr>';
+    }).join('') || '<tr><td colspan="9" style="text-align:center">Tidak ada transaksi pada periode ini.</td></tr>';
   }
 }
 function localISODate(d){
@@ -1270,11 +1271,20 @@ function togglePaymentBank(){
 }
 
 function syncBulkState(type){
-  const map={payment:['.payment-check','paymentSelectAll'],doc:['.doc-check','docSelectAll'],equipment:['.equipment-check','equipmentSelectAll'],departure:['.departure-check','departureSelectAll']};
+  const map={payment:['.payment-check','paymentSelectAll'],doc:['.doc-check','docSelectAll'],equipment:['.equipment-check','equipmentSelectAll'],departure:['.departure-check','departureSelectAll'],uangmasuk:['.uang-masuk-check','uangMasukSelectAll']};
   const cfg=map[type]; if(!cfg)return;
   const checks=[...document.querySelectorAll(cfg[0])], all=document.getElementById(cfg[1]);
   const checked=checks.filter(x=>x.checked);
   if(all){all.checked=checks.length>0&&checked.length===checks.length;all.indeterminate=checked.length>0&&checked.length<checks.length}
+}
+function toggleAllUangMasuk(v){document.querySelectorAll('.uang-masuk-check').forEach(x=>x.checked=v);syncBulkState('uangmasuk')}
+async function deleteSelectedPaymentsFromUangMasuk(){
+  const ids=[...document.querySelectorAll('.uang-masuk-check:checked')].map(x=>x.value).filter(Boolean);
+  if(!ids.length){notice('Centang minimal satu transaksi uang masuk.','error');return}
+  if(!confirm('Hapus '+ids.length+' transaksi terpilih? Transaksi yang dihapus juga akan hilang dari Pembayaran dan Laporan.'))return;
+  const {error}=await sb.from('payments').delete().in('id',ids);
+  if(error){notice('Gagal menghapus transaksi: '+error.message,'error');return}
+  await loadData();renderAll();notice(ids.length+' transaksi uang masuk berhasil dihapus.');
 }
 function toggleAllPayments(v){document.querySelectorAll('.payment-check').forEach(x=>x.checked=v);syncBulkState('payment')}
 function toggleAllDocuments(v){document.querySelectorAll('.doc-check').forEach(x=>x.checked=v);syncBulkState('doc')}
