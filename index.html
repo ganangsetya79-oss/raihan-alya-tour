@@ -527,26 +527,56 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;p
   <div class="modal-head"><h2 id="formTitle">Tambah Jamaah</h2><button class="close" onclick="closeForm()">×</button></div>
   <form id="jamaahForm" class="form">
     <input type="hidden" id="editId">
-    <div class="full"><label>Kategori Jamaah</label><div class="jamaah-category-switch">
-      <label><input type="radio" name="jamaahKategori" value="individu" checked onchange="toggleJamaahCategory()"> Individu</label>
-      <label><input type="radio" name="jamaahKategori" value="grup" onchange="toggleJamaahCategory()"> Grup / Rombongan</label>
-    </div></div>
-    <div><label>Nama Lengkap</label><input id="nama" required></div>
-    <div id="jamaahGroupWrap" class="hidden">
-      <div><label>Nama Grup / Rombongan</label><input id="nama_rombongan" placeholder="Contoh: Rombongan Keluarga Bapak Ahmad"></div>
-      <div class="full" style="margin-top:10px"><label>Nama Anggota Rombongan</label><textarea id="anggota_rombongan" rows="5" placeholder="Nama 1&#10;Nama 2&#10;Nama 3&#10;Nama 4"></textarea><div class="muted" style="margin-top:5px;font-size:11px">Masukkan satu nama jamaah per baris. Contoh: Ahmad, Siti, Budi. Sistem akan membuat masing-masing nama sebagai data jamaah dalam rombongan yang sama.</div></div>
+    <input type="hidden" id="entryMode" value="individu">
+
+    <div class="full">
+      <label>Kategori Jamaah</label>
+      <div class="jamaah-entry-tabs">
+        <button type="button" id="tabIndividu" class="jamaah-entry-tab active" onclick="setJamaahEntryMode('individu')">Input Individual</button>
+        <button type="button" id="tabGrup" class="jamaah-entry-tab" onclick="setJamaahEntryMode('grup')">Input Rombongan / Keluarga</button>
+      </div>
     </div>
-    <div><label>Jenis Kelamin</label><select id="jenis_kelamin"><option value="">-- Pilih --</option><option value="Laki-laki">Laki-laki</option><option value="Perempuan">Perempuan</option></select></div>
-    <div><label>No. HP</label><input id="hp" required></div>
-    <div><label>NIK</label><input id="nik"></div>
-    <div><label>Alamat</label><input id="alamat"></div>
-    <div><label>Paket</label><select id="paket"><option value="Executive">Executive</option><option value="Premium">Premium</option><option value="Economis">Economis</option></select></div>
-    <div><label>Harga Paket</label><input id="harga" type="number" min="0" required></div>
-    <div><label>Tanggal Berangkat</label><input id="berangkat" type="date"></div>
-    <div class="full"><label>Catatan</label><input id="catatan"></div>
-    <div class="actions full"><button type="button" class="btn secondary" onclick="closeForm()">Batal</button><button class="btn">Simpan Jamaah</button></div>
-  </form>
-</div></div>
+
+    <div id="individualForm" class="form" style="padding:0;margin:0">
+      <div><label>Nama Lengkap</label><input id="nama" required></div>
+      <div><label>Jenis Kelamin</label><select id="jenis_kelamin"><option value="">-- Pilih --</option><option value="Laki-laki">Laki-laki</option><option value="Perempuan">Perempuan</option></select></div>
+      <div><label>No. HP</label><input id="hp" required></div>
+      <div><label>NIK</label><input id="nik"></div>
+      <div><label>Alamat</label><input id="alamat"></div>
+      <div><label>Paket</label><select id="paket"><option value="Executive">Executive</option><option value="Premium">Premium</option><option value="Economis">Economis</option></select></div>
+      <div><label>Harga Paket</label><input id="harga" type="number" min="0" required></div>
+      <div><label>Tanggal Berangkat</label><input id="berangkat" type="date"></div>
+      <div class="full"><label>Catatan</label><input id="catatan"></div>
+    </div>
+
+    <div id="groupForm" class="jamaah-group-form hidden">
+      <div class="jamaah-group-head">
+        <div>
+          <label>Nama Rombongan / Keluarga</label>
+          <input id="nama_rombongan" placeholder="Contoh: Keluarga Ahmad">
+        </div>
+        <div>
+          <label>Keterangan Rombongan</label>
+          <input id="keterangan_rombongan" placeholder="Opsional">
+        </div>
+      </div>
+
+      <div class="jamaah-members-head">
+        <div>
+          <h3 style="margin:0">Anggota Jamaah</h3>
+          <div class="muted">Tambahkan semua anggota dalam satu rombongan.</div>
+        </div>
+        <button type="button" class="btn" onclick="addJamaahMember()">+ Tambah Anggota</button>
+      </div>
+
+      <div id="jamaahMembers"></div>
+    </div>
+
+    <div class="actions full">
+      <button type="button" class="btn secondary" onclick="closeForm()">Batal</button>
+      <button class="btn">Simpan Jamaah</button>
+    </div>
+  </form></div></div>
 
 <div class="modal" id="accessModal"><div class="modal-box access-modal-box">
   <div class="modal-head"><h2 id="accessModalTitle">Tambah Akses Pengguna</h2><button class="close" onclick="closeAccessForm()">×</button></div>
