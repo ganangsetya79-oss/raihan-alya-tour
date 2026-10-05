@@ -558,6 +558,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;p
       <div id="expenseBankWrap" class="hidden"><label>Bank</label><select id="expenseBank"><option value="">-- Pilih Bank --</option><option>BSI</option><option>Bank Muamalat</option></select></div>
       <div class="full"><label>Uraian Pengeluaran</label><input id="expenseDescription" required placeholder="Contoh: Beli ATK kantor"></div>
       <div class="full"><label>Keterangan Tambahan</label><input id="expenseNote" placeholder="Opsional"></div>
+      <div class="full"><label>Bukti Transaksi</label><input id="expenseReceipt" type="file" accept=".pdf,.jpg,.jpeg,.png"><div class="muted" style="margin-top:5px">PDF, JPG, JPEG, PNG · maksimal 10 MB</div></div>
       <div class="actions full"><button class="btn" type="submit">Simpan Pengeluaran</button></div>
     </form>
   </div>
@@ -572,7 +573,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;p
       <div><label>Kategori</label><select id="expenseFilterCategory" onchange="renderExpenses()"><option value="">Semua Kategori</option><option>Operasional Kantor</option><option>Transportasi</option><option>Konsumsi</option><option>Perlengkapan</option><option>Promosi</option><option>Administrasi</option><option>Gaji / Honor</option><option>Hotel</option><option>Lainnya</option></select></div>
     </div>
     <div class="actions" style="margin:0 0 12px;flex-wrap:wrap"><button type="button" class="btn secondary" onclick="setExpensePeriod('today')">Hari Ini</button><button type="button" class="btn secondary" onclick="setExpensePeriod('week')">7 Hari</button><button type="button" class="btn secondary" onclick="setExpensePeriod('month')">Bulan Ini</button><button type="button" class="btn secondary" onclick="setExpensePeriod('30days')">30 Hari</button></div>
-    <div class="table-wrap"><table><thead><tr><th style="width:38px;text-align:center"><input class="bulk-select-all" id="expenseSelectAll" type="checkbox" onchange="toggleAllExpenses(this.checked)" title="Pilih semua"></th><th>No</th><th>Tanggal</th><th>Kategori</th><th>Uraian</th><th>Nominal</th><th>Metode</th><th>Keterangan</th><th>Aksi</th></tr></thead><tbody id="expenseBody"></tbody></table></div>
+    <div class="table-wrap"><table><thead><tr><th style="width:38px;text-align:center"><input class="bulk-select-all" id="expenseSelectAll" type="checkbox" onchange="toggleAllExpenses(this.checked)" title="Pilih semua"></th><th>No</th><th>Tanggal</th><th>Kategori</th><th>Uraian</th><th>Nominal</th><th>Metode</th><th>Bank</th><th>Bukti</th><th>Keterangan</th><th>Aksi</th></tr></thead><tbody id="expenseBody"></tbody></table></div>
   </div>
 </section>
 
@@ -1329,18 +1330,18 @@ function expenseMoney(n){return new Intl.NumberFormat('id-ID',{style:'currency',
 function expenseToday(){return localISODate(new Date())}
 function expenseRowsFiltered(){const start=document.getElementById('expenseStart')?.value||'',end=document.getElementById('expenseEnd')?.value||'',cat=document.getElementById('expenseFilterCategory')?.value||'';return (expenses||[]).filter(x=>(!start||(x.date||'')>=start)&&(!end||(x.date||'')<=end)&&(!cat||x.category===cat)).sort((a,b)=>(b.date||'').localeCompare(a.date||'')||(b.created_at||'').localeCompare(a.created_at||''))}
 function expenseIncomeForPeriod(){const start=document.getElementById('expenseStart')?.value||'',end=document.getElementById('expenseEnd')?.value||'';return (payments||[]).filter(p=>(!start||(p.payment_date||'')>=start)&&(!end||(p.payment_date||'')<=end)).reduce((a,p)=>a+Number(p.amount||0),0)}
-function renderExpenses(){const rows=expenseRowsFiltered(),today=expenseToday(),now=new Date(),mk=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0'),todayTotal=(expenses||[]).filter(x=>x.date===today).reduce((a,x)=>a+Number(x.amount||0),0),monthTotal=(expenses||[]).filter(x=>String(x.date||'').startsWith(mk)).reduce((a,x)=>a+Number(x.amount||0),0),periodTotal=rows.reduce((a,x)=>a+Number(x.amount||0),0),income=expenseIncomeForPeriod(),el=id=>document.getElementById(id);if(el('expenseTodayTotal'))el('expenseTodayTotal').textContent=expenseMoney(todayTotal);if(el('expenseMonthTotal'))el('expenseMonthTotal').textContent=expenseMoney(monthTotal);if(el('expensePeriodTotal'))el('expensePeriodTotal').textContent=expenseMoney(periodTotal);if(el('expenseNetTotal'))el('expenseNetTotal').textContent=expenseMoney(income-periodTotal);const st=el('expenseStart')?.value||'',en=el('expenseEnd')?.value||'';if(el('expensePeriodText'))el('expensePeriodText').textContent=(st||en)?'Periode: '+(st?formatDate(st):'awal')+' s/d '+(en?formatDate(en):'sekarang')+' · '+rows.length+' transaksi':'Menampilkan seluruh pengeluaran · '+rows.length+' transaksi';const body=el('expenseBody');if(body)body.innerHTML=rows.map((x,i)=>'<tr><td style="text-align:center"><input class="bulk-check expense-check" type="checkbox" value="'+esc(x.id)+'" onchange="syncBulkState(\'expense\')"></td><td>'+(i+1)+'</td><td>'+formatDate(x.date)+'</td><td>'+esc(x.category)+'</td><td>'+esc(x.description)+'</td><td>'+expenseMoney(x.amount)+'</td><td>'+esc(x.method)+'</td><td>'+esc(x.note||'-')+'</td><td><div class="package-actions"><button class="btn secondary small-btn" type="button" onclick="editExpense(\''+esc(x.id)+'\')">Edit</button><button class="btn danger small-btn" type="button" onclick="deleteExpense(\''+esc(x.id)+'\')">Hapus</button></div></td></tr>').join('')||'<tr><td colspan="9" style="text-align:center">Belum ada pengeluaran pada periode ini.</td></tr>';syncBulkState('expense')}
+function renderExpenses(){const rows=expenseRowsFiltered(),today=expenseToday(),now=new Date(),mk=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0'),todayTotal=(expenses||[]).filter(x=>x.date===today).reduce((a,x)=>a+Number(x.amount||0),0),monthTotal=(expenses||[]).filter(x=>String(x.date||'').startsWith(mk)).reduce((a,x)=>a+Number(x.amount||0),0),periodTotal=rows.reduce((a,x)=>a+Number(x.amount||0),0),income=expenseIncomeForPeriod(),el=id=>document.getElementById(id);if(el('expenseTodayTotal'))el('expenseTodayTotal').textContent=expenseMoney(todayTotal);if(el('expenseMonthTotal'))el('expenseMonthTotal').textContent=expenseMoney(monthTotal);if(el('expensePeriodTotal'))el('expensePeriodTotal').textContent=expenseMoney(periodTotal);if(el('expenseNetTotal'))el('expenseNetTotal').textContent=expenseMoney(income-periodTotal);const st=el('expenseStart')?.value||'',en=el('expenseEnd')?.value||'';if(el('expensePeriodText'))el('expensePeriodText').textContent=(st||en)?'Periode: '+(st?formatDate(st):'awal')+' s/d '+(en?formatDate(en):'sekarang')+' · '+rows.length+' transaksi':'Menampilkan seluruh pengeluaran · '+rows.length+' transaksi';const body=el('expenseBody');if(body)body.innerHTML=rows.map((x,i)=>'<tr><td style="text-align:center"><input class="bulk-check expense-check" type="checkbox" value="'+esc(x.id)+'" onchange="syncBulkState(\'expense\')"></td><td>'+(i+1)+'</td><td>'+formatDate(x.date)+'</td><td>'+esc(x.category)+'</td><td>'+esc(x.description)+'</td><td>'+expenseMoney(x.amount)+'</td><td>'+esc(x.method)+'</td><td>'+esc(x.note||'-')+'</td><td><div class="package-actions"><button class="btn secondary small-btn" type="button" onclick="editExpense(\''+esc(x.id)+'\')">Edit</button><button class="btn danger small-btn" type="button" onclick="deleteExpense(\''+esc(x.id)+'\')">Hapus</button></div></td></tr>').join('')||'<tr><td colspan="11" style="text-align:center">Belum ada pengeluaran pada periode ini.</td></tr>';syncBulkState('expense')}
 function resetExpenseForm(){const f=document.getElementById('expenseForm');if(f)f.reset();const d=document.getElementById('expenseDate');if(d)d.value=expenseToday();if(f)f.dataset.editId='';toggleExpenseBank()}
 function resetExpenseFilter(){['expenseStart','expenseEnd'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=''});const c=document.getElementById('expenseFilterCategory');if(c)c.value='';renderExpenses()}
 function setExpensePeriod(type){const s=document.getElementById('expenseStart'),e=document.getElementById('expenseEnd');if(!s||!e)return;const now=new Date(),end=new Date(now),start=new Date(now);if(type==='week')start.setDate(start.getDate()-6);else if(type==='month')start.setDate(1);else if(type==='30days')start.setDate(start.getDate()-29);s.value=localISODate(start);e.value=localISODate(end);renderExpenses()}
-function handleExpenseSubmit(e){
+async function handleExpenseSubmit(e){
   if(e)e.preventDefault();
   const form=document.getElementById('expenseForm');
   if(!form||form.dataset.processing==='1')return false;
   form.dataset.processing='1';
   setFormLoading(form,true,form.dataset.editId?'Memperbarui...':'Menyimpan...');
   try{
-    saveExpenseFromForm();
+    await saveExpenseFromForm();
   }finally{
     setFormLoading(form,false);
     form.dataset.processing='0';
@@ -1356,13 +1357,66 @@ function toggleExpenseBank(){
   if(bank)bank.required=transfer;
   if(!transfer&&bank)bank.value='';
 }
-function saveExpenseFromForm(){const date=document.getElementById('expenseDate').value,category=document.getElementById('expenseCategory').value,amount=Number(document.getElementById('expenseAmount').value),method=document.getElementById('expenseMethod').value,bank=document.getElementById('expenseBank')?.value||'',description=document.getElementById('expenseDescription').value.trim(),note=document.getElementById('expenseNote').value.trim();if(!date||!category||amount<=0||!method||!description||(method==='Transfer'&&!bank)){notice('Lengkapi tanggal, kategori, nominal, metode, bank (jika transfer), dan uraian.','error');return}const form=document.getElementById('expenseForm'),editing=form.dataset.editId||'',row={id:editing||('exp-'+Date.now()+'-'+Math.random().toString(36).slice(2,8)),date,category,amount,method,bank:method==='Transfer'?bank:'',description,note,created_at:new Date().toISOString()};if(editing){const i=expenses.findIndex(x=>x.id===editing);if(i>=0)expenses[i]=row}else expenses.push(row);if(!saveLocalExpenses())return;syncToSpreadsheet('pengeluaran',row);form.dataset.editId='';document.querySelector('#expenseForm .btn[type="submit"]').textContent='Simpan Pengeluaran';resetExpenseForm();renderExpenses();addActivityLog((editing?'Memperbarui':'Mencatat')+' pengeluaran '+expenseMoney(amount)+'.');notice(editing?'Pengeluaran berhasil diperbarui.':'Pengeluaran berhasil disimpan.')}
-function editExpense(id){const x=expenses.find(v=>v.id===id);if(!x)return;const f=document.getElementById('expenseForm');f.dataset.editId=id;document.getElementById('expenseDate').value=x.date||expenseToday();document.getElementById('expenseCategory').value=x.category||'';document.getElementById('expenseAmount').value=x.amount||'';document.getElementById('expenseMethod').value=(x.method==='BSI'||x.method==='Bank Muamalat')?'Transfer':(x.method||'');document.getElementById('expenseBank').value=x.bank||(x.method==='BSI'?'BSI':x.method==='Bank Muamalat'?'Bank Muamalat':'');toggleExpenseBank();document.getElementById('expenseDescription').value=x.description||'';document.getElementById('expenseNote').value=x.note||'';document.querySelector('#expenseForm .btn[type="submit"]').textContent='Update Pengeluaran';document.getElementById('expenseDate').scrollIntoView({behavior:'smooth',block:'center'})}
+async function saveExpenseFromForm(){
+  const date=document.getElementById('expenseDate').value;
+  const category=document.getElementById('expenseCategory').value;
+  const amount=Number(document.getElementById('expenseAmount').value);
+  const method=document.getElementById('expenseMethod').value;
+  const bank=document.getElementById('expenseBank')?.value||'';
+  const description=document.getElementById('expenseDescription').value.trim();
+  const note=document.getElementById('expenseNote').value.trim();
+  const receiptInput=document.getElementById('expenseReceipt');
+  const file=receiptInput?.files?.[0];
+  if(!date||!category||amount<=0||!method||!description||(method==='Transfer'&&!bank)){
+    notice('Lengkapi tanggal, kategori, nominal, metode, bank (jika transfer), dan uraian.','error');return
+  }
+  if(file){
+    if(!['application/pdf','image/jpeg','image/png'].includes(file.type)){
+      notice('Bukti transaksi harus PDF, JPG, JPEG, atau PNG.','error');return
+    }
+    if(file.size>10*1024*1024){
+      notice('Ukuran bukti transaksi maksimal 10 MB.','error');return
+    }
+  }
+  const form=document.getElementById('expenseForm'),editing=form.dataset.editId||'';
+  const existing=editing?expenses.find(x=>x.id===editing):null;
+  let receipt_path=existing?.receipt_path||'';
+  let receipt_name=existing?.receipt_name||'';
+  if(file){
+    try{
+      const safe=file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
+      receipt_path='expenses/'+(editing||('exp-'+Date.now()))+'/receipt_'+Date.now()+'_'+safe;
+      const upload=await sb.storage.from('document').upload(receipt_path,file,{upsert:true,contentType:file.type});
+      if(upload.error)throw upload.error;
+      receipt_name=file.name;
+    }catch(err){
+      notice('Upload bukti transaksi gagal: '+(err?.message||err),'error');return
+    }
+  }
+  const row={id:editing||('exp-'+Date.now()+'-'+Math.random().toString(36).slice(2,8)),date,category,amount,method,bank:method==='Transfer'?bank:'',description,note,receipt_path,receipt_name,created_at:existing?.created_at||new Date().toISOString()};
+  if(editing){const i=expenses.findIndex(x=>x.id===editing);if(i>=0)expenses[i]=row}else expenses.push(row);
+  if(!saveLocalExpenses())return;
+  await syncToSpreadsheet('pengeluaran',row);
+  form.dataset.editId='';
+  document.querySelector('#expenseForm .btn[type="submit"]').textContent='Simpan Pengeluaran';
+  resetExpenseForm();renderExpenses();
+  addActivityLog((editing?'Memperbarui':'Mencatat')+' pengeluaran '+expenseMoney(amount)+'.');
+  notice(editing?'Pengeluaran berhasil diperbarui.':'Pengeluaran berhasil disimpan.');
+}
+function editExpense(id){const x=expenses.find(v=>v.id===id);if(!x)return;const f=document.getElementById('expenseForm');f.dataset.editId=id;document.getElementById('expenseDate').value=x.date||expenseToday();document.getElementById('expenseCategory').value=x.category||'';document.getElementById('expenseAmount').value=x.amount||'';document.getElementById('expenseMethod').value=(x.method==='BSI'||x.method==='Bank Muamalat')?'Transfer':(x.method||'');document.getElementById('expenseBank').value=x.bank||(x.method==='BSI'?'BSI':x.method==='Bank Muamalat'?'Bank Muamalat':'');toggleExpenseBank();document.getElementById('expenseDescription').value=x.description||'';document.getElementById('expenseNote').value=x.note||'';const rf=document.getElementById('expenseReceipt');if(rf)rf.value='';document.querySelector('#expenseForm .btn[type="submit"]').textContent='Update Pengeluaran';document.getElementById('expenseDate').scrollIntoView({behavior:'smooth',block:'center'})}
+async function openExpenseReceipt(encodedPath){
+  try{
+    const path=decodeURIComponent(encodedPath);
+    const {data,error}=await sb.storage.from('document').createSignedUrl(path,3600);
+    if(error)throw error;
+    window.open(data.signedUrl,'_blank','noopener');
+  }catch(err){notice('Bukti transaksi tidak bisa dibuka: '+(err?.message||err),'error')}
+}
 function deleteExpense(id){const x=expenses.find(v=>v.id===id);if(!x)return;if(!confirm('Hapus pengeluaran "'+(x.description||'')+'"?'))return;expenses=expenses.filter(v=>v.id!==id);saveLocalExpenses();renderExpenses();notice('Pengeluaran berhasil dihapus.')}
 function toggleAllExpenses(checked){document.querySelectorAll('.expense-check').forEach(x=>x.checked=checked);syncBulkState('expense')}
 function deleteSelectedExpenses(){const ids=[...document.querySelectorAll('.expense-check:checked')].map(x=>x.value);if(!ids.length){notice('Pilih pengeluaran yang ingin dihapus.','error');return}if(!confirm('Hapus '+ids.length+' pengeluaran terpilih?'))return;expenses=expenses.filter(x=>!ids.includes(x.id));saveLocalExpenses();renderExpenses();notice(ids.length+' pengeluaran berhasil dihapus.')}
-function exportExpensesCSV(){const rows=expenseRowsFiltered(),lines=[['No','Tanggal','Kategori','Uraian','Nominal','Metode','Keterangan']];rows.forEach((x,i)=>lines.push([i+1,x.date||'',x.category||'',x.description||'',Number(x.amount||0),x.method||'',x.note||'']));const csv=lines.map(r=>r.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\n'),blob=new Blob(["\ufeff"+csv],{type:'text/csv;charset=utf-8;'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='rekap-pengeluaran-harian.csv';a.click();URL.revokeObjectURL(a.href)}
-function printExpenses(){const rows=expenseRowsFiltered(),st=document.getElementById('expenseStart')?.value||'',en=document.getElementById('expenseEnd')?.value||'',total=rows.reduce((a,x)=>a+Number(x.amount||0),0),w=window.open('','_blank');if(!w){alert('Izinkan pop-up browser untuk mencetak laporan.');return}const body=rows.map((x,i)=>'<tr><td>'+(i+1)+'</td><td>'+formatDate(x.date)+'</td><td>'+esc(x.category)+'</td><td>'+esc(x.description)+'</td><td>'+expenseMoney(x.amount)+'</td><td>'+esc(x.method)+'</td><td>'+esc(x.note||'-')+'</td></tr>').join('');w.document.write('<!doctype html><html><head><title>Rekap Pengeluaran - Raihan Alya Tour</title><style>body{font-family:Arial,sans-serif;margin:30px;color:#222}table{width:100%;border-collapse:collapse;font-size:11px}th,td{border:1px solid #bbb;padding:7px;text-align:left}th{background:#f3f3f3}.summary{padding:12px;border:1px solid #ddd;margin:15px 0;font-weight:bold}</style></head><body><h1>RAIHAN ALYA TOUR</h1><h2>Rekap Pengeluaran Harian</h2><p>'+((st||en)?'Periode '+(st?formatDate(st):'awal')+' s/d '+(en?formatDate(en):'sekarang'):'Seluruh periode')+'</p><div class="summary">Total Pengeluaran: '+expenseMoney(total)+' · Jumlah Transaksi: '+rows.length+'</div><table><thead><tr><th>No</th><th>Tanggal</th><th>Kategori</th><th>Uraian</th><th>Nominal</th><th>Metode</th><th>Keterangan</th></tr></thead><tbody>'+(body||'<tr><td colspan="7">Tidak ada data.</td></tr>')+'</tbody></table><script>window.onload=()=>window.print()<\\/script></body></html>');w.document.close()}
+function exportExpensesCSV(){const rows=expenseRowsFiltered(),lines=[['No','Tanggal','Kategori','Uraian','Nominal','Metode','Bank','Bukti','Keterangan']];rows.forEach((x,i)=>lines.push([i+1,x.date||'',x.category||'',x.description||'',Number(x.amount||0),x.method||'',x.bank||'',x.receipt_name||'',x.note||'']));const csv=lines.map(r=>r.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\n'),blob=new Blob(["\ufeff"+csv],{type:'text/csv;charset=utf-8;'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='rekap-pengeluaran-harian.csv';a.click();URL.revokeObjectURL(a.href)}
+function printExpenses(){const rows=expenseRowsFiltered(),st=document.getElementById('expenseStart')?.value||'',en=document.getElementById('expenseEnd')?.value||'',total=rows.reduce((a,x)=>a+Number(x.amount||0),0),w=window.open('','_blank');if(!w){alert('Izinkan pop-up browser untuk mencetak laporan.');return}const body=rows.map((x,i)=>'<tr><td>'+(i+1)+'</td><td>'+formatDate(x.date)+'</td><td>'+esc(x.category)+'</td><td>'+esc(x.description)+'</td><td>'+expenseMoney(x.amount)+'</td><td>'+esc(x.method)+'</td><td>'+esc(x.note||'-')+'</td></tr>').join('');w.document.write('<!doctype html><html><head><title>Rekap Pengeluaran - Raihan Alya Tour</title><style>body{font-family:Arial,sans-serif;margin:30px;color:#222}table{width:100%;border-collapse:collapse;font-size:11px}th,td{border:1px solid #bbb;padding:7px;text-align:left}th{background:#f3f3f3}.summary{padding:12px;border:1px solid #ddd;margin:15px 0;font-weight:bold}</style></head><body><h1>RAIHAN ALYA TOUR</h1><h2>Rekap Pengeluaran Harian</h2><p>'+((st||en)?'Periode '+(st?formatDate(st):'awal')+' s/d '+(en?formatDate(en):'sekarang'):'Seluruh periode')+'</p><div class="summary">Total Pengeluaran: '+expenseMoney(total)+' · Jumlah Transaksi: '+rows.length+'</div><table><thead><tr><th>No</th><th>Tanggal</th><th>Kategori</th><th>Uraian</th><th>Nominal</th><th>Metode</th><th>Bank</th><th>Bukti</th><th>Keterangan</th></tr></thead><tbody>'+(body||'<tr><td colspan="7">Tidak ada data.</td></tr>')+'</tbody></table><script>window.onload=()=>window.print()<\\/script></body></html>');w.document.close()}
 function fillReportFilters(){
   const m=document.getElementById('reportMonth'), d=document.getElementById('reportDeparture'); if(!m||!d)return;
   const oldM=m.value, oldD=d.value;
