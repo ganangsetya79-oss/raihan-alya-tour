@@ -1217,16 +1217,14 @@ function printInvoice(jamaahId){
   const title=group?'INVOICE TAGIHAN ROMBONGAN':'INVOICE TAGIHAN';
   const name=group?groupNameFor(j):(j.nama||'-');
   const today=new Date().toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'});
+  const logoSrc=document.querySelector('.dashboard-brand-logo img')?.src||'';
+  const logoHtml=logoSrc?'<img class="logo" src="'+logoSrc+'" alt="Logo">':'<div class="logo-text">RA</div>';
   const memberRows=members.map((m,i)=>'<tr><td>'+(i+1)+'</td><td>'+esc(m.nama||'-')+'</td><td>'+esc(m.paket||'-')+'</td><td class="right">'+rupiah(m.harga)+'</td></tr>').join('');
-  const w=window.open('','_blank','width=820,height=900');
+  const w=window.open('','_blank','width=760,height=850');
   if(!w){notice('Pop-up diblokir browser. Izinkan pop-up untuk membuka invoice.','error');return}
-  const logoHtml=logo?'<img class="logo" src="'+logo+'" alt="Logo PT Raihan Alya Tour">':'<div class="logo-text">RA</div>';
   w.document.open();
-  w.document.write(
-    '<!doctype html><html lang="id"><head><meta charset="utf-8"><title>'+esc(inv)+'</title>'+
-    '<style>'+
-    '*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;color:#222;background:#fff}.page{width:190mm;min-height:270mm;margin:0 auto;padding:14mm;background:#fff}.head{display:flex;align-items:center;gap:14px;border-bottom:2px solid #173f35;padding-bottom:10px}.logo{width:62px;height:62px;object-fit:contain}.logo-text{width:62px;height:62px;border:2px solid #173f35;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;color:#173f35}.company{font-size:19px;font-weight:800;color:#173f35}.sub{font-size:11px;color:#666;margin-top:3px}.title{text-align:center;font-size:18px;font-weight:800;margin:18px 0}.meta{display:grid;grid-template-columns:1fr 1fr;gap:7px 25px;font-size:12px;margin-bottom:15px}.meta div{padding:5px 0;border-bottom:1px dashed #ddd}.meta span{color:#666}.box{border:1px solid #ddd;border-radius:7px;padding:10px;margin-top:12px}.box h3{font-size:13px;margin:0 0 8px}.info{font-size:12px;line-height:1.7}table{width:100%;border-collapse:collapse;font-size:11px}th,td{border:1px solid #ddd;padding:6px 7px}th{background:#f3f6f4;text-align:left}.right{text-align:right}.total{margin-top:10px;font-size:12px}.total div{display:flex;justify-content:space-between;padding:5px 0}.grand{font-size:14px;font-weight:800;border-top:2px solid #173f35;margin-top:4px;padding-top:8px}.status{margin-top:8px;padding:8px;background:#f3f6f4;border-radius:6px;font-weight:700}.sign{margin-top:42px;display:grid;grid-template-columns:1fr 1fr;gap:50px;text-align:center;font-size:11px}.space{height:55px}.foot{text-align:center;margin-top:18px;font-size:9px;color:#777}@media print{body{background:#fff}.page{margin:0;width:auto;min-height:auto;padding:10mm}@page{size:A4;margin:0}}'+
-    '</style></head><body><div class="page">'+
+  w.document.write('<!doctype html><html lang="id"><head><meta charset="utf-8"><title>'+esc(inv)+'</title><style>'+
+    '*{box-sizing:border-box}body{margin:0;background:#fff;font-family:Arial,sans-serif;color:#222}.page{width:190mm;margin:0 auto;padding:12mm}.head{display:flex;align-items:center;gap:12px;border-bottom:2px solid #173f35;padding-bottom:9px}.logo{width:58px;height:58px;object-fit:contain}.logo-text{width:58px;height:58px;border:2px solid #173f35;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;color:#173f35}.company{font-size:18px;font-weight:800;color:#173f35}.sub{font-size:11px;color:#666;margin-top:3px}.title{text-align:center;font-size:17px;font-weight:800;margin:15px 0}.meta{display:grid;grid-template-columns:1fr 1fr;gap:5px 18px;font-size:11px;margin-bottom:12px}.meta div{padding:4px 0}.meta span{color:#666}.box{border:1px solid #ddd;border-radius:6px;padding:9px;margin-top:9px}.box h3{font-size:12px;margin:0 0 7px}table{width:100%;border-collapse:collapse;font-size:10px}th,td{border:1px solid #ddd;padding:5px 6px}th{background:#f3f6f4;text-align:left}.right{text-align:right}.total{font-size:11px}.total div{display:flex;justify-content:space-between;padding:4px 0}.grand{font-size:13px;font-weight:800;border-top:2px solid #173f35;margin-top:3px;padding-top:6px}.status{margin-top:7px;padding:6px;background:#f3f6f4;border-radius:5px;font-weight:700;font-size:11px}.sign{margin-top:35px;display:grid;grid-template-columns:1fr 1fr;gap:40px;text-align:center;font-size:10px}.space{height:45px}.foot{text-align:center;margin-top:14px;font-size:9px;color:#777}@media print{.page{width:auto;padding:8mm}@page{size:A4;margin:0}}</style></head><body><div class="page">'+
     '<div class="head">'+logoHtml+'<div><div class="company">PT RAIHAN ALYA TOUR</div><div class="sub">Palangka Raya, Kalimantan Tengah</div></div></div>'+
     '<div class="title">'+title+'</div>'+
     '<div class="meta"><div><span>No. Invoice</span><br><b>'+esc(inv)+'</b></div><div><span>Tanggal</span><br><b>'+esc(today)+'</b></div><div><span>'+(group?'Nama Rombongan':'Nama Jamaah')+'</span><br><b>'+esc(name)+'</b></div><div><span>Paket</span><br><b>'+esc(group?'Sesuai anggota':(j.paket||'-'))+'</b></div></div>'+
@@ -1234,8 +1232,7 @@ function printInvoice(jamaahId){
     '<div class="box"><h3>Ringkasan Tagihan</h3><div class="total"><div><span>Total Tagihan</span><b>'+rupiah(totalBill)+'</b></div><div><span>Diskon</span><b>'+rupiah(totalDiscount)+'</b></div><div><span>Sudah Dibayar</span><b>'+rupiah(totalPaid)+'</b></div><div class="grand"><span>SISA TAGIHAN</span><b>'+rupiah(remain)+'</b></div></div><div class="status">Status: '+(remain<=0?'LUNAS':'BELUM LUNAS')+'</div></div>'+
     '<div class="sign"><div>Admin / Petugas<div class="space"></div>(________________)</div><div>Jamaah<div class="space"></div>(________________)</div></div>'+
     '<div class="foot">Invoice ini merupakan dokumen tagihan PT Raihan Alya Tour.</div></div>'+
-    '<scr'+'ipt>window.onload=function(){setTimeout(function(){window.print()},250)}<\/script></body></html>'
-  );
+    '<script>window.onload=function(){setTimeout(function(){window.print()},300)}<\/script></body></html>');
   w.document.close();
 }
 
