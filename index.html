@@ -689,7 +689,7 @@ async function renderAccessUsers(){
     const perms=Array.isArray(u.permissions)?u.permissions:defaultPermissions(u.role);
     const mods=perms.map(x=>'<span class="access-module">'+esc(ACCESS_LABELS[x]||x)+'</span>').join('');
     const active=u.active!==false;
-    return '<tr><td><div class="access-user-email">'+esc(u.email||'-')+'</div><div class="access-user-id">'+esc(u.user_id||'')+'</div></td><td><span class="badge paid">'+esc(u.role||'viewer')+'</span></td><td><div class="access-modules">'+(mods||'<span class="muted">Tidak ada</span>')+'</div></td><td><span class="access-status '+(active?'access-active':'access-inactive')+'">'+(active?'Aktif':'Nonaktif')+'</span></td><td><div class="access-actions"><button class="btn secondary small-btn" onclick="editAccessUser(''+esc(u.id)+'')">Edit</button><button class="btn danger small-btn" onclick="toggleAccessUser(''+esc(u.id)+'','+active+')">'+(active?'Nonaktifkan':'Aktifkan')+'</button></div></td></tr>';
+    return `<tr><td><div class="access-user-email">${esc(u.email||'-')}</div><div class="access-user-id">${esc(u.user_id||'')}</div></td><td><span class="badge paid">${esc(u.role||'viewer')}</span></td><td><div class="access-modules">${mods||'<span class="muted">Tidak ada</span>'}</div></td><td><span class="access-status ${active?'access-active':'access-inactive'}">${active?'Aktif':'Nonaktif'}</span></td><td><div class="access-actions"><button class="btn secondary small-btn" onclick="editAccessUser('${esc(u.id)}')">Edit</button><button class="btn danger small-btn" onclick="toggleAccessUser('${esc(u.id)}',${active})">${active?'Nonaktifkan':'Aktifkan'}</button></div></td></tr>`;
   }).join('');
 }
 function openAccessForm(user=null){
