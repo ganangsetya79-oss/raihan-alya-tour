@@ -1325,9 +1325,7 @@ async function deleteSelectedDepartures(){
   if(!ids.length){notice('Centang minimal satu grup keberangkatan.','error');return}
   const selected=(departures||[]).filter(x=>ids.includes(String(x.id)));
   const names=selected.slice(0,4).map(x=>x.name||'Grup').join(', ');
-  if(!confirm('Hapus '+ids.length+' grup keberangkatan terpilih? Data jamaah tidak akan dihapus, tetapi penugasan keberangkatannya dapat tetap menyimpan ID lama.
-
-'+names))return;
+  if(!confirm('Hapus '+ids.length+' grup keberangkatan terpilih? Data jamaah tidak akan dihapus, tetapi penugasan keberangkatannya dapat tetap menyimpan ID lama.\\n\\n'+names))return;
   const {error}=await sb.from('departures').delete().in('id',ids);
   if(error){notice('Gagal menghapus grup keberangkatan: '+error.message,'error');return}
   document.getElementById('departureDetailPanel')?.classList.add('hidden');
