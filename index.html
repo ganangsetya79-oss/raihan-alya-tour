@@ -552,9 +552,9 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;p
     <div class="panel-head"><h2>Tambah Pengeluaran</h2><button class="btn secondary small-btn" type="button" onclick="resetExpenseForm()">Reset</button></div>
     <form id="expenseForm" class="form">
       <div><label>Tanggal</label><input id="expenseDate" type="date" required></div>
-      <div><label>Kategori</label><select id="expenseCategory" required><option value="">-- Pilih Kategori --</option><option>Operasional Kantor</option><option>Transportasi</option><option>Konsumsi</option><option>Perlengkapan</option><option>Promosi</option><option>Administrasi</option><option>Gaji / Honor</option><option>Lainnya</option></select></div>
+      <div><label>Kategori</label><select id="expenseCategory" required><option value="">-- Pilih Kategori --</option><option>Operasional Kantor</option><option>Transportasi</option><option>Konsumsi</option><option>Perlengkapan</option><option>Promosi</option><option>Administrasi</option><option>Gaji / Honor</option><option>Hotel</option><option>Lainnya</option></select></div>
       <div><label>Nominal</label><input id="expenseAmount" type="number" min="1" step="1" required placeholder="Contoh: 50000"></div>
-      <div><label>Metode</label><select id="expenseMethod" required><option value="">-- Pilih Metode --</option><option>Cash</option><option>Transfer</option></select></div>
+      <div><label>Metode</label><select id="expenseMethod" required><option value="">-- Pilih Metode --</option><option>Cash</option><option>Transfer</option><option>Bank</option></select></div>
       <div class="full"><label>Uraian Pengeluaran</label><input id="expenseDescription" required placeholder="Contoh: Beli ATK kantor"></div>
       <div class="full"><label>Keterangan Tambahan</label><input id="expenseNote" placeholder="Opsional"></div>
       <div class="actions full"><button class="btn" type="submit">Simpan Pengeluaran</button></div>
@@ -568,7 +568,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;p
     <div class="form expense-filter-form" style="grid-template-columns:repeat(3,minmax(0,1fr));margin-bottom:12px">
       <div><label>Dari Tanggal</label><input id="expenseStart" type="date" onchange="renderExpenses()"></div>
       <div><label>Sampai Tanggal</label><input id="expenseEnd" type="date" onchange="renderExpenses()"></div>
-      <div><label>Kategori</label><select id="expenseFilterCategory" onchange="renderExpenses()"><option value="">Semua Kategori</option><option>Operasional Kantor</option><option>Transportasi</option><option>Konsumsi</option><option>Perlengkapan</option><option>Promosi</option><option>Administrasi</option><option>Gaji / Honor</option><option>Lainnya</option></select></div>
+      <div><label>Kategori</label><select id="expenseFilterCategory" onchange="renderExpenses()"><option value="">Semua Kategori</option><option>Operasional Kantor</option><option>Transportasi</option><option>Konsumsi</option><option>Perlengkapan</option><option>Promosi</option><option>Administrasi</option><option>Gaji / Honor</option><option>Hotel</option><option>Lainnya</option></select></div>
     </div>
     <div class="actions" style="margin:0 0 12px;flex-wrap:wrap"><button type="button" class="btn secondary" onclick="setExpensePeriod('today')">Hari Ini</button><button type="button" class="btn secondary" onclick="setExpensePeriod('week')">7 Hari</button><button type="button" class="btn secondary" onclick="setExpensePeriod('month')">Bulan Ini</button><button type="button" class="btn secondary" onclick="setExpensePeriod('30days')">30 Hari</button></div>
     <div class="table-wrap"><table><thead><tr><th style="width:38px;text-align:center"><input class="bulk-select-all" id="expenseSelectAll" type="checkbox" onchange="toggleAllExpenses(this.checked)" title="Pilih semua"></th><th>No</th><th>Tanggal</th><th>Kategori</th><th>Uraian</th><th>Nominal</th><th>Metode</th><th>Keterangan</th><th>Aksi</th></tr></thead><tbody id="expenseBody"></tbody></table></div>
