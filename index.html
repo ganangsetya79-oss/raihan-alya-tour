@@ -347,7 +347,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;p
   </div>
 
   <div class="panel">
-    <div class="panel-head"><h2>Riwayat Transaksi</h2><span style="font-size:12px;color:#687078">Setiap pembayaran memiliki nomor invoice otomatis</span></div>
+    <div class="panel-head"><h2>Riwayat Transaksi</h2><span style="font-size:12px;color:#687078">Invoice Tagihan = total kewajiban; Nota = bukti pembayaran</span></div>
     <table><thead><tr><th>No. Invoice</th><th>Tanggal</th><th>Jamaah</th><th>Nominal</th><th>Diskon</th><th>Metode</th><th>Bank</th><th>Keterangan</th><th>Aksi</th></tr></thead>
     <tbody id="historyBody"></tbody></table>
   </div>
@@ -1189,7 +1189,7 @@ function renderPaymentHistory(){
       <td>${esc(p.method||'-')}</td>
       <td>${esc(bank)}</td>
       <td>${esc(p.note||'-')}</td>
-      <td><button class="btn small-btn" type="button" onclick="printPayment('${p.id}')">🖨️ Cetak 2 Nota</button> <button class="btn danger small-btn" type="button" onclick="deletePayment('${p.id}')">Hapus</button></td>
+      <td><button class="btn small-btn" type="button" onclick="printInvoice('${p.jamaah_id}')">🧾 Invoice Tagihan</button> <button class="btn secondary small-btn" type="button" onclick="printPayment('${p.id}')">🖨️ Cetak 2 Nota</button> <button class="btn danger small-btn" type="button" onclick="deletePayment('${p.id}')">Hapus</button></td>
     </tr>`;
   }).join('')||'<tr><td colspan="9">Belum ada pembayaran.</td></tr>';
 }
@@ -1213,7 +1213,7 @@ function printInvoice(jamaahId){
   const netBill=Math.max(0,totalBill-totalDiscount);
   const remain=Math.max(0,netBill-totalPaid);
   const paymentsList=group?groupPaymentsFor(j):payments.filter(p=>p.jamaah_id===j.id);
-  const inv='RAT/INV-'+String(Date.now()).slice(-8);
+  const inv='RAT/INV/'+String(j.id||'').slice(0,8).toUpperCase();
   const rows=members.map((m,i)=>`<tr><td>${i+1}</td><td>${esc(m.nama||'-')}</td><td>${esc(m.nik||'-')}</td><td>${esc(m.paket||'-')}</td><td class="num">${rupiah(m.harga)}</td></tr>`).join('');
   const history=paymentsList.map((p,i)=>`<tr><td>${i+1}</td><td>${formatDateID(p.payment_date)}</td><td>${esc(p.invoice_no||'-')}</td><td class="num">${rupiah(p.amount)}</td><td>${esc(p.method||'-')}</td><td>${esc(p.note||'-')}</td></tr>`).join('')||'<tr><td colspan="6">Belum ada pembayaran.</td></tr>';
   const title=group?'INVOICE TAGIHAN ROMBONGAN':'INVOICE TAGIHAN';
