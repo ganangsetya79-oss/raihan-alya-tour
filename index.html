@@ -774,7 +774,7 @@ window.saveMyProfile=async function(){
         ? '<img src="'+esc(photoUrl)+'" alt="Foto profil" style="width:100%;height:100%;object-fit:cover;border-radius:inherit">'
         : '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.5"></circle><path d="M5 20c.8-4 3.2-6 7-6s6.2 2 7 6"></path></svg>';
     }
-    currentProfile={...(currentProfile||{}),...payload,...(savedProfile||{})};
+    window.currentProfile={...(window.currentProfile||{}),...payload,...(savedProfile||{})};
     closeMyProfile();
     await loadMyProfile();
     notice('Profil berhasil diperbarui');
