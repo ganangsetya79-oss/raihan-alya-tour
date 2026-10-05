@@ -744,7 +744,7 @@ const SUPABASE_URL='https://hsnvuqnpqgbokdbiwjar.supabase.co';
 const SUPABASE_KEY='sb_publishable_qsYyXhpBu2xT3sGYAv--6w_AqEjU297';
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 
-const GOOGLE_SHEETS_WEBAPP_URL="https://script.googleusercontent.com/macros/echo?user_content_key=AUkAhnSuEkedlKDGSse1zbyAC-AIZnlXX7NFxGvurErl099g_LtfYtJKq27LHnT6glOdLuGN0jHiirT2_xrJ6pPtULNBSwap7vJn4wyoRBH4Jc8eX4ydif5-ybL2eblVhs3B1EDwMImmIoCce5ncmxJfqAsPTze-hWRBLK62y9bmLCAD3j2EHAZUbiIm0kiCj8C2UcLPtA7PKBYJmbq68dHqIdKHlg-reeHuCTNEE9wFtBeSzzRVEFboKkm_OcEEfm-TrkcDaWHC2PJOqXQQhMxITYfG3yioSg&lib=Mm0BgggCrA-VP9As-EE_FVZLCVdRC5UVF";
+const GOOGLE_SHEETS_WEBAPP_URL="https://script.google.com/macros/s/AKfycbzGD3BzOL4e2LlKnAlZvG_hYww4h0iNnYXLhsi1r9YNf9R1T68zEEejYw30_zErzVme/exec";
 async function syncToSpreadsheet(sheet,data){
   if(!GOOGLE_SHEETS_WEBAPP_URL||!data)return;
   try{
