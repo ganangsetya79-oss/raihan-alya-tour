@@ -754,6 +754,8 @@ function setFormLoading(form,loading,text){
     form.dataset.originalSubmitText=buttons[0]?.textContent||'Simpan';
     form.classList.add('is-processing');
     buttons.forEach(btn=>{btn.disabled=true;btn.classList.add('is-loading');btn.dataset.originalText=btn.textContent;btn.textContent=text||'Memuat data...';});
+    clearTimeout(form._loadingTimer);
+    form._loadingTimer=setTimeout(()=>{form.dataset.processing="0";setFormLoading(form,false)},30000);
   }else{
     form.classList.remove('is-processing');
     buttons.forEach(btn=>{btn.disabled=false;btn.classList.remove('is-loading');if(btn.dataset.originalText)btn.textContent=btn.dataset.originalText;});
@@ -2063,6 +2065,7 @@ document.getElementById('paymentForm').addEventListener('submit',async e=>{
   togglePaymentBank();
 
   await syncToSpreadsheet('pembayaran',inserted||{jamaah_id,amount,discount,payment_date,method,bank:method==='Transfer'?bank:null,note:paymentNote});
+  setFormLoading(e.currentTarget,false);e.currentTarget.dataset.processing="0";
   await loadData();renderAll();notice('Pembayaran berhasil disimpan.');
   setTimeout(()=>printPayment(inserted.id),250);
 });
@@ -2390,6 +2393,7 @@ document.getElementById('departureForm').addEventListener('submit',async e=>{
   await syncToSpreadsheet('keberangkatan',{...payload,id:editId||undefined});
   cancelDepartureEdit();
   await loadData();renderAll();
+  setFormLoading(e.currentTarget,false);e.currentTarget.dataset.processing="0";
   if(editId)openDeparture(editId);
   notice(editId?'Grup keberangkatan berhasil diperbarui.':'Grup keberangkatan berhasil dibuat.');
 });
