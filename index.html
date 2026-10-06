@@ -899,18 +899,23 @@ const groupPaymentsFor=x=>{
 const groupPaidFor=x=>groupPaymentsFor(x).reduce((a,p)=>a+Number(p.amount||0),0);
 const groupDiscountFor=x=>groupPaymentsFor(x).reduce((a,p)=>a+Number(p.discount||0),0);
 
-// Pembayaran rombongan dibagi proporsional berdasarkan harga paket masing-masing anggota.
-// Pembayaran yang dipilih atas nama anggota tidak dibagi ke anggota lain.
+// Alokasi pembayaran rombongan:
+// 1. Pembayaran rombongan dialokasikan proporsional berdasarkan harga paket tiap anggota.
+// 2. Pembayaran pribadi hanya masuk ke anggota yang dipilih.
+// 3. Jadi DP grup tetap terlihat pada setiap anggota, tanpa menghilangkan pembayaran pribadi.
 const paymentContributionFor=id=>{
   const x=data.find(j=>j.id===id);
   if(!x)return{paid:0,discount:0};
+  const members=isGroupJamaah(x)?groupMembersForPayment(x):[x];
   const ownPayments=payments.filter(p=>p.jamaah_id===id&&!isRombonganPayment(p));
   let paid=ownPayments.reduce((a,p)=>a+Number(p.amount||0),0);
   let discount=ownPayments.reduce((a,p)=>a+Number(p.discount||0),0);
+
   if(isGroupJamaah(x)){
-    const members=groupMembersForPayment(x);
     const total=members.reduce((a,m)=>a+Number(m.harga||0),0);
     if(total>0){
+      // Ambil seluruh transaksi rombongan yang terhubung ke salah satu anggota.
+      // Transaksi tersebut kemudian dialokasikan ke setiap anggota sesuai harga paket.
       const shared=payments.filter(p=>isRombonganPayment(p)&&members.some(m=>m.id===p.jamaah_id));
       const sharedPaid=shared.reduce((a,p)=>a+Number(p.amount||0),0);
       const sharedDiscount=shared.reduce((a,p)=>a+Number(p.discount||0),0);
@@ -1688,7 +1693,11 @@ function renderPaymentSummary(){
       if(!name||seen.has(name))return;
       seen.add(name);
       const members=groupMembersFor(x);
-      const total=groupTotalFor(x),discount=groupDiscountFor(x),paid=groupPaidFor(x),remain=Math.max(0,total-discount-paid);
+      const total=groupTotalFor(x);
+      const members=groupMembersFor(x);
+      const discount=members.reduce((a,m)=>a+discountFor(m.id),0);
+      const paid=members.reduce((a,m)=>a+paidFor(m.id),0);
+      const remain=Math.max(0,total-discount-paid);
       const groupStatus=members.length>0 && members.every(hasKnownPackage) && paid>=Math.max(0,total-discount)?'<span class="badge paid">Lunas</span>':'<span class="badge unpaid">Belum Lunas</span>';
       rows.push(`<tr><td>👥 <b>${esc(name)}</b><div class="muted">${members.length} anggota</div></td><td>${rupiah(total)}</td><td>${rupiah(discount)}</td><td>${rupiah(paid)}</td><td>${rupiah(remain)}</td><td>${groupStatus}</td></tr>`);
     }else{
