@@ -884,7 +884,7 @@ const APP_VERSION='2026-10-05-dashboard-calendar-1';
 const rupiah=n=>new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(Number(n)||0);
 const isGroupJamaah=x=>!!(x&&(x.kategori==='grup'||String(x.nama_rombongan||'').trim()));
 const groupNameFor=x=>String(x?.nama_rombongan||'').trim();
-const normalizeGroupName=v=>String(v||'').trim().toLowerCase().replace(/\\s+/g,' ');
+const normalizeGroupName=v=>String(v||'').normalize('NFKC').replace(/[\\u200B-\\u200D\\uFEFF]/g,'').trim().toLowerCase().replace(/\\s+/g,' ');
 const groupMembersFor=x=>{
   const name=normalizeGroupName(groupNameFor(x));
   if(!name)return[];
@@ -918,13 +918,16 @@ const paymentContributionFor=id=>{
   if(isGroupJamaah(x)){
     const members=groupMembersForPayment(x);
     if(members.length){
-      const totalHarga=members.reduce((a,m)=>a+Math.max(0,Number(m.harga||0)),0);
+      // Ambil seluruh anggota dari nama rombongan yang sama, termasuk jika
+      // ada perbedaan Unicode/spasi tersembunyi pada data lama.
+      const uniqueMembers=[...new Map(members.map(m=>[m.id,m])).values()];
+      const totalHarga=uniqueMembers.reduce((a,m)=>a+Math.max(0,Number(m.harga||0)),0);
       const memberHarga=Math.max(0,Number(x.harga||0));
-      const shared=payments.filter(p=>isRombonganPayment(p)&&members.some(m=>m.id===p.jamaah_id));
+      const shared=payments.filter(p=>isRombonganPayment(p)&&uniqueMembers.some(m=>m.id===p.jamaah_id));
       for(const p of shared){
         const amount=Number(p.amount||0);
         const disc=Number(p.discount||0);
-        const ratio=totalHarga>0 ? (memberHarga/totalHarga) : (1/members.length);
+        const ratio=totalHarga>0 ? (memberHarga/totalHarga) : (1/uniqueMembers.length);
         paid+=amount*ratio;
         discount+=disc*ratio;
       }
