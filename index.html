@@ -888,7 +888,8 @@ const normalizeGroupName=v=>String(v||'').normalize('NFKC').replace(/[\\u200B-\\
 const groupMembersFor=x=>{
   const name=normalizeGroupName(groupNameFor(x));
   if(!name)return[];
-  return data.filter(j=>normalizeGroupName(groupNameFor(j))===name);
+  // Sumber jumlah anggota selalu DATA JAMAAH, bukan transaksi pembayaran.
+  return data.filter(j=>isGroupJamaah(j)&&normalizeGroupName(groupNameFor(j))===name);
 };
 const groupTotalFor=x=>groupMembersFor(x).reduce((a,j)=>a+Number(j.harga||0),0);
 const isRombonganPayment=p=>String(p?.note||'').trim().toLowerCase().includes('pembayaran rombongan');
@@ -900,13 +901,14 @@ const groupPaymentsFor=x=>{
 const groupPaidFor=x=>groupPaymentsFor(x).reduce((a,p)=>a+Number(p.amount||0),0);
 const groupDiscountFor=x=>groupPaymentsFor(x).reduce((a,p)=>a+Number(p.discount||0),0);
 
-// Perhitungan pembayaran:
-// 1. Pembayaran pribadi anggota dihitung 100% untuk anggota tersebut.
-// 2. "Pembayaran Rombongan" dibagi ke seluruh anggota rombongan.
-//    Jika harga paket tersedia, pembagian proporsional berdasarkan harga.
-//    Jika harga paket belum diketahui/Rp0, dibagi rata berdasarkan jumlah anggota.
-// Contoh: rombongan membayar DP Rp60 jt untuk 6 anggota => masing-masing Rp10 jt.
-// NETI kemudian membayar pribadi Rp30 jt => total NETI Rp40 jt.
+// Pembayaran:
+// - Pembayaran pribadi anggota dihitung penuh untuk anggota tersebut.
+// - Pembayaran rombongan dibagi ke SEMUA anggota yang tercatat pada Data Jamaah
+//   dengan nama rombongan yang sama.
+// - Jika harga paket tersedia, pembagian mengikuti harga paket.
+// - Jika harga paket Rp0/belum diketahui, pembagian rata berdasarkan jumlah anggota.
+// Contoh: Rp60 jt / 6 anggota = Rp10 jt per anggota.
+// NETI + pembayaran pribadi Rp30 jt = Rp40 jt.
 const paymentContributionFor=id=>{
   const x=data.find(j=>j.id===id);
   if(!x)return{paid:0,discount:0};
@@ -916,24 +918,21 @@ const paymentContributionFor=id=>{
   let discount=ownPayments.reduce((a,p)=>a+Number(p.discount||0),0);
 
   if(isGroupJamaah(x)){
-    const members=groupMembersForPayment(x);
-    if(members.length){
-      // Ambil seluruh anggota dari nama rombongan yang sama, termasuk jika
-      // ada perbedaan Unicode/spasi tersembunyi pada data lama.
-      const uniqueMembers=[...new Map(members.map(m=>[m.id,m])).values()];
-      const totalHarga=uniqueMembers.reduce((a,m)=>a+Math.max(0,Number(m.harga||0)),0);
+    const members=groupMembersFor(x);
+    const memberCount=members.length;
+    if(memberCount>0){
+      const totalHarga=members.reduce((a,m)=>a+Math.max(0,Number(m.harga||0)),0);
       const memberHarga=Math.max(0,Number(x.harga||0));
-      const shared=payments.filter(p=>isRombonganPayment(p)&&uniqueMembers.some(m=>m.id===p.jamaah_id));
+      const shared=payments.filter(p=>isRombonganPayment(p)&&members.some(m=>m.id===p.jamaah_id));
       for(const p of shared){
         const amount=Number(p.amount||0);
         const disc=Number(p.discount||0);
-        const ratio=totalHarga>0 ? (memberHarga/totalHarga) : (1/uniqueMembers.length);
+        const ratio=totalHarga>0 ? (memberHarga/totalHarga) : (1/memberCount);
         paid+=amount*ratio;
         discount+=disc*ratio;
       }
     }
   }
-
   return{paid,discount};
 };
 const paidFor=id=>paymentContributionFor(id).paid;
