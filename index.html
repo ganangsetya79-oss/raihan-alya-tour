@@ -890,31 +890,39 @@ const groupMembersFor=x=>{
   return data.filter(j=>groupNameFor(j)===name);
 };
 const groupTotalFor=x=>groupMembersFor(x).reduce((a,j)=>a+Number(j.harga||0),0);
-const isRombonganPayment=p=>String(p?.note||'').trim().toLowerCase().startsWith('pembayaran rombongan:');
+const isRombonganPayment=p=>String(p?.note||'').trim().toLowerCase().includes('pembayaran rombongan');
+const groupMembersForPayment=x=>groupMembersFor(x);
 const groupPaymentsFor=x=>{
-  const ids=new Set(groupMembersFor(x).map(j=>j.id));
+  const ids=new Set(groupMembersForPayment(x).map(j=>j.id));
   return payments.filter(p=>ids.has(p.jamaah_id));
 };
 const groupPaidFor=x=>groupPaymentsFor(x).reduce((a,p)=>a+Number(p.amount||0),0);
 const groupDiscountFor=x=>groupPaymentsFor(x).reduce((a,p)=>a+Number(p.discount||0),0);
-const paidFor=id=>{
+
+// Pembayaran rombongan dibagi proporsional berdasarkan harga paket masing-masing anggota.
+// Pembayaran yang dipilih atas nama anggota tidak dibagi ke anggota lain.
+const paymentContributionFor=id=>{
   const x=data.find(j=>j.id===id);
-  if(!x||!isGroupJamaah(x))return payments.filter(p=>p.jamaah_id===id).reduce((a,p)=>a+Number(p.amount||0),0);
-  const members=groupMembersFor(x),total=groupTotalFor(x);
-  if(!total)return 0;
-  const ownPaid=payments.filter(p=>p.jamaah_id===id&&!isRombonganPayment(p)).reduce((a,p)=>a+Number(p.amount||0),0);
-  const groupPaid=payments.filter(p=>isRombonganPayment(p)&&members.some(m=>m.id===p.jamaah_id)).reduce((a,p)=>a+Number(p.amount||0),0);
-  return ownPaid+groupPaid*(Number(x.harga||0)/total);
+  if(!x)return{paid:0,discount:0};
+  const ownPayments=payments.filter(p=>p.jamaah_id===id&&!isRombonganPayment(p));
+  let paid=ownPayments.reduce((a,p)=>a+Number(p.amount||0),0);
+  let discount=ownPayments.reduce((a,p)=>a+Number(p.discount||0),0);
+  if(isGroupJamaah(x)){
+    const members=groupMembersForPayment(x);
+    const total=members.reduce((a,m)=>a+Number(m.harga||0),0);
+    if(total>0){
+      const shared=payments.filter(p=>isRombonganPayment(p)&&members.some(m=>m.id===p.jamaah_id));
+      const sharedPaid=shared.reduce((a,p)=>a+Number(p.amount||0),0);
+      const sharedDiscount=shared.reduce((a,p)=>a+Number(p.discount||0),0);
+      const ratio=Math.max(0,Number(x.harga||0))/total;
+      paid+=sharedPaid*ratio;
+      discount+=sharedDiscount*ratio;
+    }
+  }
+  return{paid,discount};
 };
-const discountFor=id=>{
-  const x=data.find(j=>j.id===id);
-  if(!x||!isGroupJamaah(x))return payments.filter(p=>p.jamaah_id===id).reduce((a,p)=>a+Number(p.discount||0),0);
-  const members=groupMembersFor(x),total=groupTotalFor(x);
-  if(!total)return 0;
-  const ownDiscount=payments.filter(p=>p.jamaah_id===id&&!isRombonganPayment(p)).reduce((a,p)=>a+Number(p.discount||0),0);
-  const groupDiscount=payments.filter(p=>isRombonganPayment(p)&&members.some(m=>m.id===p.jamaah_id)).reduce((a,p)=>a+Number(p.discount||0),0);
-  return ownDiscount+groupDiscount*(Number(x.harga||0)/total);
-};
+const paidFor=id=>paymentContributionFor(id).paid;
+const discountFor=id=>paymentContributionFor(id).discount;
 const netBillFor=x=>Math.max(0,Number(x.harga||0)-discountFor(x.id));
 // Jamaah tanpa paket yang jelas atau tanpa harga paket tidak boleh dianggap lunas,
 // meskipun nominal pembayarannya sudah mencapai/lebih dari tagihan yang tersimpan.
