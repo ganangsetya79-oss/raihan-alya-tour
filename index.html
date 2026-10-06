@@ -1694,7 +1694,6 @@ function renderPaymentSummary(){
       seen.add(name);
       const members=groupMembersFor(x);
       const total=groupTotalFor(x);
-      const members=groupMembersFor(x);
       const discount=members.reduce((a,m)=>a+discountFor(m.id),0);
       const paid=members.reduce((a,m)=>a+paidFor(m.id),0);
       const remain=Math.max(0,total-discount-paid);
