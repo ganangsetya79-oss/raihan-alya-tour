@@ -2749,8 +2749,29 @@ function renderDashboardUpcoming(){
 }
 function renderDashboardAgenda(){
   const el=document.getElementById('dashboardAgenda');if(!el)return;
-  const rows=(departures||[]).filter(x=>x.start_date).slice().sort((a,b)=>String(a.start_date).localeCompare(String(b.start_date))).slice(0,3);
-  el.innerHTML=rows.length?rows.map(d=>{const dt=new Date(d.start_date);return '<div class="dash-agenda-item"><div class="dash-agenda-date"><b>'+String(dt.getDate()).padStart(2,'0')+'</b><span>'+dt.toLocaleDateString('id-ID',{month:'short'})+'</span></div><div class="dash-agenda-main"><strong>'+esc(d.name||'Jadwal Umroh')+'</strong><small>Jadwal keberangkatan • Persiapan rombongan</small></div><span class="dash-agenda-tag">Akan Datang</span></div>'}).join(''):'<div class="muted">Belum ada agenda.</div>';
+  const today=new Date();today.setHours(0,0,0,0);
+  const items=[];
+  const add=(date,title,sub,tag,type='info')=>{
+    const dt=new Date(date+'T00:00:00');
+    if(dt<today)return;
+    items.push({date,title,sub,tag,type,dt});
+  };
+  // Agenda manasik yang sudah ditetapkan admin.
+  add('2026-10-08','Manasik Jamaah Umroh','08.00 WIB • Kantor PT Raihan Alya Tour (Lantai 3)','Akan Datang','manasik');
+  // Keberangkatan terdekat dari data sistem.
+  (departures||[]).filter(x=>x.start_date).forEach(d=>{
+    const count=(data||[]).filter(j=>departureFor(j)?.id===d.id).length;
+    add(String(d.start_date).slice(0,10),d.name||'Jadwal Keberangkatan',count+' Jamaah • Persiapan rombongan','Keberangkatan','departure');
+  });
+  items.sort((a,b)=>a.dt-b.dt);
+  const shown=items.slice(0,5);
+  el.innerHTML=shown.length?shown.map(x=>{
+    const dt=x.dt;
+    const day=String(dt.getDate()).padStart(2,'0');
+    const mon=dt.toLocaleDateString('id-ID',{month:'short'});
+    const cls=x.type==='manasik'?'dash-agenda-tag agenda-manis':'dash-agenda-tag';
+    return '<div class="dash-agenda-item"><div class="dash-agenda-date"><b>'+day+'</b><span>'+mon+'</span></div><div class="dash-agenda-main"><strong>'+esc(x.title)+'</strong><small>'+esc(x.sub)+'</small></div><span class="'+cls+'">'+esc(x.tag)+'</span></div>';
+  }).join(''):'<div class="muted">Belum ada pengingat atau agenda terdekat.</div>';
 }
 function renderDashboardModern(){
   renderDashboardFinanceChart();renderDashboardUpcoming();renderDashboardAgenda();renderDashboardExtras();
