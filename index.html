@@ -2163,6 +2163,10 @@ function openForm(id=null){
       setJamaahEntryMode('grup');
       document.getElementById('nama_rombongan').value=x.nama_rombongan||'';
       document.getElementById('keterangan_rombongan').value=x.keterangan_rombongan||'';
+      // Mode grup biasanya membuat kolom awal otomatis. Untuk EDIT,
+      // kosongkan dulu agar yang tampil hanya anggota yang benar-benar tersimpan.
+      const box=document.getElementById('jamaahMembers');
+      if(box)box.innerHTML='';
       // Saat mengedit satu anggota rombongan, buka seluruh anggota yang sudah ada.
       // Jadi admin tidak perlu mengetik ulang nama anggota lainnya.
       const members=groupMembersFor(x);
