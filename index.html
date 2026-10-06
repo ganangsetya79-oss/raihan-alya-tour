@@ -2191,64 +2191,98 @@ if(jamaahForm) jamaahForm.addEventListener('submit',async e=>{
 
 document.getElementById('paymentForm').addEventListener('submit',async e=>{
   e.preventDefault();
-  if(e.currentTarget.dataset.processing==="1")return;
-  e.currentTarget.dataset.processing="1";
-  setFormLoading(e.currentTarget,true,"Menyimpan...");
-  let jamaah_id=document.getElementById('paymentJamaah').value;
-  const selectedJamaah=(data||[]).find(x=>x.id===jamaah_id);
-  const selectedGroup=isGroupJamaah(selectedJamaah);
-  if(selectedGroup){
-    const members=groupMembersFor(selectedJamaah);
-    if(members.length)jamaah_id=members[0].id;
-  }
-  const amount=Number(document.getElementById('paymentAmount').value);
-  const discount=Math.max(0,Number(document.getElementById('paymentDiscount').value)||0);
-  const payment_date=document.getElementById('paymentDate').value;
-  const method=document.getElementById('paymentMethod').value;
-  const bank=document.getElementById('paymentBank').value;
-  const note=document.getElementById('paymentNote').value.trim();
-
-  if(!jamaah_id||amount<=0||!payment_date||!method){
-    notice('Lengkapi nama, nominal, tanggal, dan metode pembayaran.','error');
-    setFormLoading(e.currentTarget,false);e.currentTarget.dataset.processing="0";return
-  }
-  if(discount<0){notice('Diskon tidak boleh negatif.','error');setFormLoading(e.currentTarget,false);e.currentTarget.dataset.processing="0";return}
-  if(method==='Transfer'&&!bank){
-    notice('Pilih bank transfer: Bank Muamalat atau BSI.','error');
-    setFormLoading(e.currentTarget,false);e.currentTarget.dataset.processing="0";return
-  }
-
-  const paymentNote=selectedGroup
-    ? ('Pembayaran Rombongan: '+groupNameFor(selectedJamaah)+(note?' — '+note:''))
-    : note;
-  const {data:inserted,error}=await sb.from('payments').insert({
-    jamaah_id, amount, discount, payment_date, method,
-    bank: method==='Transfer'?bank:null,
-    note:paymentNote
-  }).select('*').single();
-  if(error){
-    console.error('Simpan pembayaran gagal:',JSON.stringify(error,null,2));
-    notice('Gagal menyimpan pembayaran: '+(error.message||'Kesalahan Supabase')+(error.details?' — '+error.details:''),'error');
-    setFormLoading(e.currentTarget,false);e.currentTarget.dataset.processing="0";return
-  }
-
-  document.getElementById('paymentAmount').value='';
-  document.getElementById('paymentDiscount').value='0';
-  document.getElementById('paymentMethod').value='';
-  document.getElementById('paymentBank').value='';
-  document.getElementById('paymentNote').value='';
-  togglePaymentBank();
+  const form=e.currentTarget;
+  if(form.dataset.processing==="1")return;
+  form.dataset.processing="1";
+  setFormLoading(form,true,"Menyimpan...");
 
   try{
-    await syncToSpreadsheet('pembayaran',inserted||{jamaah_id,amount,discount,payment_date,method,bank:method==='Transfer'?bank:null,note:paymentNote});
-  }catch(syncErr){
-    console.warn('Sinkronisasi spreadsheet pembayaran gagal, tetapi pembayaran sudah tersimpan di Supabase:',syncErr);
-  }
-  setFormLoading(e.currentTarget,false);e.currentTarget.dataset.processing="0";
-  await loadData();renderAll();addActivityLog('Mencatat pembayaran jamaah sebesar '+rupiah(amount)+'.');notice('Pembayaran berhasil disimpan.');
-  setTimeout(()=>printPayment(inserted.id),250);
-});
+    let jamaah_id=document.getElementById('paymentJamaah').value;
+    const selectedJamaah=(data||[]).find(x=>x.id===jamaah_id);
+    const selectedGroup=isGroupJamaah(selectedJamaah);
+    if(selectedGroup){
+      const members=groupMembersFor(selectedJamaah);
+      if(members.length)jamaah_id=members[0].id;
+    }
 
+    const amount=Number(document.getElementById('paymentAmount').value);
+    const discount=Math.max(0,Number(document.getElementById('paymentDiscount').value)||0);
+    const payment_date=document.getElementById('paymentDate').value;
+    const method=document.getElementById('paymentMethod').value;
+    const bank=document.getElementById('paymentBank').value;
+    const note=document.getElementById('paymentNote').value.trim();
+
+    if(!jamaah_id||amount<=0||!payment_date||!method){
+      notice('Lengkapi nama, nominal, tanggal, dan metode pembayaran.','error');
+      return;
+    }
+    if(discount<0){
+      notice('Diskon tidak boleh negatif.','error');
+      return;
+    }
+    if(method==='Transfer'&&!bank){
+      notice('Pilih bank transfer: Bank Muamalat atau BSI.','error');
+      return;
+    }
+
+    const paymentNote=selectedGroup
+      ? ('Pembayaran Rombongan: '+groupNameFor(selectedJamaah)+(note?' — '+note:''))
+      : note;
+
+    const payload={
+      jamaah_id,
+      amount,
+      discount,
+      payment_date,
+      method,
+      bank:method==='Transfer'?bank:null,
+      note:paymentNote
+    };
+
+    // Simpan ke Supabase sebagai sumber data utama.
+    // Tidak memakai .select() agar tidak gagal hanya karena SELECT policy.
+    const savePromise=sb.from('payments').insert(payload);
+    const timeoutPromise=new Promise(resolve=>setTimeout(
+      ()=>resolve({error:{message:'Waktu penyimpanan habis (timeout). Periksa koneksi Supabase/RLS.'}}),
+      15000
+    ));
+    const result=await Promise.race([savePromise,timeoutPromise]);
+
+    if(result?.error){
+      console.error('Simpan pembayaran gagal:',JSON.stringify(result.error,null,2));
+      notice('Gagal menyimpan pembayaran: '+(result.error.message||'Kesalahan Supabase')+(result.error.details?' — '+result.error.details:''),'error');
+      return;
+    }
+
+    // Kosongkan form segera setelah Supabase berhasil.
+    document.getElementById('paymentAmount').value='';
+    document.getElementById('paymentDiscount').value='0';
+    document.getElementById('paymentMethod').value='';
+    document.getElementById('paymentBank').value='';
+    document.getElementById('paymentNote').value='';
+    togglePaymentBank();
+
+    await loadData();
+    renderAll();
+    addActivityLog('Mencatat pembayaran jamaah sebesar '+rupiah(amount)+'.');
+    notice('Pembayaran berhasil disimpan.');
+
+    // Spreadsheet bukan bagian dari transaksi utama.
+    // Jalankan terpisah dengan timeout agar tidak membuat tombol menggantung.
+    const sheetPayload={...payload};
+    Promise.race([
+      syncToSpreadsheet('pembayaran',sheetPayload),
+      new Promise(resolve=>setTimeout(()=>resolve(false),5000))
+    ]).catch(err=>console.warn('Sinkronisasi spreadsheet pembayaran gagal:',err));
+
+  }catch(err){
+    console.error('Proses pembayaran error:',err);
+    notice('Pembayaran gagal disimpan: '+(err?.message||'Kesalahan tidak diketahui'),'error');
+  }finally{
+    form.dataset.processing="0";
+    setFormLoading(form,false);
+  }
+});
 
 
 const DOC_TYPES=[
