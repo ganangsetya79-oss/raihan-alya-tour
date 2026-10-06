@@ -253,6 +253,57 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;p
 .dashboard-activity-item{display:flex;gap:10px;padding:9px 0;border-bottom:1px solid #edf0ef}.dashboard-activity-item:last-child{border-bottom:0}.dashboard-activity-dot{width:7px;height:7px;border-radius:50%;background:#1f705d;margin-top:5px;flex:none}.dashboard-activity-text{font-size:12px}.dashboard-activity-time{font-size:10px;color:#8a9490;margin-top:2px}
 .dashboard-wa-btn{border:0;background:#e7f5ec;color:#1b6a47;border-radius:7px;padding:5px 8px;font-size:11px;cursor:pointer}.dashboard-wa-btn:hover{background:#d9efe2}
 @media(max-width:800px){.dashboard-extra-grid{grid-template-columns:1fr}}
+</style><style id="dashboard-layout-refresh">
+/* Dashboard layout refresh */
+#dashboard{max-width:1500px!important;padding-bottom:30px}
+#dashboard .dashboard-top{margin-bottom:14px;min-height:58px;align-items:center}
+#dashboard .dashboard-top h1{font-size:25px;line-height:1.1}
+#dashboard .dashboard-welcome{margin-top:3px;font-size:11px}
+#dashboard .dashboard-greeting{font-size:13px;margin-top:7px;color:#31584e}
+#dashboard .dashboard-running{display:none}
+#dashboard .dashboard-user-actions{gap:6px}
+#dashboard .dashboard-brand{min-height:112px;margin-bottom:16px;padding:18px 22px;display:flex;align-items:center;border-radius:17px}
+#dashboard .dashboard-brand-logo{width:68px;height:68px}
+#dashboard .dashboard-brand-title{font-size:21px;font-weight:800}
+#dashboard .dashboard-brand-slogan{font-size:13px}
+#dashboard .dashboard-brand-subtitle{font-size:11px}
+#dashboard .dashboard-calendar-open-btn{margin:0 0 14px!important}
+#dashboard .dashboard-filter-panel{margin-bottom:16px;padding:16px 18px;border-radius:15px}
+#dashboard .dashboard-filter-panel .panel-head{margin-bottom:12px}
+#dashboard .dashboard-filter-panel .form-grid{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;align-items:end}
+#dashboard .dashboard-filter-panel .form-grid>div{min-width:0}
+#dashboard .dashboard-filter-panel label{display:block;font-size:11px;font-weight:700;color:#48645c;margin-bottom:4px}
+#dashboard .dashboard-filter-panel select{height:42px;margin-top:0;border-radius:9px;font-size:13px;font-weight:600}
+#dashboard .dashboard-filter-panel>.muted{margin-top:10px!important;padding:9px 11px;border-radius:8px;background:#fff;color:#74827d;font-size:11px}
+#dashboard>.cards.dashboard-stat-cards{grid-template-columns:repeat(4,minmax(0,1fr));gap:13px;margin-bottom:16px}
+#dashboard>.cards.dashboard-stat-cards .stat-card{min-height:112px;padding:16px;border-radius:14px;background:#fff;border:1px solid #e3ebe7;box-shadow:0 7px 20px rgba(23,63,53,.055)}
+#dashboard>.cards.dashboard-stat-cards .stat-card:nth-child(5){grid-column:1}
+#dashboard>.cards.dashboard-stat-cards .stat-main{min-height:57px}
+#dashboard>.cards.dashboard-stat-cards .label{font-size:11px}
+#dashboard>.cards.dashboard-stat-cards .num{font-size:23px;margin-top:6px;color:#163e35}
+#dashboard>.cards.dashboard-stat-cards .stat-icon{width:38px;height:38px;border-radius:11px}
+#dashboard>.cards.dashboard-stat-cards .stat-link{font-size:10px;margin-top:9px}
+#dashboard .dashboard-extra-grid{grid-template-columns:1.15fr .85fr;gap:14px;margin-bottom:14px}
+#dashboard .dashboard-checklist-panel,#dashboard .dashboard-activity-panel,#dashboard .dashboard-extra-grid .panel{border-radius:14px;padding:17px;margin-bottom:14px}
+#dashboard .panel{box-shadow:0 7px 20px rgba(23,63,53,.045)}
+#dashboard .panel-head{margin-bottom:11px}
+#dashboard .panel-head h2{font-size:15px}
+#dashboard .dashboard-alert-item{padding:9px 10px}
+#dashboard .dashboard-finance-grid>div{padding:9px 10px}
+@media(max-width:1100px){
+ #dashboard>.cards.dashboard-stat-cards{grid-template-columns:repeat(2,minmax(0,1fr))}
+ #dashboard>.cards.dashboard-stat-cards .stat-card:nth-child(5){grid-column:auto}
+ #dashboard .dashboard-extra-grid{grid-template-columns:1fr}
+}
+@media(max-width:700px){
+ #dashboard .dashboard-top{align-items:flex-start}
+ #dashboard .dashboard-user-actions{justify-content:flex-start}
+ #dashboard .dashboard-filter-panel .form-grid{grid-template-columns:1fr}
+ #dashboard>.cards.dashboard-stat-cards{grid-template-columns:1fr}
+ #dashboard .dashboard-brand{min-height:96px;padding:14px}
+ #dashboard .dashboard-brand-logo{width:56px;height:56px}
+ #dashboard .dashboard-brand-title{font-size:17px}
+}
 </style></head>
 <body>
 <button type="button" class="mobile-menu-btn" id="mobileMenuBtn" onclick="toggleMobileNav()" aria-label="Buka menu" title="Buka menu"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"></path></svg></button>
