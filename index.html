@@ -358,6 +358,38 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;p
  .dashboard-modern .dash-upcoming-item{grid-template-columns:50px 1fr}
  .dashboard-modern .dash-status-pill{display:none}
 }
+</style><style>
+/* Dashboard compact layout */
+.dashboard-modern{max-width:1500px!important;margin:0 auto!important}
+.dashboard-modern .dash-head{margin-bottom:10px}
+.dashboard-modern .dashboard-greeting{display:none}
+.dashboard-modern .dash-hero{min-height:112px!important;height:112px;padding:16px 20px!important;margin-bottom:12px}
+.dashboard-modern .dash-hero-logo{width:66px;height:66px}
+.dashboard-modern .dash-hero-title{font-size:27px}
+.dashboard-modern .dash-hero-slogan{font-size:15px}
+.dashboard-modern .dash-hero-sub{font-size:12px}
+.dashboard-modern .dash-filter-panel{margin-bottom:12px!important}
+.dashboard-modern .dash-stat-grid{gap:12px;margin-bottom:12px}
+.dashboard-modern .dash-stat{min-height:92px;padding:14px}
+.dashboard-modern .dash-stat-icon{width:46px;height:46px}
+.dashboard-modern .dash-stat strong{font-size:20px;margin-top:3px}
+.dashboard-modern .dash-main-grid{gap:12px}
+.dashboard-modern .dash-chart-panel,.dashboard-modern .dash-departure-panel,.dashboard-modern .dash-bottom-grid>.panel{padding:14px}
+.dashboard-modern .dash-finance-chart{height:165px;padding:12px 6px 4px}
+.dashboard-modern .dash-chart-legend{margin-top:20px}
+.dashboard-modern .dash-bottom-grid{gap:12px!important;margin-top:12px!important}
+.dashboard-calendar-toolbar{display:flex;justify-content:flex-end;margin:0 0 10px}
+.dashboard-calendar-toggle{display:inline-flex;align-items:center;gap:7px}
+.dashboard-calendar-row{margin:0 0 12px!important}
+.dashboard-calendar-card{width:330px!important}
+@media(max-width:900px){
+ .dashboard-modern .dash-stat-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .dashboard-modern .dash-main-grid{grid-template-columns:1fr}
+}
+@media(max-width:600px){
+ .dashboard-modern .dash-stat-grid{grid-template-columns:1fr}
+ .dashboard-modern .dash-hero{height:auto;min-height:100px!important}
+}
 </style></head>
 <body>
 <button type="button" class="mobile-menu-btn" id="mobileMenuBtn" onclick="toggleMobileNav()" aria-label="Buka menu" title="Buka menu"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"></path></svg></button>
@@ -426,6 +458,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;p
     </div>
   </div>
 
+  <div class="dashboard-calendar-toolbar" id="dashboardCalendarToggleWrap"><button class="btn secondary dashboard-calendar-toggle" type="button" onclick="toggleDashboardCalendar()"><svg viewBox="0 0 24 24" style="width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.8"><rect x="3" y="4" width="18" height="17" rx="2"></rect><path d="M16 2v4M8 2v4M3 9h18"></path></svg>Tampilkan Kalender</button></div>
   <div class="dashboard-calendar-row" id="dashboardCalendarPanel" style="display:none">
     <div class="dashboard-calendar-card">
       <button type="button" class="calendar-close-btn" onclick="toggleDashboardCalendar()" aria-label="Sembunyikan kalender">×</button>
@@ -1942,10 +1975,11 @@ function calendarFormatLong(dateStr){
 }
 function toggleDashboardCalendar(){
   const panel=document.getElementById('dashboardCalendarPanel'),wrap=document.getElementById('dashboardCalendarToggleWrap');
-  if(!panel||!wrap)return;
-  const hidden=panel.style.display==='none';
-  panel.style.display=hidden?'':'none';
-  wrap.style.display=hidden?'none':'block';
+  if(!panel)return;
+  const hidden=getComputedStyle(panel).display==='none';
+  panel.style.display=hidden?'flex':'none';
+  if(wrap)wrap.style.display=hidden?'none':'flex';
+  if(hidden)calendarRender();
 }
 function calendarRender(){
   const grid=document.getElementById('dashboardCalendarGrid'),label=document.getElementById('calendarMonthLabel'),selectedLabel=document.getElementById('calendarSelectedLabel'),note=document.getElementById('calendarNote');
