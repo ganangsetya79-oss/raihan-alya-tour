@@ -1580,10 +1580,24 @@ function printReport(){
     '<div class="title">'+esc(r.name)+'</div>'+table);
 }
 const PACKAGE_KEY='raihan_alya_packages_v1';
-const defaultPackages=[{id:'pkg-executive',name:'Executive',price:'',hotel:'',duration:'',departure:'',returnDate:'',notes:''},{id:'pkg-premium',name:'Premium',price:'',hotel:'',duration:'',departure:'',returnDate:'',notes:''},{id:'pkg-economis',name:'Economis',price:'',hotel:'',duration:'',departure:'',returnDate:'',notes:''}];
-function getPackages(){try{const r=localStorage.getItem(PACKAGE_KEY);const a=r?JSON.parse(r):defaultPackages;return Array.isArray(a)&&a.length?a:defaultPackages}catch(e){return defaultPackages}}
+const OTHER_PACKAGE={id:'pkg-other',name:'Other / Belum Diketahui',price:'',hotel:'',duration:'',departure:'',returnDate:'',notes:'Paket belum ditentukan / belum diketahui'};
+const defaultPackages=[{id:'pkg-executive',name:'Executive',price:'',hotel:'',duration:'',departure:'',returnDate:'',notes:''},{id:'pkg-premium',name:'Premium',price:'',hotel:'',duration:'',departure:'',returnDate:'',notes:''},{id:'pkg-economis',name:'Economis',price:'',hotel:'',duration:'',departure:'',returnDate:'',notes:''},OTHER_PACKAGE];
+function getPackages(){
+  try{
+    const r=localStorage.getItem(PACKAGE_KEY);
+    const a=r?JSON.parse(r):defaultPackages;
+    const list=Array.isArray(a)&&a.length?a.slice():defaultPackages.slice();
+    if(!list.some(p=>String(p?.name||'').toLowerCase()==='other / belum diketahui'))list.push(OTHER_PACKAGE);
+    return list;
+  }catch(e){return defaultPackages.slice()}
+}
 function savePackages(a){localStorage.setItem(PACKAGE_KEY,JSON.stringify(a))}
-function packageOptions(selected=''){return getPackages().map(p=>'<option value="'+esc(p.name)+'" '+(p.name===selected?'selected':'')+'>'+esc(p.name)+'</option>').join('')}
+function packageOptions(selected=''){
+  const list=getPackages().slice();
+  if(selected && !list.some(p=>p.name===selected))list.push({id:'pkg-existing-'+selected,name:selected,price:'',hotel:'',duration:'',departure:'',returnDate:'',notes:'Paket lama'});
+  if(!list.some(p=>p.name==='Other / Belum Diketahui'))list.push(OTHER_PACKAGE);
+  return list.map(p=>'<option value="'+esc(p.name)+'" '+(p.name===selected?'selected':'')+'>'+esc(p.name)+'</option>').join('');
+}
 function refreshPackageSelects(){const s=document.getElementById('jPaketSelect');if(s){const old=s.value;s.innerHTML=packageOptions(old);if(old)s.value=old}document.querySelectorAll('#jamaahMembers select[data-field="paket"]').forEach(s=>{const old=s.value;s.innerHTML=packageOptions(old);if(old)s.value=old});const r=document.getElementById('reportPackage');if(r){const old=r.value;r.innerHTML='<option value="">Semua Paket</option>'+getPackages().map(p=>'<option value="'+esc(p.name)+'">'+esc(p.name)+'</option>').join('');if(old)r.value=old}}
 function packageByName(name){return getPackages().find(p=>p.name===name)}
 function syncPackagePrice(selectId,priceId){const s=document.getElementById(selectId),p=document.getElementById(priceId);const item=packageByName(s?.value);if(item&&item.price!==''&&p)p.value=item.price}
@@ -2065,11 +2079,11 @@ function syncPaymentJamaahName(){
 }
 
 function jamaahMemberTemplate(index,data={}){
-  return `<div class="jamaah-member-card">
+  return `<div class="jamaah-member-card" data-jamaah-id="${esc(data.id||'')}">
     <div class="jamaah-member-title"><span>Anggota ${index}</span>${index>1?'<button type="button" class="btn small-btn jamaah-remove" onclick="removeJamaahMember(this)">Hapus</button>':''}</div>
     <div class="jamaah-member-grid">
       <div><label>Nama Lengkap</label><input data-field="nama" placeholder="Nama anggota" value="${esc(data.nama||'')}"></div>
-      <div><label>Jenis Kelamin</label><select data-field="jenis_kelamin"><option value="">-- Pilih --</option><option value="Laki-laki" ${data.jenis_kelamin==='Laki-laki'?'selected':''}>Laki-laki</option><option value="Perempuan" ${data.jenis_kelamin==='Perempuan'?'selected':''}>Perempuan</option></select></div>
+      <div><label>Jenis Kelamin</label><select data-field="jenis_kelamin"><option value="">-- Pilih --</option><option value="Laki-laki" ${data.jenis_kelamin==='Laki-laki'?'selected':''}>Laki-laki</option><option value="Perempuan" ${data.jenis_kelamin==='Perempuan'?'selected':''}>Perempuan</select></div>
       <div><label>NIK</label><input data-field="nik" placeholder="NIK" value="${esc(data.nik||'')}"></div>
       <div><label>Paket</label><select data-field="paket" onchange="syncPackageMemberPrice(this)">${packageOptions(data.paket||'')}</select></div>
       <div><label>Harga Paket</label><input data-field="harga" type="number" min="0" placeholder="Harga" value="${data.harga??''}"></div>
@@ -2140,12 +2154,26 @@ async function assignSelectedGroup(){
 function openForm(id=null){
   document.getElementById('modal').classList.add('show');
   document.getElementById('formTitle').textContent=id?'Edit Jamaah':'Tambah Jamaah';
-  document.getElementById('jamaahForm').reset(); document.getElementById('editId').value=id||'';
+  document.getElementById('jamaahForm').reset();
+  document.getElementById('editId').value=id||'';
   document.getElementById('jamaahMembers').innerHTML='';
   if(id){
     const x=data.find(a=>a.id===id);
-    if(x&&x.kategori==='grup'){setJamaahEntryMode('grup');document.getElementById('nama_rombongan').value=x.nama_rombongan||'';document.getElementById('keterangan_rombongan').value=x.keterangan_rombongan||'';addJamaahMember(x)}
-    else if(x){setJamaahEntryMode('individu');for(const k of ['nama','jenis_kelamin','hp','nik','alamat','paket','harga','berangkat','catatan']){const el=document.getElementById(k);if(el)el.value=x[k]??''}}
+    if(x&&x.kategori==='grup'){
+      setJamaahEntryMode('grup');
+      document.getElementById('nama_rombongan').value=x.nama_rombongan||'';
+      document.getElementById('keterangan_rombongan').value=x.keterangan_rombongan||'';
+      // Saat mengedit satu anggota rombongan, buka seluruh anggota yang sudah ada.
+      // Jadi admin tidak perlu mengetik ulang nama anggota lainnya.
+      const members=groupMembersFor(x);
+      members.forEach(member=>addJamaahMember(member));
+      if(!members.length)addJamaahMember(x);
+    }else if(x){
+      setJamaahEntryMode('individu');
+      for(const k of ['nama','jenis_kelamin','hp','nik','alamat','paket','harga','berangkat','catatan']){
+        const el=document.getElementById(k);if(el)el.value=x[k]??''
+      }
+    }
   }else setJamaahEntryMode('individu');
 }
 function closeForm(){document.getElementById('modal').classList.remove('show')}
@@ -2163,23 +2191,58 @@ const jamaahForm=document.getElementById('jamaahForm');
 if(jamaahForm) jamaahForm.addEventListener('submit',async e=>{
   e.preventDefault();
   const id=document.getElementById('editId').value,mode=document.getElementById('entryMode').value||'individu';let result, jamaahSheetRows=[];
-  if(mode==='grup'&&!id){
-    const groupName=document.getElementById('nama_rombongan').value.trim(),groupNote=document.getElementById('keterangan_rombongan').value.trim();
+  if(mode==='grup'){
+    const groupName=document.getElementById('nama_rombongan').value.trim();
+    const groupNote=document.getElementById('keterangan_rombongan').value.trim();
     const cards=[...document.querySelectorAll('#jamaahMembers .jamaah-member-card')];
-    const rows=cards.map(card=>{const get=k=>card.querySelector('[data-field="'+k+'"]')?.value||'';return{
-      nama:get('nama').trim(),jenis_kelamin:get('jenis_kelamin'),nik:get('nik').trim(),paket:get('paket')||'Executive',harga:Number(get('harga'))||0,
-      hp:'',alamat:'',berangkat:null,catatan:'',kategori:'grup',nama_rombongan:groupName,keterangan_rombongan:groupNote
-    }}).filter(x=>x.nama);
+    const rows=cards.map(card=>{
+      const get=k=>card.querySelector('[data-field="'+k+'"]')?.value||'';
+      return{
+        id:card.dataset.jamaahId||'',
+        nama:get('nama').trim(),
+        jenis_kelamin:get('jenis_kelamin'),
+        nik:get('nik').trim(),
+        paket:get('paket')||'Other / Belum Diketahui',
+        harga:Number(get('harga'))||0,
+        hp:'',
+        alamat:'',
+        berangkat:null,
+        catatan:'',
+        kategori:'grup',
+        nama_rombongan:groupName,
+        keterangan_rombongan:groupNote
+      };
+    }).filter(x=>x.nama);
+
     if(!groupName){notice('Nama rombongan / keluarga wajib diisi.','error');return}
     if(!rows.length){notice('Isi minimal satu nama anggota.','error');return}
+
     jamaahSheetRows=rows;
-    result=await sb.from('jamaah').insert(rows);
-    if(result.error && /keterangan_rombongan|column.*does not exist|schema cache/i.test(result.error.message||'')){
-      const fallbackRows=rows.map(({keterangan_rombongan,...row})=>row);
-      result=await sb.from('jamaah').insert(fallbackRows);
+    const fallbackRows=rows.map(({id,...row})=>row);
+    const existingRows=rows.filter(x=>x.id);
+    const newRows=rows.filter(x=>!x.id);
+
+    // Update anggota yang sudah ada, insert hanya anggota baru.
+    const results=[];
+    for(const row of existingRows){
+      const {id,...payload}=row;
+      let q=await sb.from('jamaah').update(payload).eq('id',id);
+      if(q.error && /keterangan_rombongan|column.*does not exist|schema cache/i.test(q.error.message||'')){
+        const {keterangan_rombongan,...fallback}=payload;
+        q=await sb.from('jamaah').update(fallback).eq('id',id);
+      }
+      results.push(q);
     }
+    if(newRows.length){
+      let q=await sb.from('jamaah').insert(newRows.map(({id,...row})=>row));
+      if(q.error && /keterangan_rombongan|column.*does not exist|schema cache/i.test(q.error.message||'')){
+        q=await sb.from('jamaah').insert(newRows.map(({id,keterangan_rombongan,...row})=>row));
+      }
+      results.push(q);
+    }
+    result=results.find(x=>x?.error)||{error:null};
   }else{
-    const payload={nama:document.getElementById('nama').value.trim(),jenis_kelamin:document.getElementById('jenis_kelamin').value,hp:document.getElementById('hp').value.trim(),nik:document.getElementById('nik').value.trim(),alamat:document.getElementById('alamat').value.trim(),paket:document.getElementById('jPaketSelect').value,harga:Number(document.getElementById('harga').value)||0,berangkat:document.getElementById('berangkat').value||null,catatan:document.getElementById('catatan').value.trim()};
+    const payload={nama:document.getElementById('nama').value.trim(),jenis_kelamin:document.getElementById('jenis_kelamin').value,hp:document.getElementById('hp').value.trim(),nik:document.getElementById('nik').value.trim(),alamat:document.getElementById('alamat').value.trim(),paket:document.getElementById('jPaketSelect').value||'Other / Belum Diketahui',harga:Number(document.getElementById('harga').value)||0,berangkat:document.getElementById('berangkat').value||null,catatan:document.getElementById('catatan').value.trim()};
     jamaahSheetRows=[{...payload,id:id||undefined}];
     if(id)result=await sb.from('jamaah').update(payload).eq('id',id);else result=await sb.from('jamaah').insert(payload);
     if(result.error){console.error('Simpan jamaah gagal:',JSON.stringify(result.error,null,2));notice('Gagal menyimpan jamaah: '+(result.error.message||'Kesalahan Supabase')+(result.error.details?' — '+result.error.details:''),'error');return}
