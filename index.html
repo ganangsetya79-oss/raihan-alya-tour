@@ -723,11 +723,14 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;p
       <div><label>Nama Lengkap</label><input id="nama" required></div><div><label>Jenis Kelamin</label><select id="jenis_kelamin"><option value="">-- Pilih --</option><option value="Laki-laki">Laki-laki</option><option value="Perempuan">Perempuan</option></select></div>
       <div><label>No. HP</label><input id="hp" required></div><div><label>NIK</label><input id="nik"></div><div><label>Alamat</label><input id="alamat"></div>
       <div><label>Paket</label><select id="jPaketSelect" onchange="syncPackagePrice('jPaketSelect','harga')"></select></div>
-      <div><label>Harga Paket</label><input id="harga" type="number" min="0" required readonly title="Harga otomatis mengikuti data paket"></div><div><label>Tanggal Berangkat</label><input id="berangkat" type="date"></div>
+      <div><label>Harga Paket</label><input id="harga" type="number" min="0" required readonly title="Harga otomatis mengikuti data paket"></div>
+      <div><label>Jadwal Keberangkatan</label><select id="jDepartureSelect"><option value="">-- Belum ditentukan --</option></select></div>
+      <div><label>Tanggal Berangkat</label><input id="berangkat" type="date"></div>
       <div class="full"><label>Catatan</label><input id="catatan"></div>
     </div></div>
     <div id="groupForm" class="jamaah-group-form hidden">
       <div class="jamaah-group-head"><div><label>Nama Rombongan / Keluarga</label><input id="nama_rombongan" placeholder="Contoh: Keluarga Ahmad"></div><div><label>Keterangan Rombongan</label><input id="keterangan_rombongan" placeholder="Opsional"></div></div>
+      <div style="margin:0 0 12px"><label>Jadwal Keberangkatan</label><select id="groupDepartureSelect"><option value="">-- Belum ditentukan --</option></select><div class="muted" style="margin-top:4px">Semua anggota rombongan otomatis dimasukkan ke jadwal ini.</div></div>
       <div class="jamaah-members-head"><div><h3 style="margin:0">Anggota Jamaah</h3><div class="muted">Isi nama anggota 1 sampai 5.</div></div><button type="button" class="btn" onclick="addJamaahMember()">+ Tambah Anggota</button></div>
       <div id="jamaahMembers"></div>
     </div>
@@ -2158,18 +2161,38 @@ async function assignSelectedGroup(){
   if(result.error){notice('Gagal mengatur rombongan: '+result.error.message,'error');return}
   await loadData();renderAll();notice(ids.length+' jamaah berhasil dimasukkan ke rombongan '+nama+'.');
 }
+function fillJamaahDepartureSelects(selected=''){
+  const options=(departures||[]).slice().sort((a,b)=>String(a.start_date||'').localeCompare(String(b.start_date||''))).map(d=>{
+    const date=d.start_date?(d.start_date+(d.end_date?' s/d '+d.end_date:'')):'Tanggal belum diisi';
+    return '<option value="'+esc(d.id)+'">'+esc(d.name||'Jadwal')+' — '+esc(date)+'</option>';
+  }).join('');
+  ['jDepartureSelect','groupDepartureSelect'].forEach(id=>{
+    const sel=document.getElementById(id);
+    if(!sel)return;
+    sel.innerHTML='<option value="">-- Belum ditentukan --</option>'+options;
+    if(selected)sel.value=selected;
+  });
+}
+function syncDepartureDateFromSelect(selectId,dateId){
+  const sel=document.getElementById(selectId),date=document.getElementById(dateId);
+  if(!sel||!date||!sel.value)return;
+  const d=(departures||[]).find(x=>x.id===sel.value);
+  if(d?.start_date)date.value=d.start_date;
+}
 function openForm(id=null){
   document.getElementById('modal').classList.add('show');
   document.getElementById('formTitle').textContent=id?'Edit Jamaah':'Tambah Jamaah';
   document.getElementById('jamaahForm').reset();
   document.getElementById('editId').value=id||'';
   document.getElementById('jamaahMembers').innerHTML='';
+  fillJamaahDepartureSelects();
   if(id){
     const x=data.find(a=>a.id===id);
     if(x&&x.kategori==='grup'){
       setJamaahEntryMode('grup');
       document.getElementById('nama_rombongan').value=x.nama_rombongan||'';
       document.getElementById('keterangan_rombongan').value=x.keterangan_rombongan||'';
+      fillJamaahDepartureSelects(x.departure_id||'');
       // Mode grup biasanya membuat kolom awal otomatis. Untuk EDIT,
       // kosongkan dulu agar yang tampil hanya anggota yang benar-benar tersimpan.
       const box=document.getElementById('jamaahMembers');
@@ -2184,6 +2207,7 @@ function openForm(id=null){
       for(const k of ['nama','jenis_kelamin','hp','nik','alamat','paket','harga','berangkat','catatan']){
         const el=document.getElementById(k);if(el)el.value=x[k]??''
       }
+      fillJamaahDepartureSelects(x.departure_id||'');
       if(document.getElementById('jPaketSelect')?.value)syncPackagePrice('jPaketSelect','harga')
     }
   }else setJamaahEntryMode('individu');
@@ -2222,7 +2246,8 @@ if(jamaahForm) jamaahForm.addEventListener('submit',async e=>{
         catatan:get('catatan').trim(),
         kategori:'grup',
         nama_rombongan:groupName,
-        keterangan_rombongan:groupNote
+        keterangan_rombongan:groupNote,
+        departure_id:document.getElementById('groupDepartureSelect').value||null
       };
     }).filter(x=>x.nama);
 
@@ -2254,7 +2279,7 @@ if(jamaahForm) jamaahForm.addEventListener('submit',async e=>{
     }
     result=results.find(x=>x?.error)||{error:null};
   }else{
-    const payload={nama:document.getElementById('nama').value.trim(),jenis_kelamin:document.getElementById('jenis_kelamin').value,hp:document.getElementById('hp').value.trim(),nik:document.getElementById('nik').value.trim(),alamat:document.getElementById('alamat').value.trim(),paket:document.getElementById('jPaketSelect').value||'Other / Belum Diketahui',harga:Number(document.getElementById('harga').value)||0,berangkat:document.getElementById('berangkat').value||null,catatan:document.getElementById('catatan').value.trim()};
+    const payload={nama:document.getElementById('nama').value.trim(),jenis_kelamin:document.getElementById('jenis_kelamin').value,hp:document.getElementById('hp').value.trim(),nik:document.getElementById('nik').value.trim(),alamat:document.getElementById('alamat').value.trim(),paket:document.getElementById('jPaketSelect').value||'Other / Belum Diketahui',harga:Number(document.getElementById('harga').value)||0,berangkat:document.getElementById('berangkat').value||null,catatan:document.getElementById('catatan').value.trim(),departure_id:document.getElementById('jDepartureSelect').value||null};
     jamaahSheetRows=[{...payload,id:id||undefined}];
     if(id)result=await sb.from('jamaah').update(payload).eq('id',id);else result=await sb.from('jamaah').insert(payload);
     if(result.error){console.error('Simpan jamaah gagal:',JSON.stringify(result.error,null,2));notice('Gagal menyimpan jamaah: '+(result.error.message||'Kesalahan Supabase')+(result.error.details?' — '+result.error.details:''),'error');return}
