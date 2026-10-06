@@ -809,15 +809,17 @@ function setFormLoading(form,loading,text){
     }
     const wrapped=async function(event){
       const form=event.currentTarget;
-      if(form.dataset.processing==="1")return;
-      form.dataset.processing="1";
+      // Gunakan lock terpisah agar tidak bentrok dengan handler form
+      // yang memang memakai dataset.processing sendiri.
+      if(form.dataset.submitLock==="1")return;
+      form.dataset.submitLock="1";
       setFormLoading(form,true,"Menyimpan...");
       try{
         return await listener.call(this,event);
       }finally{
         clearTimeout(form._loadingTimer);
         form._loadingTimer=setTimeout(()=>{
-          form.dataset.processing="0";
+          form.dataset.submitLock="0";
           setFormLoading(form,false);
         },300);
       }
