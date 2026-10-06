@@ -34,7 +34,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;p
 .jamaah-category-switch label{display:flex;align-items:center;gap:7px;padding:9px 14px;border:1px solid #d8e2df;border-radius:9px;background:#fff;cursor:pointer;font-size:12px;font-weight:700}
 .jamaah-category-switch input{accent-color:#18745f}
 .jamaah-group-tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.bulk-tools{display:flex;gap:7px;align-items:center;flex-wrap:wrap}.bulk-select-all,.bulk-check{width:16px;height:16px;accent-color:#18745f;cursor:pointer}
-.jamaah-select-all{width:16px;height:16px;accent-color:#18745f}
+.jamaah-data-count{display:inline-flex;align-items:center;padding:4px 9px;border-radius:999px;background:#eef7f3;color:#18745f;font-size:11px;font-weight:800;border:1px solid #d7e9e2}.jamaah-select-all{width:16px;height:16px;accent-color:#18745f}
 .jamaah-check{width:16px;height:16px;accent-color:#18745f}
 .jamaah-group-badge{display:inline-flex;padding:3px 8px;border-radius:999px;background:#eef7f3;color:#18745f;font-size:10px;font-weight:700}
 .jamaah-individual-badge{display:inline-flex;padding:3px 8px;border-radius:999px;background:#f3f5f7;color:#687078;font-size:10px;font-weight:700}
@@ -423,7 +423,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;p
 </section>
 
 <section id="jamaah" class="hidden">
-  <div class="top"><h1>Data Jamaah</h1><input id="search" class="search" placeholder="Cari nama / HP / paket / rombongan..." oninput="renderJamaah()"></div>
+  <div class="top"><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><h1 style="margin:0">Data Jamaah</h1><span id="jamaahDataCount" class="jamaah-data-count">0 data</span></div><input id="search" class="search" placeholder="Cari nama / HP / paket / rombongan / catatan..." oninput="renderJamaah()"></div>
   <div class="panel">
     <div class="panel-head">
       <div><h2>Daftar Jamaah</h2><div class="muted" style="margin-top:4px">Kelola jamaah individu maupun grup/rombongan.</div></div>
@@ -1629,8 +1629,10 @@ function printPayment(paymentId){
 }
 
 function renderJamaah(){
-  const q=(document.getElementById('search')?.value||'').toLowerCase();
-  const rows=data.filter(x=>(x.nama+' '+(x.hp||'')+' '+(x.paket||'')+' '+(x.jenis_kelamin||'')+' '+(x.nama_rombongan||'')+' '+(x.kategori||'')).toLowerCase().includes(q));
+  const q=(document.getElementById('search')?.value||'').trim().toLowerCase();
+  const rows=data.filter(x=>(x.nama+' '+(x.hp||'')+' '+(x.paket||'')+' '+(x.jenis_kelamin||'')+' '+(x.nama_rombongan||'')+' '+(x.kategori||'')+' '+(x.catatan||'')).toLowerCase().includes(q));
+  const countEl=document.getElementById('jamaahDataCount');
+  if(countEl) countEl.textContent=q ? (rows.length+' dari '+data.length+' data') : (data.length+' data');
   document.getElementById('jamaahBody').innerHTML=rows.map(x=>{
     const paid=paidFor(x.id), discount=discountFor(x.id), remain=remainFor(x);
     const isGroup=x.kategori==='grup';
@@ -2087,6 +2089,7 @@ function jamaahMemberTemplate(index,data={}){
       <div><label>NIK</label><input data-field="nik" placeholder="NIK" value="${esc(data.nik||'')}"></div>
       <div><label>Paket</label><select data-field="paket" onchange="syncPackageMemberPrice(this)">${packageOptions(data.paket||'')}</select></div>
       <div><label>Harga Paket</label><input data-field="harga" type="number" min="0" placeholder="Harga" value="${data.harga??''}"></div>
+      <div class="jamaah-field-wide"><label>Catatan</label><input data-field="catatan" placeholder="Catatan anggota (opsional)" value="${esc(data.catatan||'')}"></div>
     </div>
   </div>`;
 }
@@ -2211,7 +2214,7 @@ if(jamaahForm) jamaahForm.addEventListener('submit',async e=>{
         hp:'',
         alamat:'',
         berangkat:null,
-        catatan:'',
+        catatan:get('catatan').trim(),
         kategori:'grup',
         nama_rombongan:groupName,
         keterangan_rombongan:groupNote
