@@ -899,22 +899,36 @@ const groupPaymentsFor=x=>{
 const groupPaidFor=x=>groupPaymentsFor(x).reduce((a,p)=>a+Number(p.amount||0),0);
 const groupDiscountFor=x=>groupPaymentsFor(x).reduce((a,p)=>a+Number(p.discount||0),0);
 
-// Perhitungan pembayaran anggota:
-// Setiap transaksi yang tersimpan dengan jamaah_id anggota tersebut dihitung penuh
-// untuk anggota itu. Jadi DP awal NETI Rp10 jt + pembayaran kedua Rp30 jt = Rp40 jt.
-// Pembayaran pribadi tidak boleh hilang hanya karena anggota tersebut berada dalam rombongan.
-// Transaksi "Pembayaran Rombongan" tetap dapat dipakai untuk transaksi kolektif,
-// tetapi jika transaksi tersebut tersimpan langsung pada anggota, nominalnya tetap
-// terlihat pada anggota tersebut agar riwayat pembayaran tidak kehilangan nilai DP.
-// Untuk transaksi kolektif yang benar-benar perlu dibagi, gunakan nominal/struktur
-// pembayaran rombongan pada saat input dan jangan masukkan sebagai pembayaran anggota.
+// Perhitungan pembayaran:
+// 1. Pembayaran pribadi anggota dihitung 100% untuk anggota tersebut.
+// 2. "Pembayaran Rombongan" dibagi ke seluruh anggota rombongan.
+//    Jika harga paket tersedia, pembagian proporsional berdasarkan harga.
+//    Jika harga paket belum diketahui/Rp0, dibagi rata berdasarkan jumlah anggota.
+// Contoh: rombongan membayar DP Rp60 jt untuk 6 anggota => masing-masing Rp10 jt.
+// NETI kemudian membayar pribadi Rp30 jt => total NETI Rp40 jt.
 const paymentContributionFor=id=>{
   const x=data.find(j=>j.id===id);
   if(!x)return{paid:0,discount:0};
 
-  const ownPayments=payments.filter(p=>p.jamaah_id===id);
-  const paid=ownPayments.reduce((a,p)=>a+Number(p.amount||0),0);
-  const discount=ownPayments.reduce((a,p)=>a+Number(p.discount||0),0);
+  const ownPayments=payments.filter(p=>p.jamaah_id===id&&!isRombonganPayment(p));
+  let paid=ownPayments.reduce((a,p)=>a+Number(p.amount||0),0);
+  let discount=ownPayments.reduce((a,p)=>a+Number(p.discount||0),0);
+
+  if(isGroupJamaah(x)){
+    const members=groupMembersForPayment(x);
+    if(members.length){
+      const totalHarga=members.reduce((a,m)=>a+Math.max(0,Number(m.harga||0)),0);
+      const memberHarga=Math.max(0,Number(x.harga||0));
+      const shared=payments.filter(p=>isRombonganPayment(p)&&members.some(m=>m.id===p.jamaah_id));
+      for(const p of shared){
+        const amount=Number(p.amount||0);
+        const disc=Number(p.discount||0);
+        const ratio=totalHarga>0 ? (memberHarga/totalHarga) : (1/members.length);
+        paid+=amount*ratio;
+        discount+=disc*ratio;
+      }
+    }
+  }
 
   return{paid,discount};
 };
