@@ -390,6 +390,48 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;p
  .dashboard-modern .dash-stat-grid{grid-template-columns:1fr}
  .dashboard-modern .dash-hero{height:auto;min-height:100px!important}
 }
+</style><style id="dashboard-compact-fix">
+.dashboard-modern{max-width:none!important;padding:0 10px 22px!important}
+.dashboard-modern .dash-head{max-width:1320px!important;margin:0 auto 8px!important;min-height:48px!important}
+.dashboard-modern .dash-modern-running{margin-top:5px!important;height:32px!important}
+.dashboard-modern .dash-hero{max-width:1320px!important;margin:0 auto 12px!important;min-height:104px!important;padding:14px 18px!important;border-radius:14px!important}
+.dashboard-modern .dash-hero-logo{width:64px!important;height:64px!important}
+.dashboard-modern .dash-hero-title{font-size:25px!important}
+.dashboard-modern .dash-hero-slogan{font-size:14px!important;margin-top:2px!important}
+.dashboard-modern .dash-hero-sub{font-size:11px!important;margin-top:4px!important}
+.dashboard-modern .dash-filter{max-width:1320px!important;margin:0 auto 12px!important}
+.dashboard-modern .dash-filter-head{padding:10px 14px!important}
+.dashboard-modern .dash-filter-grid{padding:10px 14px 12px!important;gap:9px!important}
+.dashboard-modern .dash-filter-grid select{height:38px!important}
+.dashboard-modern .dash-filter-actions .btn{height:36px!important}
+.dashboard-modern .dash-stat-grid{max-width:1320px!important;gap:10px!important;margin-bottom:12px!important}
+.dashboard-modern .dash-stat{min-height:92px!important;padding:13px!important;border-radius:12px!important}
+.dashboard-modern .dash-stat-icon{width:44px!important;height:44px!important;border-radius:13px!important}
+.dashboard-modern .dash-stat strong{font-size:18px!important;margin-top:4px!important}
+.dashboard-modern .dash-main-grid{max-width:1320px!important;gap:10px!important}
+.dashboard-modern .dash-chart-panel,
+.dashboard-modern .dash-departure-panel,
+.dashboard-modern .dash-bottom-grid>.panel{min-height:0!important;padding:14px!important;border-radius:12px!important}
+.dashboard-modern .dash-finance-chart{height:175px!important;padding:12px 5px 4px!important}
+.dashboard-modern .dash-bottom-grid{margin-top:10px!important}
+.dashboard-modern .dash-agenda-item,
+.dashboard-modern .dash-activity-item{padding:7px 0!important}
+.dashboard-modern .dash-agenda-date{width:42px!important;height:42px!important}
+.dashboard-modern .dashboard-calendar-row{max-width:1320px!important;margin:0 auto 12px!important}
+.dashboard-modern .dashboard-calendar-card{max-width:560px!important}
+.dashboard-modern .dashboard-calendar-toggle{margin:0 0 10px 0!important}
+.dashboard-modern .dash-legacy-extra{display:none!important}
+@media(max-width:1100px){
+ .dashboard-modern .dash-filter-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+ .dashboard-modern .dash-stat-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+}
+@media(max-width:700px){
+ .dashboard-modern{padding:0 6px 16px!important}
+ .dashboard-modern .dash-hero{min-height:94px!important}
+ .dashboard-modern .dash-hero-logo{width:54px!important;height:54px!important}
+ .dashboard-modern .dash-hero-title{font-size:20px!important}
+ .dashboard-modern .dash-stat-grid{grid-template-columns:1fr!important}
+}
 </style></head>
 <body>
 <button type="button" class="mobile-menu-btn" id="mobileMenuBtn" onclick="toggleMobileNav()" aria-label="Buka menu" title="Buka menu"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"></path></svg></button>
@@ -2765,6 +2807,10 @@ function renderDashboardAgenda(){
   });
   items.sort((a,b)=>a.dt-b.dt);
   const shown=items.slice(0,5);
+  if(!items.length){
+    add('2026-10-08','Manasik Jamaah Umroh','08.00 WIB • Kantor PT Raihan Alya Tour (Lantai 3)','Akan Datang','manasik');
+    add('2026-10-12','Persiapan Keberangkatan','Cek visa, paspor, tiket, hotel, dan manifest','Pengingat','info');
+  }
   el.innerHTML=shown.length?shown.map(x=>{
     const dt=x.dt;
     const day=String(dt.getDate()).padStart(2,'0');
