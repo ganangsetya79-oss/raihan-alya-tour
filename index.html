@@ -1554,7 +1554,7 @@ function reportExportData(){
   const type=document.getElementById('reportType')?.value||'jamaah';
   if(type==='jamaah')return {name:'Laporan Jamaah',head:['No','Nama Jamaah','No. HP','Paket','Harga Paket','Keberangkatan','Terbayar','Sisa','Status'],rows:reportJamaahRows().map((j,i)=>{const p=paidFor(j.id),d=departureFor(j);return [i+1,j.nama,j.hp||'',j.paket||'',Number(j.harga||0),d?.name||j.berangkat||'',p,Math.max(0,Number(j.harga||0)-p),isPaid(j)?'Lunas':'Belum Lunas']})};
   if(type==='payment')return {name:'Laporan Pembayaran',head:['No','Invoice','Tanggal','Jamaah','Jumlah','Diskon','Metode','Bank','Keterangan'],rows:reportPaymentRows().map((p,i)=>{const j=data.find(x=>x.id===p.jamaah_id);return [i+1,p.invoice_no||'',p.payment_date||'',j?.nama||'',Number(p.amount||0),Number(p.discount||0),p.method||'',p.bank||'',p.note||'']})};
-  if(type==='departure')return {name:'Laporan Keberangkatan',head:['No','Grup','Tanggal','Maskapai','PNR','Jamaah','Lunas','Belum Lunas','Total Paket','Terbayar','Sisa'],rows:reportDepartureRows().map((d,i)=>{const js=data.filter(j=>j.departure_id===d.id),v=js.reduce((a,j)=>a+Number(j.harga||0),0),p=js.reduce((a,j)=>a+paidFor(j.id),0),l=js.filter(j=>paidFor(j.id)>=Number(j.harga||0)).length;return [i+1,d.name,(d.start_date||'')+(d.end_date?' s/d '+d.end_date:''),d.airline||'',d.pnr||'',js.length,l,js.length-l,v,p,Math.max(0,v-p)]})};
+  if(type==='departure')return {name:'Laporan Keberangkatan',head:['No','Grup','Tanggal','Maskapai','PNR','Jamaah','Lunas','Belum Lunas','Total Paket','Terbayar','Sisa'],rows:reportDepartureRows().map((d,i)=>{const js=data.filter(j=>j.departure_id===d.id),v=js.reduce((a,j)=>a+Number(j.harga||0),0),p=js.reduce((a,j)=>a+paidFor(j.id),0),l=js.filter(isPaid).length;return [i+1,d.name,(d.start_date||'')+(d.end_date?' s/d '+d.end_date:''),d.airline||'',d.pnr||'',js.length,l,js.length-l,v,p,Math.max(0,v-p)]})};
   if(type==='equipment')return {name:'Laporan Perlengkapan',head:['No','Nama Jamaah','Keberangkatan','Mukena / Ihram','Batik','Koper','Buku Manasik','Tanggal','Keterangan'],rows:reportEquipmentRows().map((j,i)=>{const x=getEquipment(j.id)||{},d=departureFor(j),ok=k=>x[k]?'Diambil':'Belum';return [i+1,j.nama,d?.name||j.berangkat||'',ok('mukena_ihram'),ok('batik'),ok('koper'),ok('buku'),x.taken_date||'',x.note||'']})};
   return {name:'Laporan Dokumen',head:['No','Nama Jamaah','Keberangkatan','KTP','KK','Passport','BPJS','Vaksin','Visa','Tiket','Status'],rows:reportDocumentRows().map((j,i)=>{const x=documents.find(d=>d.jamaah_id===j.id)||{},dep=departureFor(j),ok=k=>x[k]?'Lengkap':'Belum';return [i+1,j.nama,dep?.name||j.berangkat||'',ok('ktp'),ok('kk'),ok('passport'),ok('bpjs'),ok('vaccine'),ok('visa'),ok('ticket'),['ktp','kk','passport','bpjs','vaccine','visa','ticket'].every(k=>x[k])?'Lengkap':'Belum Lengkap']})};
 }
@@ -2582,7 +2582,7 @@ async function openDeparture(id){
   const value=rows.reduce((a,j)=>a+Number(j.harga||0),0);
   const paid=rows.reduce((a,j)=>a+paidFor(j.id),0);
   const remain=rows.reduce((a,j)=>a+remainFor(j),0);
-  const lunas=rows.filter(j=>paidFor(j.id)>=Number(j.harga||0)).length;
+  const lunas=rows.filter(isPaid).length;
   document.getElementById('departureDetailSummary').innerHTML=
     `<div class="card"><div class="label">Jamaah</div><div class="num">${rows.length}</div></div>
      <div class="card"><div class="label">Lunas</div><div class="num">${lunas}</div></div>
