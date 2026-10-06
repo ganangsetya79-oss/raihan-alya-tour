@@ -1589,7 +1589,8 @@ function printInvoice(jamaahId){
   const name=group?groupNameFor(j):(j.nama||'-');
   const inv='RAT/INV/'+String(j.id||'').slice(0,8).toUpperCase();
   const rows=members.map((m,i)=>'<tr><td>'+(i+1)+'</td><td>'+esc(m.nama||'-')+'</td><td>'+esc(m.paket||'-')+'</td><td class="right">'+rupiah(m.harga)+'</td></tr>').join('');
-  const head='<div class="head"><div class="logo-mark">RA</div><div><div class="company">PT RAIHAN ALYA TOUR</div><div class="sub">Palangka Raya, Kalimantan Tengah</div></div></div>';
+  const invoiceLogo=getPrintLogo();
+  const head=invoiceLogo?'<div class="head"><img src="'+invoiceLogo+'" alt="Logo PT Raihan Alya Tour"><div><div class="company">PT RAIHAN ALYA TOUR</div><div class="sub">Palangka Raya, Kalimantan Tengah</div></div></div>':'<div class="head"><div class="logo-mark">RA</div><div><div class="company">PT RAIHAN ALYA TOUR</div><div class="sub">Palangka Raya, Kalimantan Tengah</div></div></div>';
   const memberBox=group?'<div class="box"><b>Rincian Anggota</b><table><thead><tr><th>No</th><th>Nama</th><th>Paket</th><th class="right">Harga</th></tr></thead><tbody>'+rows+'</tbody></table></div>':'';
   const body=head+
     '<div class="title">'+(group?'INVOICE TAGIHAN ROMBONGAN':'INVOICE TAGIHAN')+'</div>'+
