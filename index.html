@@ -896,8 +896,16 @@ const discountFor=id=>{
   return total>0?groupDiscount*(Number(x.harga||0)/total):0;
 };
 const netBillFor=x=>Math.max(0,Number(x.harga||0)-discountFor(x.id));
+// Jamaah tanpa paket yang jelas atau tanpa harga paket tidak boleh dianggap lunas,
+// meskipun nominal pembayarannya sudah mencapai/lebih dari tagihan yang tersimpan.
+const hasKnownPackage=x=>{
+  const paket=String(x?.paket||'').trim().toLowerCase();
+  const harga=Number(x?.harga||0);
+  return !!x && harga>0 && paket!=='' && paket!=='other' && paket!=='other / belum diketahui' && paket!=='belum diketahui';
+};
+const isPaid=x=>hasKnownPackage(x) && paidFor(x.id)>=netBillFor(x);
 const remainFor=x=>Math.max(0,netBillFor(x)-paidFor(x.id));
-const status=x=>paidFor(x.id)>=netBillFor(x)?'<span class="badge paid">Lunas</span>':'<span class="badge unpaid">Belum Lunas</span>';
+const status=x=>isPaid(x)?'<span class="badge paid">Lunas</span>':'<span class="badge unpaid">Belum Lunas</span>';
 
 function notice(msg,type='ok'){
   const el=document.getElementById('globalNotice');
@@ -1528,7 +1536,7 @@ function renderReport(){
     const total=rows.reduce((a,p)=>a+Number(p.amount||0),0), cash=rows.filter(p=>p.method==='Cash').reduce((a,p)=>a+Number(p.amount||0),0), transfer=rows.filter(p=>p.method==='Transfer').reduce((a,p)=>a+Number(p.amount||0),0); sum.innerHTML=reportCards([['Transaksi',rows.length],['Total Pembayaran',rupiah(total)],['Cash',rupiah(cash)],['Transfer',rupiah(transfer)]]);
   } else if(type==='departure'){
     rows=reportDepartureRows(); title='Laporan Keberangkatan'; headers=['No','Grup','Tanggal','Maskapai','PNR','Jamaah','Lunas','Belum Lunas','Total Paket','Terbayar','Sisa'];
-    html=rows.map((d,i)=>{const js=data.filter(j=>j.departure_id===d.id),value=js.reduce((a,j)=>a+Number(j.harga||0),0),paid=js.reduce((a,j)=>a+paidFor(j.id),0),lunas=js.filter(j=>paidFor(j.id)>=Number(j.harga||0)).length;return `<tr><td>${i+1}</td><td>${esc(d.name)}</td><td>${esc(d.start_date||'-')}${d.end_date?' s/d '+esc(d.end_date):''}</td><td>${esc(d.airline||'-')}</td><td>${esc(d.pnr||'-')}</td><td>${js.length}</td><td>${lunas}</td><td>${js.length-lunas}</td><td>${rupiah(value)}</td><td>${rupiah(paid)}</td><td>${rupiah(js.reduce((a,j)=>a+remainFor(j),0))}</td></tr>`}).join('');
+    html=rows.map((d,i)=>{const js=data.filter(j=>j.departure_id===d.id),value=js.reduce((a,j)=>a+Number(j.harga||0),0),paid=js.reduce((a,j)=>a+paidFor(j.id),0),lunas=js.filter(isPaid).length;return `<tr><td>${i+1}</td><td>${esc(d.name)}</td><td>${esc(d.start_date||'-')}${d.end_date?' s/d '+esc(d.end_date):''}</td><td>${esc(d.airline||'-')}</td><td>${esc(d.pnr||'-')}</td><td>${js.length}</td><td>${lunas}</td><td>${js.length-lunas}</td><td>${rupiah(value)}</td><td>${rupiah(paid)}</td><td>${rupiah(js.reduce((a,j)=>a+remainFor(j),0))}</td></tr>`}).join('');
     const js=rows.flatMap(d=>data.filter(j=>j.departure_id===d.id)), value=js.reduce((a,j)=>a+Number(j.harga||0),0), paid=js.reduce((a,j)=>a+paidFor(j.id),0); sum.innerHTML=reportCards([['Jadwal',rows.length],['Jamaah',js.length],['Total Paket',rupiah(value)],['Sisa',rupiah(js.reduce((a,j)=>a+remainFor(j),0))]]);
   } else if(type==='equipment'){
     rows=reportEquipmentRows(); title='Laporan Perlengkapan'; headers=['No','Nama Jamaah','Keberangkatan','Mukena / Ihram','Batik','Koper','Buku Manasik','Tanggal','Keterangan'];
@@ -1544,7 +1552,7 @@ function renderReport(){
 function reportCards(items){return '<div class="report-summary-grid">'+items.map(x=>`<div class="report-summary-card"><div class="label">${x[0]}</div><div class="value">${x[1]}</div></div>`).join('')+'</div>';}
 function reportExportData(){
   const type=document.getElementById('reportType')?.value||'jamaah';
-  if(type==='jamaah')return {name:'Laporan Jamaah',head:['No','Nama Jamaah','No. HP','Paket','Harga Paket','Keberangkatan','Terbayar','Sisa','Status'],rows:reportJamaahRows().map((j,i)=>{const p=paidFor(j.id),d=departureFor(j);return [i+1,j.nama,j.hp||'',j.paket||'',Number(j.harga||0),d?.name||j.berangkat||'',p,Math.max(0,Number(j.harga||0)-p),p>=netBillFor(j)?'Lunas':'Belum Lunas']})};
+  if(type==='jamaah')return {name:'Laporan Jamaah',head:['No','Nama Jamaah','No. HP','Paket','Harga Paket','Keberangkatan','Terbayar','Sisa','Status'],rows:reportJamaahRows().map((j,i)=>{const p=paidFor(j.id),d=departureFor(j);return [i+1,j.nama,j.hp||'',j.paket||'',Number(j.harga||0),d?.name||j.berangkat||'',p,Math.max(0,Number(j.harga||0)-p),isPaid(j)?'Lunas':'Belum Lunas']})};
   if(type==='payment')return {name:'Laporan Pembayaran',head:['No','Invoice','Tanggal','Jamaah','Jumlah','Diskon','Metode','Bank','Keterangan'],rows:reportPaymentRows().map((p,i)=>{const j=data.find(x=>x.id===p.jamaah_id);return [i+1,p.invoice_no||'',p.payment_date||'',j?.nama||'',Number(p.amount||0),Number(p.discount||0),p.method||'',p.bank||'',p.note||'']})};
   if(type==='departure')return {name:'Laporan Keberangkatan',head:['No','Grup','Tanggal','Maskapai','PNR','Jamaah','Lunas','Belum Lunas','Total Paket','Terbayar','Sisa'],rows:reportDepartureRows().map((d,i)=>{const js=data.filter(j=>j.departure_id===d.id),v=js.reduce((a,j)=>a+Number(j.harga||0),0),p=js.reduce((a,j)=>a+paidFor(j.id),0),l=js.filter(j=>paidFor(j.id)>=Number(j.harga||0)).length;return [i+1,d.name,(d.start_date||'')+(d.end_date?' s/d '+d.end_date:''),d.airline||'',d.pnr||'',js.length,l,js.length-l,v,p,Math.max(0,v-p)]})};
   if(type==='equipment')return {name:'Laporan Perlengkapan',head:['No','Nama Jamaah','Keberangkatan','Mukena / Ihram','Batik','Koper','Buku Manasik','Tanggal','Keterangan'],rows:reportEquipmentRows().map((j,i)=>{const x=getEquipment(j.id)||{},d=departureFor(j),ok=k=>x[k]?'Diambil':'Belum';return [i+1,j.nama,d?.name||j.berangkat||'',ok('mukena_ihram'),ok('batik'),ok('koper'),ok('buku'),x.taken_date||'',x.note||'']})};
@@ -1653,7 +1661,7 @@ function renderPaymentSummary(){
       seen.add(name);
       const members=groupMembersFor(x);
       const total=groupTotalFor(x),discount=groupDiscountFor(x),paid=groupPaidFor(x),remain=Math.max(0,total-discount-paid);
-      const groupStatus=paid>=Math.max(0,total-discount)?'<span class="badge paid">Lunas</span>':'<span class="badge unpaid">Belum Lunas</span>';
+      const groupStatus=members.length>0 && members.every(hasKnownPackage) && paid>=Math.max(0,total-discount)?'<span class="badge paid">Lunas</span>':'<span class="badge unpaid">Belum Lunas</span>';
       rows.push(`<tr><td>👥 <b>${esc(name)}</b><div class="muted">${members.length} anggota</div></td><td>${rupiah(total)}</td><td>${rupiah(discount)}</td><td>${rupiah(paid)}</td><td>${rupiah(remain)}</td><td>${groupStatus}</td></tr>`);
     }else{
       const paid=paidFor(x.id),discount=discountFor(x.id),remain=remainFor(x);
@@ -1945,7 +1953,7 @@ function renderDash(){
     return byMonth&&byDep;
   });
 
-  const lunas=filtered.filter(x=>paidFor(x.id)>=netBillFor(x)).length;
+  const lunas=filtered.filter(isPaid).length;
   const nilai=filtered.reduce((a,x)=>a+Number(x.harga||0),0);
   const terbayar=filtered.reduce((a,x)=>a+paidFor(x.id),0);
   const sisa=filtered.reduce((a,x)=>a+remainFor(x),0);
@@ -1968,7 +1976,7 @@ function renderDash(){
     const paid=rows.reduce((a,j)=>a+paidFor(j.id),0);
     const value=rows.reduce((a,j)=>a+Number(j.harga||0),0);
     const remain=rows.reduce((a,j)=>a+remainFor(j),0);
-    const lunasCount=rows.filter(j=>paidFor(j.id)>=netBillFor(j)).length;
+    const lunasCount=rows.filter(isPaid).length;
     return `<tr><td>${esc(d.name)}</td><td>${d.start_date||'-'}${d.end_date?' s/d '+d.end_date:''}</td><td>${rows.length}</td><td>${lunasCount}</td><td>${rupiah(value)}</td><td>${rupiah(paid)}</td><td>${rupiah(remain)}</td></tr>`;
   }).join('');
   depBody.innerHTML=depRows||'<tr><td colspan="7">Belum ada jadwal pada filter ini.</td></tr>';
@@ -2547,7 +2555,7 @@ function renderDepartures(){
     const paid=rows.reduce((a,j)=>a+paidFor(j.id),0);
     const value=rows.reduce((a,j)=>a+Number(j.harga||0),0);
     const remain=rows.reduce((a,j)=>a+remainFor(j),0);
-    const lunas=rows.filter(j=>paidFor(j.id)>=Number(j.harga||0)).length;
+    const lunas=rows.filter(isPaid).length;
     return `<tr>
       <td style="text-align:center"><input class="bulk-check departure-check" type="checkbox" value="${esc(d.id)}" onchange="syncBulkState('departure')"></td><td><b>${esc(d.name)}</b></td>
       <td>${d.start_date||'-'}</td>
