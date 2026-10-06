@@ -899,32 +899,22 @@ const groupPaymentsFor=x=>{
 const groupPaidFor=x=>groupPaymentsFor(x).reduce((a,p)=>a+Number(p.amount||0),0);
 const groupDiscountFor=x=>groupPaymentsFor(x).reduce((a,p)=>a+Number(p.discount||0),0);
 
-// Logika pembayaran:
-// - Semua transaksi yang jamaah_id-nya menunjuk langsung ke anggota adalah milik anggota tersebut.
-//   Jadi DP awal Rp10 jt milik NETI tetap Rp10 jt untuk NETI.
-// - Pembayaran pribadi berikutnya juga ditambahkan penuh ke anggota tersebut.
-// - Hanya transaksi yang memang dicatat sebagai pembayaran untuk seluruh rombongan
-//   yang dialokasikan proporsional berdasarkan harga paket anggota.
+// Perhitungan pembayaran anggota:
+// Setiap transaksi yang tersimpan dengan jamaah_id anggota tersebut dihitung penuh
+// untuk anggota itu. Jadi DP awal NETI Rp10 jt + pembayaran kedua Rp30 jt = Rp40 jt.
+// Pembayaran pribadi tidak boleh hilang hanya karena anggota tersebut berada dalam rombongan.
+// Transaksi "Pembayaran Rombongan" tetap dapat dipakai untuk transaksi kolektif,
+// tetapi jika transaksi tersebut tersimpan langsung pada anggota, nominalnya tetap
+// terlihat pada anggota tersebut agar riwayat pembayaran tidak kehilangan nilai DP.
+// Untuk transaksi kolektif yang benar-benar perlu dibagi, gunakan nominal/struktur
+// pembayaran rombongan pada saat input dan jangan masukkan sebagai pembayaran anggota.
 const paymentContributionFor=id=>{
   const x=data.find(j=>j.id===id);
   if(!x)return{paid:0,discount:0};
 
   const ownPayments=payments.filter(p=>p.jamaah_id===id);
-  let paid=ownPayments.filter(p=>!isRombonganPayment(p)).reduce((a,p)=>a+Number(p.amount||0),0);
-  let discount=ownPayments.filter(p=>!isRombonganPayment(p)).reduce((a,p)=>a+Number(p.discount||0),0);
-
-  if(isGroupJamaah(x)){
-    const members=groupMembersForPayment(x);
-    const total=members.reduce((a,m)=>a+Number(m.harga||0),0);
-    if(total>0){
-      const shared=payments.filter(p=>isRombonganPayment(p)&&members.some(m=>m.id===p.jamaah_id));
-      const sharedPaid=shared.reduce((a,p)=>a+Number(p.amount||0),0);
-      const sharedDiscount=shared.reduce((a,p)=>a+Number(p.discount||0),0);
-      const ratio=Math.max(0,Number(x.harga||0))/total;
-      paid+=sharedPaid*ratio;
-      discount+=sharedDiscount*ratio;
-    }
-  }
+  const paid=ownPayments.reduce((a,p)=>a+Number(p.amount||0),0);
+  const discount=ownPayments.reduce((a,p)=>a+Number(p.discount||0),0);
 
   return{paid,discount};
 };
