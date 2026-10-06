@@ -1577,29 +1577,6 @@ function printReport(){
   openPrintWindow(r.name,(logo?'<div class="head"><img src="'+logo+'" alt="Logo"><div><div class="company">PT RAIHAN ALYA TOUR</div><div class="sub">Melayani dengan Sepenuh Hati</div></div></div>':'<div class="head"><div><div class="company">PT RAIHAN ALYA TOUR</div></div></div>')+
     '<div class="title">'+esc(r.name)+'</div>'+table);
 }
-function printInvoice(jamaahId){
-  const j=data.find(x=>x.id===jamaahId);
-  if(!j){notice('Data jamaah tidak ditemukan.','error');return}
-  const group=isGroupJamaah(j);
-  const members=group?groupMembersFor(j):[j];
-  const totalBill=group?groupTotalFor(j):Number(j.harga||0);
-  const totalPaid=group?groupPaidFor(j):paidFor(j.id);
-  const totalDiscount=group?groupDiscountFor(j):discountFor(j.id);
-  const remain=Math.max(0,totalBill-totalDiscount-totalPaid);
-  const name=group?groupNameFor(j):(j.nama||'-');
-  const inv='RAT/INV/'+String(j.id||'').slice(0,8).toUpperCase();
-  const rows=members.map((m,i)=>'<tr><td>'+(i+1)+'</td><td>'+esc(m.nama||'-')+'</td><td>'+esc(m.paket||'-')+'</td><td class="right">'+rupiah(m.harga)+'</td></tr>').join('');
-  const invoiceLogo=getPrintLogo();
-  const head=invoiceLogo?'<div class="head invoice-head"><img class="invoice-logo" src="'+invoiceLogo+'" alt="Logo PT Raihan Alya Tour"><div><div class="company">PT RAIHAN ALYA TOUR</div><div class="sub">Palangka Raya, Kalimantan Tengah</div><div class="invoice-company-note">Umroh & Haji • Melayani dengan Sepenuh Hati</div></div></div>':'<div class="head invoice-head"><div class="logo-mark">RA</div><div><div class="company">PT RAIHAN ALYA TOUR</div><div class="sub">Palangka Raya, Kalimantan Tengah</div></div></div>';
-  const memberBox=group?'<div class="box"><b>Rincian Anggota</b><table><thead><tr><th>No</th><th>Nama</th><th>Paket</th><th class="right">Harga</th></tr></thead><tbody>'+rows+'</tbody></table></div>':'';
-  const body=head+
-    '<div class="title">'+(group?'INVOICE PENAGIHAN ROMBONGAN':'INVOICE PENAGIHAN')+'</div>'+
-    '<div class="meta"><b>No. Invoice:</b> '+esc(inv)+'<br><b>Tanggal:</b> '+esc(new Date().toLocaleDateString('id-ID'))+'<br><b>'+(group?'Rombongan':'Jamaah')+':</b> '+esc(name)+'</div>'+
-    memberBox+
-    '<div class="box sum"><b>Ringkasan Tagihan</b><div><span>Total Tagihan</span><b>'+rupiah(totalBill)+'</b></div><div><span>Diskon</span><b>'+rupiah(totalDiscount)+'</b></div><div><span>Sudah Dibayar</span><b>'+rupiah(totalPaid)+'</b></div><div class="grand"><span>SISA TAGIHAN</span><b>'+rupiah(remain)+'</b></div></div>'+
-    '<div class="sign"><div>Admin / Petugas<div class="space"></div>(________________)</div><div>Jamaah<div class="space"></div>(________________)</div></div>';
-  openPrintWindow(inv,body);
-}
 const PACKAGE_KEY='raihan_alya_packages_v1';
 const defaultPackages=[{id:'pkg-executive',name:'Executive',price:'',hotel:'',duration:'',departure:'',returnDate:'',notes:''},{id:'pkg-premium',name:'Premium',price:'',hotel:'',duration:'',departure:'',returnDate:'',notes:''},{id:'pkg-economis',name:'Economis',price:'',hotel:'',duration:'',departure:'',returnDate:'',notes:''}];
 function getPackages(){try{const r=localStorage.getItem(PACKAGE_KEY);const a=r?JSON.parse(r):defaultPackages;return Array.isArray(a)&&a.length?a:defaultPackages}catch(e){return defaultPackages}}
@@ -1698,40 +1675,36 @@ function formatDateID(v){
 
 function invoiceNumber(p){ return p.invoice_no || ('RAT/INV/'+String(p.id||'').slice(0,8).toUpperCase()); }
 
-function printInvoice(jamaahId){
+function printInvoice(jamaahId, preferredInvoiceNo=''){
   const j=data.find(x=>x.id===jamaahId);
   if(!j){notice('Data jamaah tidak ditemukan.','error');return}
   const group=isGroupJamaah(j);
   const members=group?groupMembersFor(j):[j];
+  if(group&&!members.length){notice('Anggota rombongan tidak ditemukan.','error');return}
   const totalBill=group?groupTotalFor(j):Number(j.harga||0);
   const totalPaid=group?groupPaidFor(j):paidFor(j.id);
   const totalDiscount=group?groupDiscountFor(j):discountFor(j.id);
   const netBill=Math.max(0,totalBill-totalDiscount);
   const remain=Math.max(0,netBill-totalPaid);
-  const inv='RAT/INV/'+String(j.id||'').slice(0,8).toUpperCase();
-  const title=group?'INVOICE TAGIHAN ROMBONGAN':'INVOICE TAGIHAN';
   const name=group?groupNameFor(j):(j.nama||'-');
+  let invNo=String(preferredInvoiceNo||'').trim();
+  if(!invNo){
+    const related=group?groupPaymentsFor(j):payments.filter(p=>p.jamaah_id===j.id);
+    const latest=related.slice().sort((a,b)=>String(b.payment_date||'').localeCompare(String(a.payment_date||'')))[0];
+    invNo=invoiceNumber(latest||{id:j.id});
+  }
   const today=new Date().toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'});
-  const logoHtml='<div class="logo-mark">RA</div>';
-  const memberRows=members.map((m,i)=>'<tr><td>'+(i+1)+'</td><td>'+esc(m.nama||'-')+'</td><td>'+esc(m.paket||'-')+'</td><td class="right">'+rupiah(m.harga)+'</td></tr>').join('');
-  const w=window.open('','_blank','width=760,height=850');
-  if(!w){notice('Pop-up diblokir browser. Izinkan pop-up untuk membuka invoice.','error');return}
-  w.document.open();
-  w.document.write('<!doctype html><html lang="id"><head><meta charset="utf-8"><title>'+esc(inv)+'</title><style>'+
-    '*{box-sizing:border-box}body{margin:0;background:#fff;font-family:Arial,sans-serif;color:#222}.page{width:190mm;margin:0 auto;padding:12mm}.head{display:flex;align-items:center;gap:12px;border-bottom:2px solid #173f35;padding-bottom:9px}.logo-mark{width:52px;height:52px;border:2px solid #173f35;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;color:#173f35;font-size:16px;flex:none}.company{font-size:18px;font-weight:800;color:#173f35}.sub{font-size:11px;color:#666;margin-top:3px}.title{text-align:center;font-size:17px;font-weight:800;margin:15px 0}.meta{display:grid;grid-template-columns:1fr 1fr;gap:5px 18px;font-size:11px;margin-bottom:12px}.meta div{padding:4px 0}.meta span{color:#666}.box{border:1px solid #ddd;border-radius:6px;padding:9px;margin-top:9px}.box h3{font-size:12px;margin:0 0 7px}table{width:100%;border-collapse:collapse;font-size:10px}th,td{border:1px solid #ddd;padding:5px 6px}th{background:#f3f6f4;text-align:left}.right{text-align:right}.total{font-size:11px}.total div{display:flex;justify-content:space-between;padding:4px 0}.grand{font-size:13px;font-weight:800;border-top:2px solid #173f35;margin-top:3px;padding-top:6px}.status{margin-top:7px;padding:6px;background:#f3f6f4;border-radius:5px;font-weight:700;font-size:11px}.sign{margin-top:35px;display:grid;grid-template-columns:1fr 1fr;gap:40px;text-align:center;font-size:10px}.space{height:45px}.foot{text-align:center;margin-top:14px;font-size:9px;color:#777}@media print{.page{width:auto;padding:8mm}@page{size:A4;margin:0}}</style></head><body><div class="page">'+
-    '<div class="head">'+logoHtml+'<div><div class="company">PT RAIHAN ALYA TOUR</div><div class="sub">Palangka Raya, Kalimantan Tengah</div></div></div>'+
-    '<div class="title">'+title+'</div>'+
-    '<div class="meta"><div><span>No. Invoice</span><br><b>'+esc(inv)+'</b></div><div><span>Tanggal</span><br><b>'+esc(today)+'</b></div><div><span>'+(group?'Nama Rombongan':'Nama Jamaah')+'</span><br><b>'+esc(name)+'</b></div><div><span>Paket</span><br><b>'+esc(group?'Sesuai anggota':(j.paket||'-'))+'</b></div></div>'+
-    (group?'<div class="box"><h3>Rincian Anggota</h3><table><thead><tr><th>No</th><th>Nama Jamaah</th><th>Paket</th><th class="right">Harga</th></tr></thead><tbody>'+memberRows+'</tbody></table></div>':'')+
+  const logo=getPrintLogo();
+  const logoHtml=logo?'<img class="invoice-logo" src="'+logo+'" alt="Logo PT Raihan Alya Tour">':'<div class="logo-mark">RA</div>';
+  const memberRows=members.map((m,i)=>'<tr><td style="text-align:center">'+(i+1)+'</td><td>'+esc(m.nama||'-')+'</td><td>'+esc(m.paket||'-')+'</td><td class="right">'+rupiah(m.harga)+'</td></tr>').join('');
+  const body='<div class="head invoice-head">'+logoHtml+'<div><div class="company">PT RAIHAN ALYA TOUR</div><div class="sub">Palangka Raya, Kalimantan Tengah</div><div class="invoice-company-note">Umroh & Haji • Melayani dengan Sepenuh Hati</div></div></div>'+
+    '<div class="title">'+(group?'INVOICE TAGIHAN ROMBONGAN':'INVOICE TAGIHAN')+'</div>'+
+    '<div class="meta"><div><span>No. Invoice</span><br><b>'+esc(invNo)+'</b></div><div><span>Tanggal</span><br><b>'+esc(today)+'</b></div><div><span>'+(group?'Nama Rombongan':'Nama Jamaah')+'</span><br><b>'+esc(name)+'</b></div><div><span>Paket</span><br><b>'+esc(group?'Sesuai anggota':(j.paket||'-'))+'</b></div></div>'+
+    (group?'<div class="box"><h3>Rincian Anggota ('+members.length+' orang)</h3><table><thead><tr><th>No</th><th>Nama Jamaah</th><th>Paket</th><th class="right">Harga</th></tr></thead><tbody>'+memberRows+'</tbody></table></div>':'')+
     '<div class="box"><h3>Ringkasan Tagihan</h3><div class="total"><div><span>Total Tagihan</span><b>'+rupiah(totalBill)+'</b></div><div><span>Diskon</span><b>'+rupiah(totalDiscount)+'</b></div><div><span>Sudah Dibayar</span><b>'+rupiah(totalPaid)+'</b></div><div class="grand"><span>SISA TAGIHAN</span><b>'+rupiah(remain)+'</b></div></div><div class="status">Status: '+(remain<=0?'LUNAS':'BELUM LUNAS')+'</div></div>'+
-    '<div class="sign"><div>Admin / Petugas<div class="space"></div>(________________)</div><div>Jamaah<div class="space"></div>(________________)</div></div>'+
-    '<div class="foot">Invoice ini merupakan dokumen tagihan PT Raihan Alya Tour.</div></div>'+
-    '</body></html>');
-  w.document.close();
-  w.focus();
-  setTimeout(()=>w.print(),300);
+    '<div class="sign"><div>Admin / Petugas<div class="space"></div>(________________)</div><div>Jamaah<div class="space"></div>(________________)</div></div><div class="foot">Invoice ini merupakan dokumen tagihan PT Raihan Alya Tour.</div>';
+  openPrintWindow(invNo,body);
 }
-
 function printPayment(paymentId){
   const p=payments.find(x=>x.id===paymentId);
   if(!p){notice('Transaksi tidak ditemukan.','error');return}
