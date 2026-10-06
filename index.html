@@ -387,10 +387,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;p
     </table>
   </div>
 
-  <div class="panel">
-    <div class="panel-head"><h2>Jamaah pada Filter Aktif</h2><button class="btn" onclick="show('jamaah',document.querySelectorAll('.nav button')[1])">Kelola Jamaah</button></div>
-    <table><thead><tr><th>Nama</th><th>Paket</th><th>Keberangkatan</th><th>Total Terbayar</th><th>Sisa</th><th>Status</th><th>Aksi</th></tr></thead><tbody id="recentBody"></tbody></table>
-  </div>
+
 </section>
 
 <section id="akses" class="hidden">
@@ -1980,11 +1977,7 @@ function renderDash(){
   }).join('');
   depBody.innerHTML=depRows||'<tr><td colspan="7">Belum ada jadwal pada filter ini.</td></tr>';
 
-  document.getElementById('recentBody').innerHTML=filtered.slice(0,50).map(x=>{
-    const d=departureFor(x);
-    const paid=paidFor(x.id), remain=remainFor(x);
-    return `<tr><td>${esc(x.nama)}</td><td>${esc(x.paket||'')}</td><td>${d?esc(d.name):esc(x.berangkat||'-')}</td><td>${rupiah(paid)}</td><td>${rupiah(remain)}</td><td>${status(x)}</td><td><button class="dashboard-wa-btn" type="button" onclick="waJamaah('${esc(x.id)}')">WhatsApp</button></td></tr>`;
-  }).join('')||'<tr><td colspan="7">Belum ada jamaah pada filter ini.</td></tr>';
+
 }
 
 let paymentDropdownRequest=0;
