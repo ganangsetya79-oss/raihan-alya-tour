@@ -440,7 +440,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;p
   <label>Nama Jamaah</label>
   <input id="paymentJamaahSearch" type="text" placeholder="Ketik nama jamaah untuk mencari..." autocomplete="off" oninput="filterPaymentJamaahOptions()">
   <select id="paymentJamaah" required onchange="syncPaymentJamaahName();syncPaymentJamaahSearch()" ><option value="">-- Memuat daftar jamaah... --</option></select>
-  <div class="payment-search-hint"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"></circle><path d="m16 16 4 4"></path></svg><span>Ketik nama di kolom pencarian, lalu pilih jamaah dari daftar.</span></div>
+  <div class="payment-search-hint"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"></circle><path d="m16 16 4 4"></path></svg><span>Ketik nama jamaah — hasil yang cocok akan langsung dipilih. Jika ada beberapa, pilih nama yang sesuai.</span></div>
 </div>
       <div><label>Nominal Pembayaran</label><input id="paymentAmount" type="number" min="1" required placeholder="Contoh: 5000000"></div>
       <div><label>Diskon / Potongan Tagihan</label><input id="paymentDiscount" type="number" min="0" value="0" placeholder="Contoh: 500000"></div>
@@ -2096,12 +2096,21 @@ function filterPaymentJamaahOptions(){
   const sel=document.getElementById('paymentJamaah'),input=document.getElementById('paymentJamaahSearch');
   if(!sel||!input)return;
   const q=String(input.value||'').trim().toLowerCase();
-  const current=sel.value;
-  [...sel.options].forEach(opt=>{
-    if(!opt.value){opt.hidden=false;return}
-    opt.hidden=!!q&&!String(opt.textContent||'').toLowerCase().includes(q);
-  });
-  if(current&&[...sel.options].some(o=>o.value===current&&!o.hidden))sel.value=current;
+  const options=[...sel.options].filter(o=>o.value);
+  if(!q){
+    options.forEach(o=>o.hidden=false);
+    sel.value='';
+    return;
+  }
+  const matches=options.filter(o=>String(o.textContent||'').toLowerCase().includes(q));
+  options.forEach(o=>o.hidden=!matches.includes(o));
+  if(matches.length){
+    // Otomatis pilih hasil pertama agar tidak perlu klik dropdown lagi.
+    sel.value=matches[0].value;
+    syncPaymentJamaahName();
+  }else{
+    sel.value='';
+  }
 }
 function syncPaymentJamaahSearch(){
   const sel=document.getElementById('paymentJamaah'),input=document.getElementById('paymentJamaahSearch');
