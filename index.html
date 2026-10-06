@@ -2207,11 +2207,13 @@ document.getElementById('paymentForm').addEventListener('submit',async e=>{
   const note=document.getElementById('paymentNote').value.trim();
 
   if(!jamaah_id||amount<=0||!payment_date||!method){
-    notice('Lengkapi nama, nominal, tanggal, dan metode pembayaran.','error');return
+    notice('Lengkapi nama, nominal, tanggal, dan metode pembayaran.','error');
+    setFormLoading(e.currentTarget,false);e.currentTarget.dataset.processing="0";return
   }
-  if(discount<0){notice('Diskon tidak boleh negatif.','error');return}
+  if(discount<0){notice('Diskon tidak boleh negatif.','error');setFormLoading(e.currentTarget,false);e.currentTarget.dataset.processing="0";return}
   if(method==='Transfer'&&!bank){
-    notice('Pilih bank transfer: Bank Muamalat atau BSI.','error');return
+    notice('Pilih bank transfer: Bank Muamalat atau BSI.','error');
+    setFormLoading(e.currentTarget,false);e.currentTarget.dataset.processing="0";return
   }
 
   const paymentNote=selectedGroup
@@ -2222,7 +2224,11 @@ document.getElementById('paymentForm').addEventListener('submit',async e=>{
     bank: method==='Transfer'?bank:null,
     note:paymentNote
   }).select('*').single();
-  if(error){notice('Gagal menyimpan pembayaran: '+error.message,'error');return}
+  if(error){
+    console.error('Simpan pembayaran gagal:',JSON.stringify(error,null,2));
+    notice('Gagal menyimpan pembayaran: '+(error.message||'Kesalahan Supabase')+(error.details?' — '+error.details:''),'error');
+    setFormLoading(e.currentTarget,false);e.currentTarget.dataset.processing="0";return
+  }
 
   document.getElementById('paymentAmount').value='';
   document.getElementById('paymentDiscount').value='0';
@@ -2231,7 +2237,11 @@ document.getElementById('paymentForm').addEventListener('submit',async e=>{
   document.getElementById('paymentNote').value='';
   togglePaymentBank();
 
-  await syncToSpreadsheet('pembayaran',inserted||{jamaah_id,amount,discount,payment_date,method,bank:method==='Transfer'?bank:null,note:paymentNote});
+  try{
+    await syncToSpreadsheet('pembayaran',inserted||{jamaah_id,amount,discount,payment_date,method,bank:method==='Transfer'?bank:null,note:paymentNote});
+  }catch(syncErr){
+    console.warn('Sinkronisasi spreadsheet pembayaran gagal, tetapi pembayaran sudah tersimpan di Supabase:',syncErr);
+  }
   setFormLoading(e.currentTarget,false);e.currentTarget.dataset.processing="0";
   await loadData();renderAll();addActivityLog('Mencatat pembayaran jamaah sebesar '+rupiah(amount)+'.');notice('Pembayaran berhasil disimpan.');
   setTimeout(()=>printPayment(inserted.id),250);
