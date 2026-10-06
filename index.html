@@ -2118,10 +2118,11 @@ function clearPaymentJamaahSearch(){
 function syncPaymentJamaahName(){
   const sel=document.getElementById('paymentJamaah');
   if(sel && sel.value){
-    const found=(data||[]).find(x=>x.id===sel.value);
+    const actualId=sel.value.startsWith('group::')?sel.value.replace(/^group::/,''):sel.value;
+    const found=(data||[]).find(x=>x.id===actualId);
     if(!found){
       const opt=sel.options[sel.selectedIndex];
-      if(opt) data.push({id:sel.value,nama:opt.textContent});
+      if(opt) data.push({id:actualId,nama:opt.textContent});
     }
   }
 }
