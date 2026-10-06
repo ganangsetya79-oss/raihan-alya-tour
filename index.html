@@ -318,6 +318,46 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;p
 .dash-modern-running{margin-top:9px;max-width:920px}.dash-modern-running .dashboard-running-track{animation-duration:28s}.dash-modern-running .dashboard-running-item{padding:6px 20px;font-size:10px}
 .dashboard-modern .dashboard-greeting{color:#1f705d}
 .dashboard-modern .dash-hero{margin-top:15px}
+</style><style id="dashboard-final-polish">
+.dashboard-modern{max-width:none!important;padding:0 14px 30px!important;background:#f6f8f8}
+.dashboard-modern .dash-head{max-width:1248px;margin:0 auto 12px!important;min-height:58px}
+.dashboard-modern .dash-head .dashboard-greeting{display:none!important}
+.dashboard-modern .dash-modern-running{max-width:100%;margin-top:7px!important;height:38px!important;border-radius:9px!important}
+.dashboard-modern .dash-hero{max-width:1248px;margin:0 auto 18px!important;min-height:128px!important;position:relative;overflow:hidden;padding:20px 22px!important;border-radius:16px!important;background:linear-gradient(100deg,#fff 0%,#f9fcfb 65%,#eef4ef 100%)!important;border:1px solid #dce8e3!important;box-shadow:0 8px 24px rgba(23,63,53,.05)!important}
+.dashboard-modern .dash-hero-art{width:48%!important;background:radial-gradient(circle at 88% 10%,rgba(194,138,22,.18),transparent 32%),radial-gradient(circle at 72% 90%,rgba(31,112,93,.08),transparent 42%),linear-gradient(90deg,transparent,rgba(255,255,255,.1))!important}
+.dashboard-modern .dash-filter{max-width:1248px;margin:0 auto 18px!important}
+.dashboard-modern .dashboard-calendar-row{max-width:1248px;margin:0 auto 18px}
+.dashboard-modern .dash-stat-grid{max-width:1248px;margin-left:auto;margin-right:auto;gap:14px}
+.dashboard-modern .dash-main-grid{max-width:1248px;margin-left:auto;margin-right:auto;gap:14px}
+.dashboard-modern .dash-bottom-grid{max-width:1248px}
+.dashboard-modern .dash-hidden-data{display:none!important}
+.dashboard-modern .dash-legacy-extra{display:none!important}
+.dashboard-modern .dash-filter-grid{grid-template-columns:1fr 1.08fr 1fr 1fr 190px!important}
+.dashboard-modern .dash-filter-actions .btn:first-child{background:#176b5a!important}
+.dashboard-modern .dash-filter-actions .btn.secondary{background:#eef3f1!important;color:#176b5a!important;border-color:#dce7e3!important}
+.dashboard-modern .dash-stat{min-height:116px!important}
+.dashboard-modern .dash-chart-panel,.dashboard-modern .dash-departure-panel,.dashboard-modern .dash-bottom-grid>.panel{min-height:280px}
+@media(max-width:1100px){
+ .dashboard-modern .dash-filter-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+ .dashboard-modern .dash-filter-actions{grid-column:1/-1;flex-direction:row}
+ .dashboard-modern .dash-main-grid{grid-template-columns:1fr}
+ .dashboard-modern .dash-stat-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:700px){
+ .dashboard-modern{padding:0 8px 20px!important}
+ .dashboard-modern .dash-head{align-items:flex-start}
+ .dashboard-modern .dashboard-user-actions{display:none}
+ .dashboard-modern .dash-hero{min-height:112px!important;padding:16px!important}
+ .dashboard-modern .dash-hero-logo{width:62px;height:62px}
+ .dashboard-modern .dash-hero-title{font-size:22px}
+ .dashboard-modern .dash-hero-slogan{font-size:13px}
+ .dashboard-modern .dash-filter-grid{grid-template-columns:1fr!important}
+ .dashboard-modern .dash-filter-actions{grid-column:auto;flex-direction:column}
+ .dashboard-modern .dash-stat-grid{grid-template-columns:1fr}
+ .dashboard-modern .dash-main-grid{grid-template-columns:1fr}
+ .dashboard-modern .dash-upcoming-item{grid-template-columns:50px 1fr}
+ .dashboard-modern .dash-status-pill{display:none}
+}
 </style></head>
 <body>
 <button type="button" class="mobile-menu-btn" id="mobileMenuBtn" onclick="toggleMobileNav()" aria-label="Buka menu" title="Buka menu"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"></path></svg></button>
