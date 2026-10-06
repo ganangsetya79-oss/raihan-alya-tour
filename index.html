@@ -884,10 +884,11 @@ const APP_VERSION='2026-10-05-dashboard-calendar-1';
 const rupiah=n=>new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(Number(n)||0);
 const isGroupJamaah=x=>!!(x&&(x.kategori==='grup'||String(x.nama_rombongan||'').trim()));
 const groupNameFor=x=>String(x?.nama_rombongan||'').trim();
+const normalizeGroupName=v=>String(v||'').trim().toLowerCase().replace(/\\s+/g,' ');
 const groupMembersFor=x=>{
-  const name=groupNameFor(x);
+  const name=normalizeGroupName(groupNameFor(x));
   if(!name)return[];
-  return data.filter(j=>groupNameFor(j)===name);
+  return data.filter(j=>normalizeGroupName(groupNameFor(j))===name);
 };
 const groupTotalFor=x=>groupMembersFor(x).reduce((a,j)=>a+Number(j.harga||0),0);
 const isRombonganPayment=p=>String(p?.note||'').trim().toLowerCase().includes('pembayaran rombongan');
