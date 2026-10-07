@@ -655,24 +655,24 @@ table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;border
     </div>
     <div id="equipmentFormArea" class="hidden">
       <div class="equipment-grid">
-        <label class="equipment-card"><input type="checkbox" id="eq_mukena_ihram"><span>🕋 <b>Mukena / Ihram</b><small>Sudah diambil</small></span></label>
-        <label class="equipment-card"><input type="checkbox" id="eq_batik"><span>👕 <b>Batik</b><small>Sudah diambil</small></span></label>
-        <label class="equipment-card"><input type="checkbox" id="eq_koper"><span>🧳 <b>Koper</b><small>Sudah diambil</small></span></label>
-        <label class="equipment-card"><input type="checkbox" id="eq_buku"><span>📖 <b>Buku Manasik</b><small>Sudah diambil</small></span></label>
+        <label class="equipment-card"><input type="checkbox" id="eq_mukena_ihram"><span><b>Mukena / Ihram</b><small>Sudah diambil</small></span></label>
+        <label class="equipment-card"><input type="checkbox" id="eq_batik"><span><b>Batik</b><small>Sudah diambil</small></span></label>
+        <label class="equipment-card"><input type="checkbox" id="eq_koper"><span><b>Koper</b><small>Sudah diambil</small></span></label>
+        <label class="equipment-card"><input type="checkbox" id="eq_buku"><span><b>Buku Manasik</b><small>Sudah diambil</small></span></label>
       </div>
       <div style="margin-top:16px">
         <label>Keterangan</label>
         <textarea id="equipmentNote" rows="3" placeholder="Contoh: Koper sudah diambil, batik menyusul. Atau tulis keterangan lain."></textarea>
       </div>
       <div class="actions" style="margin-top:14px">
-        <button class="btn" type="button" onclick="saveEquipment()">💾 Simpan Perlengkapan</button>
-        <button class="btn secondary" type="button" onclick="resetEquipmentForm()">↺ Reset</button>
+        <button class="btn" type="button" onclick="saveEquipment()">Simpan Perlengkapan</button>
+        <button class="btn secondary" type="button" onclick="resetEquipmentForm()">Reset</button>
       </div>
     </div>
   </div>
 
   <div class="panel">
-    <div class="panel-head"><div><h2>Rekap Pengambilan Perlengkapan</h2><span style="font-size:12px;color:#687078">Klik jamaah untuk melihat detail pengambilan.</span></div><div class="bulk-tools"><button class="btn danger small-btn" type="button" onclick="deleteSelectedEquipment()">🗑️ Hapus Rekap Terpilih</button></div></div><div style="margin:0 0 10px"><input id="equipmentSearch" type="search" placeholder="🔎 Cari nama jamaah..." oninput="renderEquipment()" style="width:100%;max-width:360px;padding:8px 10px;border:1px solid #d8dde0;border-radius:7px;font-size:12px"></div>
+    <div class="panel-head"><div><h2>Rekap Pengambilan Perlengkapan</h2><span style="font-size:12px;color:#687078">Klik jamaah untuk melihat detail pengambilan.</span></div><div class="bulk-tools"><button class="btn danger small-btn" type="button" onclick="deleteSelectedEquipment()">Hapus Rekap Terpilih</button></div></div><div style="margin:0 0 10px"><input id="equipmentSearch" type="text" placeholder="Cari nama jamaah..." oninput="renderEquipment()" style="width:100%;max-width:360px;padding:8px 10px;border:1px solid #d8dde0;border-radius:7px;font-size:12px"></div>
     <div class="table-wrap"><table><thead><tr><th style="width:38px;text-align:center"><input class="bulk-select-all" id="equipmentSelectAll" type="checkbox" onchange="toggleAllEquipment(this.checked)" title="Pilih semua"></th><th>No</th><th>Nama Jamaah</th><th>Keberangkatan</th><th>Mukena / Ihram</th><th>Batik</th><th>Koper</th><th>Buku Manasik</th><th>Tanggal</th><th>Keterangan</th></tr></thead><tbody id="equipmentBody"></tbody></table></div>
   </div>
 </section>
@@ -2775,7 +2775,8 @@ function loadEquipmentForm(){
   if(!id){area.classList.add('hidden');return}
   area.classList.remove('hidden');
   const x=getEquipment(id)||{};
-  ['ihram','mukena','batik','koper','buku'].forEach(k=>{const el=document.getElementById('eq_'+k);if(el)el.checked=!!x[k]});
+  const equipmentChecks={mukena_ihram:x.mukena_ihram ?? x.ihram ?? x.mukena,batik:x.batik,koper:x.koper,buku:x.buku};
+  [['mukena_ihram','mukena_ihram'],['batik','batik'],['koper','koper'],['buku','buku']].forEach(([field,id])=>{const el=document.getElementById('eq_'+id);if(el)el.checked=!!equipmentChecks[field]});
   const dt=document.getElementById('equipmentDate'); if(dt)dt.value=x.taken_date||equipmentDateToday();
   const note=document.getElementById('equipmentNote'); if(note)note.value=x.note||'';
 }
