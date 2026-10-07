@@ -2365,8 +2365,9 @@ function editPayment(id){
   setTimeout(()=>{
     const sel=document.getElementById('paymentJamaah');
     if(sel){
-      sel.value=(isRombonganPayment(p)?'group::':'')+(p.jamaah_id||'');
-      if(![...sel.options].some(o=>o.value===sel.value))sel.value=p.jamaah_id||'';
+      const target=(isRombonganPayment(p)?'group::':'')+(p.jamaah_id||'');
+      const value=[...sel.options].some(o=>o.value===target)?target:(p.jamaah_id||'');
+      setPaymentSelection(value);
       syncPaymentJamaahName();
       syncPaymentJamaahSearch();
     }
