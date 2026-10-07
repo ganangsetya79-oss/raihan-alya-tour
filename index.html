@@ -839,8 +839,7 @@ table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;border
       <div><label>Paket</label><select id="jPaketSelect" onchange="syncPackagePrice('jPaketSelect','harga')"></select></div>
       <div><label>Harga Paket</label><input id="harga" type="number" min="0" required readonly title="Harga otomatis mengikuti data paket"></div>
       <div><label>Jadwal Keberangkatan</label><select id="jDepartureSelect"><option value="">-- Belum ditentukan --</option></select></div>
-      <div><label>Tanggal Berangkat</label><input id="berangkat" type="date"></div>
-      <div class="full"><label>Catatan</label><input id="catatan"></div>
+      <div><label>Keterangan</label><input id="catatan" placeholder="Keterangan / catatan jamaah"></div>
     </div></div>
     <div id="groupForm" class="jamaah-group-form hidden">
       <div class="jamaah-group-head"><div><label>Nama Rombongan / Keluarga</label><input id="nama_rombongan" placeholder="Contoh: Keluarga Ahmad"></div><div><label>Keterangan Rombongan</label><input id="keterangan_rombongan" placeholder="Opsional"></div></div>
@@ -2513,7 +2512,7 @@ function openForm(id=null){
       }
     }else if(x){
       setJamaahEntryMode('individu');
-      for(const k of ['nama','jenis_kelamin','hp','nik','alamat','paket','harga','berangkat','catatan']){
+      for(const k of ['nama','jenis_kelamin','hp','nik','alamat','paket','harga','catatan']){
         const el=document.getElementById(k);if(el)el.value=x[k]??''
       }
       fillJamaahDepartureSelects(x.departure_id||'');
@@ -2603,7 +2602,7 @@ if(jamaahForm) jamaahForm.addEventListener('submit',async e=>{
     }
     result=results.find(x=>x?.error)||{error:null};
   }else{
-    const payload={nama:document.getElementById('nama').value.trim(),jenis_kelamin:document.getElementById('jenis_kelamin').value,hp:document.getElementById('hp').value.trim(),nik:document.getElementById('nik').value.trim(),alamat:document.getElementById('alamat').value.trim(),paket:document.getElementById('jPaketSelect').value||'Other / Belum Diketahui',harga:Number(document.getElementById('harga').value)||0,berangkat:document.getElementById('berangkat').value||null,catatan:document.getElementById('catatan').value.trim(),departure_id:document.getElementById('jDepartureSelect').value||null};
+    const payload={nama:document.getElementById('nama').value.trim(),jenis_kelamin:document.getElementById('jenis_kelamin').value,hp:document.getElementById('hp').value.trim(),nik:document.getElementById('nik').value.trim(),alamat:document.getElementById('alamat').value.trim(),paket:document.getElementById('jPaketSelect').value||'Other / Belum Diketahui',harga:Number(document.getElementById('harga').value)||0,berangkat:null,catatan:document.getElementById('catatan').value.trim(),departure_id:document.getElementById('jDepartureSelect').value||null};
     jamaahSheetRows=[{...payload,id:id||undefined}];
     if(id)result=await sb.from('jamaah').update(payload).eq('id',id);else result=await sb.from('jamaah').insert(payload);
     if(result.error){console.error('Simpan jamaah gagal:',JSON.stringify(result.error,null,2));notice('Gagal menyimpan jamaah: '+(result.error.message||'Kesalahan Supabase')+(result.error.details?' — '+result.error.details:''),'error');return}
