@@ -2606,11 +2606,7 @@ if(jamaahForm) jamaahForm.addEventListener('submit',async e=>{
     const payload={nama:document.getElementById('nama').value.trim(),jenis_kelamin:document.getElementById('jenis_kelamin').value,hp:document.getElementById('hp').value.trim(),nik:document.getElementById('nik').value.trim(),alamat:document.getElementById('alamat').value.trim(),paket:document.getElementById('jPaketSelect').value||'Other / Belum Diketahui',harga:Number(document.getElementById('harga').value)||0,berangkat:null,keterangan:document.getElementById('keterangan').value.trim(),catatan:document.getElementById('catatan').value.trim(),departure_id:document.getElementById('jDepartureSelect').value||null};
     jamaahSheetRows=[{...payload,id:id||undefined}];
     if(id)result=await sb.from('jamaah').update(payload).eq('id',id);else result=await sb.from('jamaah').insert(payload);
-    if(result.error && /keterangan|column.*does not exist|schema cache/i.test(result.error.message||'')){
-      const {keterangan,...fallback}=payload;
-      result=id?await sb.from('jamaah').update(fallback).eq('id',id):await sb.from('jamaah').insert(fallback);
-    }
-    if(result.error){console.error('Simpan jamaah gagal:',JSON.stringify(result.error,null,2));notice('Gagal menyimpan jamaah: '+(result.error.message||'Kesalahan Supabase')+(result.error.details?' — '+result.error.details:''),'error');return}
+    if(result.error){console.error('Simpan jamaah gagal:',JSON.stringify(result.error,null,2));notice('Gagal menyimpan jamaah: '+(result.error.message||'Kesalahan Supabase')+(result.error.details?' — '+result.error.details:'')+' Pastikan kolom keterangan tersedia di tabel jamaah.','error');return}
   }
   if(result.error){console.error('Simpan jamaah gagal:',JSON.stringify(result.error,null,2));notice('Gagal menyimpan jamaah: '+(result.error.message||'Kesalahan Supabase')+(result.error.details?' — '+result.error.details:''),'error');return}
   await syncManyToSpreadsheet('jamaah',jamaahSheetRows);
