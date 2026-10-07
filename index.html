@@ -988,12 +988,13 @@ const groupMembersFor=x=>{
   const name=normalizeGroupName(groupNameFor(x));
   if(!name)return[];
   const departureId=String(x?.departure_id||'').trim();
-  // Sumber anggota selalu DATA JAMAAH. Jika jadwal tersedia, rombongan
-  // dibedakan berdasarkan nama + jadwal agar rombongan lain tidak tercampur.
+  // Rombongan ditentukan secara ketat berdasarkan NAMA ROMBONGAN + JADWAL.
+  // Jangan pernah mencampurkan anggota dari jadwal berbeda atau anggota
+  // tanpa jadwal ke rombongan yang sudah memiliki jadwal.
   return data.filter(j=>{
     if(!isGroupJamaah(j)||normalizeGroupName(groupNameFor(j))!==name)return false;
     const jd=String(j?.departure_id||'').trim();
-    return !departureId || !jd || jd===departureId;
+    return departureId ? jd===departureId : jd==='';
   });
 };
 const groupTotalFor=x=>groupMembersFor(x).reduce((a,j)=>a+Number(j.harga||0),0);
