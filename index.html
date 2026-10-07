@@ -641,8 +641,12 @@ table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;border
     <div class="form" style="margin-bottom:16px">
       <div>
         <label>Pilih Jamaah</label>
-        <input id="equipmentJamaahSearch" type="search" placeholder="🔎 Cari nama jamaah..." autocomplete="off" oninput="filterEquipmentJamaah()" style="width:100%;padding:8px 10px;border:1px solid #d8dde0;border-radius:7px;margin-bottom:6px;font-size:12px">
-        <select id="equipmentJamaah" onchange="loadEquipmentForm()" style="width:100%;padding:10px;border:1px solid #d8dde0;border-radius:7px"></select>
+        <div style="position:relative">
+          <input id="equipmentJamaahSearch" type="search" placeholder="🔎 Cari nama jamaah..." autocomplete="off" oninput="filterEquipmentJamaah()" onclick="filterEquipmentJamaah()" style="width:100%;padding:8px 10px;border:1px solid #d8dde0;border-radius:7px;margin-bottom:6px;font-size:12px">
+          <div id="equipmentJamaahResults" style="display:none;position:absolute;z-index:30;left:0;right:0;top:36px;background:#fff;border:1px solid #d8dde0;border-radius:7px;box-shadow:0 5px 14px rgba(0,0,0,.10);max-height:220px;overflow-y:auto"></div>
+        </div>
+        <select id="equipmentJamaah" onchange="loadEquipmentForm()" style="display:none;width:100%;padding:10px;border:1px solid #d8dde0;border-radius:7px"></select>
+        <div id="equipmentJamaahSelected" style="font-size:11px;color:#687078;margin-top:4px">Belum ada jamaah dipilih.</div>
       </div>
       <div>
         <label>Tanggal Pengambilan</label>
@@ -2723,19 +2727,46 @@ async function openStoredFile(encodedPath){
 
 
 function fillEquipmentJamaah(){
-  const s=document.getElementById('equipmentJamaah'); if(!s)return;
+  const s=document.getElementById('equipmentJamaah');
+  if(!s)return;
   const old=s.value;
-  const q=(document.getElementById('equipmentJamaahSearch')?.value||'').trim().toLowerCase();
-  const rows=data.slice().filter(j=>!q||(j.nama||'').toLowerCase().includes(q)).sort((a,b)=>(a.nama||'').localeCompare(b.nama||''));
+  const rows=data.slice().sort((a,b)=>(a.nama||'').localeCompare(b.nama||''));
   s.innerHTML='<option value="">-- Pilih Jamaah --</option>'+rows.map(j=>`<option value="${j.id}">${esc(j.nama)} — ${esc(j.paket||'-')}</option>`).join('');
-  if(rows.some(j=>j.id===old))s.value=old;
+  if(data.some(j=>j.id===old))s.value=old;
 }
 function filterEquipmentJamaah(){
-  const s=document.getElementById('equipmentJamaah');
-  const old=s?.value||'';
-  fillEquipmentJamaah();
-  if(s&&old&&[...s.options].some(o=>o.value===old)){s.value=old;loadEquipmentForm()}
+  const input=document.getElementById('equipmentJamaahSearch');
+  const results=document.getElementById('equipmentJamaahResults');
+  if(!input||!results)return;
+  const q=(input.value||'').trim().toLowerCase();
+  const rows=data.slice().filter(j=>!q||(j.nama||'').toLowerCase().includes(q)).sort((a,b)=>(a.nama||'').localeCompare(b.nama||''));
+  if(!rows.length){
+    results.innerHTML='<div style="padding:10px;font-size:12px;color:#687078">Nama jamaah tidak ditemukan.</div>';
+    results.style.display='block';
+    return;
+  }
+  results.innerHTML=rows.slice(0,30).map(j=>`<button type="button" style="display:block;width:100%;text-align:left;padding:9px 10px;border:0;border-bottom:1px solid #edf0ef;background:#fff;cursor:pointer;font-size:12px" onmouseover="this.style.background='#f3f7f5'" onmouseout="this.style.background='#fff'" onclick="selectEquipmentJamaah('${esc(j.id)}')"><b>${esc(j.nama)}</b><span style="display:block;color:#687078;font-size:10px;margin-top:2px">${esc(j.paket||'Paket belum ditentukan')}</span></button>`).join('');
+  results.style.display='block';
 }
+function selectEquipmentJamaah(id){
+  const j=data.find(x=>String(x.id)===String(id));
+  const s=document.getElementById('equipmentJamaah');
+  const input=document.getElementById('equipmentJamaahSearch');
+  const results=document.getElementById('equipmentJamaahResults');
+  const selected=document.getElementById('equipmentJamaahSelected');
+  if(!j||!s)return;
+  s.value=j.id;
+  if(input)input.value=j.nama||'';
+  if(selected)selected.innerHTML='Jamaah dipilih: <b>'+esc(j.nama)+'</b>';
+  if(results)results.style.display='none';
+  loadEquipmentForm();
+}
+document.addEventListener('click',function(e){
+  const box=document.getElementById('equipmentJamaahResults');
+  const input=document.getElementById('equipmentJamaahSearch');
+  if(box&&input&&!box.contains(e.target)&&e.target!==input)box.style.display='none';
+});
+
 function getEquipment(id){return equipment.find(x=>x.jamaah_id===id)}
 function equipmentDateToday(){return new Date().toISOString().slice(0,10)}
 function loadEquipmentForm(){
