@@ -2439,33 +2439,39 @@ function removeJamaahMember(btn){btn.closest('.jamaah-member-card')?.remove();re
 function setJamaahEntryMode(mode){
   document.getElementById('entryMode').value=mode;
   const isInd=mode==='individu',isMulti=mode==='individu-multi',isGroup=mode==='grup';
+
   document.getElementById('individualForm')?.classList.toggle('hidden',!isInd);
   document.getElementById('individualMultiForm')?.classList.toggle('hidden',!isMulti);
   document.getElementById('groupForm')?.classList.toggle('hidden',!isGroup);
   document.getElementById('tabIndividu')?.classList.toggle('active',isInd);
   document.getElementById('tabMultiIndividu')?.classList.toggle('active',isMulti);
   document.getElementById('tabGrup')?.classList.toggle('active',isGroup);
-  const individualFields=['nama','jenis_kelamin','hp','nik','alamat','paket','harga','keterangan','catatan'];
+
+  // Selalu reset status disabled berdasarkan mode aktif agar saat EDIT
+  // dari Multi Input kembali ke Individual semua field bisa diedit lagi.
+  document.querySelectorAll('#individualForm input,#individualForm select,#individualForm textarea').forEach(el=>{
+    el.disabled=!isInd;
+  });
+  document.querySelectorAll('#groupForm input,#groupForm select,#groupForm textarea').forEach(el=>{
+    el.disabled=!isGroup;
+  });
+
+  const individualFields=['nama','jenis_kelamin','hp','nik','alamat','harga','keterangan','catatan'];
   individualFields.forEach(id=>{
     const el=document.getElementById(id);
     if(el){
-      el.disabled=!isInd;
-      if(['nama','hp','harga'].includes(id))el.required=isInd;
+      el.required=isInd && ['nama','hp','harga'].includes(id);
     }
   });
-  // Saat Multi Input aktif, semua field form Individual dan Rombongan
-  // tidak boleh ikut memblokir native form validation.
-  if(isMulti){
-    document.querySelectorAll('#individualForm input,#individualForm select,#groupForm input,#groupForm select').forEach(el=>{
-      el.disabled=true;
-      el.required=false;
-    });
-  }
+  const paketEl=document.getElementById('jPaketSelect');
+  if(paketEl)paketEl.required=isInd;
+
   if(isMulti){
     fillJamaahDepartureSelects();
     fillMultiPackageSelect();
     renderMultiIndividualCards();
   }
+
   if(isGroup){
     const box=document.getElementById('jamaahMembers');
     if(box&&!box.querySelector('.jamaah-member-card'))for(let i=0;i<5;i++)addJamaahMember();
