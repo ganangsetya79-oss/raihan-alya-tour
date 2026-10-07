@@ -3508,7 +3508,7 @@ function exportJamaahCSV(){
   const preferred=['nama','jenis_kelamin','hp','nik','alamat','kategori','paket','harga','group_id','nama_rombongan','departure_id','berangkat','keterangan','catatan','complimentary_reason','created_at'];
   const keys=[...new Set(preferred.concat(rows.flatMap(x=>Object.keys(x||{}))))].filter(Boolean);
   const escCsv=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
-  const csv='\\uFEFF'+[keys.map(escCsv).join(','),...rows.map(x=>keys.map(k=>escCsv(x[k])).join(','))].join('\\r\\n');
+  const csv='\uFEFF'+[keys.map(escCsv).join(';'),...rows.map(x=>keys.map(k=>escCsv(x[k])).join(';'))].join('\r\n');
   const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
