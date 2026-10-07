@@ -2170,29 +2170,53 @@ function choosePaymentJamaah(input){
   setPaymentSelection(input.value);
 }
 function filterPaymentJamaahOptions(){
-  const box=document.getElementById('paymentJamaahChecklist'),input=document.getElementById('paymentJamaahSearch');
+  const box=document.getElementById('paymentJamaahChecklist');
+  const input=document.getElementById('paymentJamaahSearch');
   if(!box||!input)return;
   const q=String(input.value||'').trim().toLowerCase();
-  const items=[...box.querySelectorAll('.payment-check-item')];
-  const headers=[...box.querySelectorAll('.payment-check-group-header')];
+  const all=[...box.children];
+
   if(paymentEntryMode==='group'){
-    items.forEach(item=>item.style.display=!q||String(item.dataset.search||'').includes(q)?'flex':'none');
+    all.forEach(item=>{
+      const hay=String(item.dataset.search||'').toLowerCase();
+      item.style.display=!q||hay.includes(q)?'flex':'none';
+    });
     return;
   }
-  headers.forEach(h=>h.style.display='flex');
-  items.forEach(item=>item.style.display=!q||String(item.dataset.search||'').includes(q)?'flex':'none');
-  headers.forEach((h,idx)=>{
-    const nextHeader=headers[idx+1];
-    const start=items.indexOf(items.find(it=>it.compareDocumentPosition(h)&Node.DOCUMENT_POSITION_FOLLOWING));
-    const groupItems=items.filter(it=>{
-      const rel=h.compareDocumentPosition(it);
-      const before=!!(rel&Node.DOCUMENT_POSITION_FOLLOWING);
-      const afterNext=nextHeader?!!(nextHeader.compareDocumentPosition(it)&Node.DOCUMENT_POSITION_FOLLOWING):true;
-      return before&&afterNext;
+
+  let currentHeader=null;
+  let groupItems=[];
+  const flushGroup=()=>{
+    if(!currentHeader)return;
+    const headerHay=String(currentHeader.dataset.search||'').toLowerCase();
+    const headerMatch=!q||headerHay.includes(q);
+    const memberMatch=groupItems.some(item=>{
+      const hay=String(item.dataset.search||'').toLowerCase();
+      return !q||hay.includes(q);
     });
-    const visible=groupItems.some(it=>it.style.display!=='none');
-    h.style.display=visible||!q?'flex':'none';
+    const showGroup=headerMatch||memberMatch;
+    currentHeader.style.display=showGroup?'flex':'none';
+    groupItems.forEach(item=>{
+      const hay=String(item.dataset.search||'').toLowerCase();
+      item.style.display=(!q||hay.includes(q))?'flex':'none';
+    });
+    currentHeader=null;
+    groupItems=[];
+  };
+
+  all.forEach(item=>{
+    if(item.classList.contains('payment-check-group-header')){
+      flushGroup();
+      currentHeader=item;
+    }else if(item.classList.contains('payment-check-item')){
+      if(currentHeader)groupItems.push(item);
+      else{
+        const hay=String(item.dataset.search||'').toLowerCase();
+        item.style.display=!q||hay.includes(q)?'flex':'none';
+      }
+    }
   });
+  flushGroup();
 }
 function syncPaymentJamaahSearch(){setPaymentSelection(paymentSelectionValue())}
 function clearPaymentJamaahSearch(){
