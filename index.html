@@ -2453,6 +2453,14 @@ function setJamaahEntryMode(mode){
       if(['nama','hp','harga'].includes(id))el.required=isInd;
     }
   });
+  // Saat Multi Input aktif, semua field form Individual dan Rombongan
+  // tidak boleh ikut memblokir native form validation.
+  if(isMulti){
+    document.querySelectorAll('#individualForm input,#individualForm select,#groupForm input,#groupForm select').forEach(el=>{
+      el.disabled=true;
+      el.required=false;
+    });
+  }
   if(isMulti){
     fillJamaahDepartureSelects();
     fillMultiPackageSelect();
@@ -2601,22 +2609,28 @@ if(jamaahForm) jamaahForm.addEventListener('submit',async e=>{
   e.preventDefault();
   const id=document.getElementById('editId').value,mode=document.getElementById('entryMode').value||'individu';let result, jamaahSheetRows=[];
   if(mode==='individu-multi'){
-    const departure_id=document.getElementById('multiDepartureSelect').value||null;
-    const paket=document.getElementById('multiPaketSelect').value||'Other / Belum Diketahui';
-    const harga=Number(document.getElementById('multiHarga').value)||0;
-    const cards=[...document.querySelectorAll('#multiIndividualCards .multi-individual-card')];
-    const rows=cards.map(card=>{
-      const get=k=>card.querySelector('[data-field="'+k+'"]')?.value||'';
-      return {nama:get('nama').trim(),jenis_kelamin:get('jenis_kelamin'),nik:get('nik').trim(),hp:get('hp').trim(),alamat:'',paket,harga,berangkat:null,keterangan:get('keterangan').trim(),catatan:get('catatan').trim(),kategori:'individu',nama_rombongan:null,keterangan_rombongan:null,departure_id};
-    }).filter(x=>x.nama);
-    if(!rows.length){notice('Isi minimal satu nama jamaah pada Multi Input.','error');return}
-    if(!departure_id){notice('Pilih jadwal keberangkatan terlebih dahulu.','error');return}
-    const q=await sb.from('jamaah').insert(rows);
-    if(q.error){notice('Gagal menyimpan Multi Input: '+q.error.message,'error');return}
-    jamaahSheetRows=rows;
-    syncManyToSpreadsheet('jamaah',rows);
-    await loadData();jamaahCurrentPage=1;renderAll();closeForm();
-    notice(rows.length+' jamaah berhasil ditambahkan sebagai individu.');
+    const saveBtn=document.getElementById('jamaahSaveBtn');
+    if(saveBtn){saveBtn.disabled=true;saveBtn.textContent='Menyimpan...';}
+    try{
+      const departure_id=document.getElementById('multiDepartureSelect').value||null;
+      const paket=document.getElementById('multiPaketSelect').value||'Other / Belum Diketahui';
+      const harga=Number(document.getElementById('multiHarga').value)||0;
+      const cards=[...document.querySelectorAll('#multiIndividualCards .multi-individual-card')];
+      const rows=cards.map(card=>{
+        const get=k=>card.querySelector('[data-field="'+k+'"]')?.value||'';
+        return {nama:get('nama').trim(),jenis_kelamin:get('jenis_kelamin'),nik:get('nik').trim(),hp:get('hp').trim(),alamat:'',paket,harga,berangkat:null,keterangan:get('keterangan').trim(),catatan:get('catatan').trim(),kategori:'individu',nama_rombongan:null,keterangan_rombongan:null,departure_id};
+      }).filter(x=>x.nama);
+      if(!rows.length){notice('Isi minimal satu nama jamaah pada Multi Input.','error');return}
+      if(!departure_id){notice('Pilih jadwal keberangkatan terlebih dahulu.','error');return}
+      const q=await sb.from('jamaah').insert(rows);
+      if(q.error){notice('Gagal menyimpan Multi Input: '+q.error.message,'error');return}
+      jamaahSheetRows=rows;
+      if(typeof syncManyToSpreadsheet==='function')syncManyToSpreadsheet('jamaah',rows);
+      await loadData();jamaahCurrentPage=1;renderAll();closeForm();
+      notice(rows.length+' jamaah berhasil ditambahkan sebagai individu.');
+    }finally{
+      if(saveBtn){saveBtn.disabled=false;saveBtn.textContent='Simpan Jamaah';}
+    }
     return;
   }
   if(mode==='grup'){
