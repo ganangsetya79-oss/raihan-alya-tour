@@ -297,7 +297,7 @@ table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;border
 .roomlist-filter-grid,.room-create-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.room-create-grid{grid-template-columns:repeat(5,1fr);align-items:end}.room-create-button{display:flex;align-items:end}.roomlist-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:14px}.room-stat{background:#fff;border:1px solid #e1e8e5;border-radius:10px;padding:12px}.room-stat-label{font-size:10px;color:#718078}.room-stat-value{font-size:20px;font-weight:800;color:#173f35;margin-top:4px}.room-list-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px}.room-card{border:1px solid #dce5e1;border-radius:12px;padding:13px;background:#fff;box-shadow:0 2px 8px #00000008}.room-card-head{display:flex;justify-content:space-between;gap:8px;align-items:start}.room-card-title{font-weight:800;color:#173f35;font-size:14px}.room-capacity{font-size:10px;padding:5px 8px;border-radius:999px;background:#eef5f2;color:#286253;font-weight:700;white-space:nowrap}.room-capacity.full{background:#e4f5ec;color:#197044}.room-capacity.warn{background:#fff0dc;color:#a45b00}.room-card-meta{font-size:10px;color:#687078;margin:5px 0 10px}.room-progress{height:7px;background:#edf1ef;border-radius:99px;overflow:hidden;margin:6px 0 10px}.room-progress span{display:block;height:100%;background:#1f705d;border-radius:99px;transition:width .2s}.room-progress span.full{background:#197044}.room-member-list{display:grid;gap:5px;margin-bottom:10px;min-height:34px}.room-member{display:flex;justify-content:space-between;gap:8px;padding:8px 9px;background:#f7f9f8;border-radius:7px;font-size:11px;align-items:center}.room-member-name{font-weight:700;color:#35413d;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.room-member-remove{border:0;background:none;color:#b84040;cursor:pointer;font-size:10px;flex:none}.room-assign{display:flex;gap:6px}.room-assign select{flex:1;min-width:0}.room-card-actions{display:flex;gap:6px;margin-top:9px}.room-card-actions .btn{flex:1}.room-empty{padding:24px;text-align:center;color:#7a858b;font-size:12px;border:1px dashed #d8e0dc;border-radius:9px;background:#fafcfb}.room-create-button .btn{width:100%}.room-unassigned{margin-top:12px;padding:10px 12px;border-radius:9px;background:#fff8ea;border:1px solid #f0dfbb;color:#805d16;font-size:11px}.room-edit-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:9px;padding-top:9px;border-top:1px solid #edf0ef}.room-edit-grid input,.room-edit-grid select{width:100%;padding:7px 8px;border:1px solid #d8dde0;border-radius:7px;font-size:11px}.room-filter-actions{display:flex;gap:7px;align-items:end}.room-filter-actions .btn{height:35px;white-space:nowrap}
 @media(max-width:1000px){.roomlist-filter-grid{grid-template-columns:repeat(2,1fr)}.room-create-grid{grid-template-columns:repeat(3,1fr)}.roomlist-summary{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:650px){.roomlist-filter-grid,.room-create-grid{grid-template-columns:1fr}.roomlist-summary{grid-template-columns:1fr 1fr}.room-card{min-width:0}.room-edit-grid{grid-template-columns:1fr}.room-filter-actions{align-items:stretch}.room-filter-actions .btn{width:100%}}
-</style></style></style></style></style>
+<style id="roomlist-slot-style">.room-slot-note{padding:9px 11px;border:1px dashed #cbded8;border-radius:8px;background:#f8fbfa;font-size:11px;color:#526762;margin-bottom:10px}.room-card-title{font-weight:700}</style></style></style></style></style></style>
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
@@ -779,10 +779,10 @@ table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;border
 
   <div class="panel">
     <div class="panel-head">
-      <div><h2>Buat Kamar</h2><div class="muted">Buat kamar sesuai hotel, kota, tipe, dan kapasitas.</div></div>
+      <div><h2>Buat Kamar</h2><div class="muted">Buat slot kamar terlebih dahulu. Nomor kamar bisa diisi nanti setelah hotel mengonfirmasi.</div></div>
     </div>
     <div class="room-create-grid">
-      <div><label>No. Kamar</label><input id="roomNumber" placeholder="Contoh: 101"></div>
+      <div><label>No. Kamar <span class="muted">(opsional)</span></label><input id="roomNumber" placeholder="Belum diketahui"></div>
       <div><label>Hotel</label><input id="roomHotel" placeholder="Contoh: Anjum"></div>
       <div><label>Kota</label><select id="roomCity"><option>Makkah</option><option>Madinah</option></select></div>
       <div><label>Tipe Kamar</label><select id="roomType" onchange="syncRoomCapacity()"><option value="Double">Double</option><option value="Triple">Triple</option><option value="Quad" selected>Quad</option></select></div>
@@ -1579,13 +1579,13 @@ function resetRoomListFilter(){
 }
 function editRoom(roomId){
   const room=loadRoomListStore().find(r=>r.id===roomId);if(!room)return;
-  const n=prompt('No. kamar:',room.room_number);if(n===null)return;
-  const htl=prompt('Hotel:',room.hotel);if(htl===null)return;
+  const n=prompt('No. kamar (boleh kosong jika belum diketahui):',room.room_number||'');if(n===null)return;
+  const htl=prompt('Hotel:',room.hotel||'');if(htl===null)return;
   const cap=prompt('Kapasitas kamar:',String(room.capacity));if(cap===null)return;
   const capacity=Math.max(room.member_ids?.length||0,Math.min(10,Number(cap)||room.capacity));
   const rows=loadRoomListStore(),target=rows.find(r=>r.id===roomId);if(!target)return;
-  target.room_number=n.trim()||target.room_number;target.hotel=htl.trim()||target.hotel;target.capacity=capacity;
-  saveRoomListStore(rows);renderRoomList();notice('Kamar berhasil diperbarui.');
+  target.room_number=n.trim();target.hotel=htl.trim()||target.hotel;target.capacity=capacity;
+  saveRoomListStore(rows);renderRoomList();notice(target.room_number?'Nomor kamar berhasil diperbarui.':'Kamar tetap menggunakan nomor sementara.');
 }
 function createRoom(){
   const departure_id=document.getElementById('roomDepartureFilter')?.value||'';
@@ -1595,12 +1595,15 @@ function createRoom(){
   const city=document.getElementById('roomCity')?.value||'Makkah';
   const type=document.getElementById('roomType')?.value||'Quad';
   const capacity=Math.max(1,Math.min(10,Number(document.getElementById('roomCapacity')?.value)||4));
-  if(!room_number||!hotel){notice('No. kamar dan hotel wajib diisi.','error');return}
+  if(!hotel){notice('Hotel wajib diisi. Nomor kamar boleh dikosongkan dulu.','error');return}
   const rows=loadRoomListStore();
-  if(rows.some(r=>String(r.departure_id)===String(departure_id)&&String(r.room_number).toLowerCase()===room_number.toLowerCase()&&String(r.hotel).toLowerCase()===hotel.toLowerCase())){notice('Nomor kamar tersebut sudah ada pada hotel dan jadwal ini.','error');return}
-  rows.push({id:'room_'+Date.now()+'_'+Math.random().toString(36).slice(2,7),departure_id,room_number,hotel,city,type,capacity,member_ids:[]});
+  const sameSchedule=rows.filter(r=>String(r.departure_id)===String(departure_id)&&String(r.hotel||'').toLowerCase()===hotel.toLowerCase()&&String(r.city||'')===city);
+  if(room_number && sameSchedule.some(r=>String(r.room_number||'').toLowerCase()===room_number.toLowerCase())){notice('Nomor kamar tersebut sudah ada pada hotel dan jadwal ini.','error');return}
+  const slotNo=sameSchedule.length+1;
+  rows.push({id:'room_'+Date.now()+'_'+Math.random().toString(36).slice(2,7),departure_id,room_number,slot_no:slotNo,hotel,city,type,capacity,member_ids:[]});
   saveRoomListStore(rows);
-  document.getElementById('roomNumber').value='';renderRoomList();notice('Kamar berhasil dibuat.');
+  const n=document.getElementById('roomNumber');if(n)n.value='';
+  renderRoomList();notice(room_number?'Kamar berhasil dibuat.':'Slot kamar '+String(slotNo).padStart(2,'0')+' berhasil dibuat. Nomor kamar bisa diisi nanti.');
 }
 function assignRoomMember(roomId,jamaahId){
   if(!jamaahId)return;
@@ -1649,7 +1652,7 @@ function renderRoomList(){
     const pct=Math.min(100,Math.round((members.length/Math.max(1,Number(r.capacity)))*100));
     const status=members.length>=Number(r.capacity)?'Penuh':'Tersedia '+(Number(r.capacity)-members.length);
     const cls=members.length>=Number(r.capacity)?'full':'warn';
-    return '<div class="room-card"><div class="room-card-head"><div><div class="room-card-title">Kamar '+esc(r.room_number)+' — '+esc(r.hotel)+'</div><div class="room-card-meta">'+esc(r.city)+' · '+esc(r.type)+' · '+members.length+'/'+esc(r.capacity)+' orang</div></div><span class="room-capacity '+cls+'">'+status+'</span></div><div class="room-progress"><span class="'+(members.length>=Number(r.capacity)?'full':'')+'" style="width:'+pct+'%"></span></div><div class="room-member-list">'+(members.length?members.map(m=>'<div class="room-member"><span class="room-member-name">'+esc(m.nama)+'</span><button class="room-member-remove" type="button" onclick="removeRoomMember(\''+r.id+'\',\''+m.id+'\')">Hapus</button></div>').join(''):'<div class="muted" style="font-size:11px">Belum ada jamaah.</div>')+'</div><div class="room-assign"><select onchange="assignRoomMember(\''+r.id+'\',this.value)"><option value="">+ Tambah jamaah</option>'+available.map(m=>'<option value="'+esc(m.id)+'">'+esc(m.nama)+'</option>').join('')+'</select></div><div class="room-card-actions"><button class="btn secondary small-btn" type="button" onclick="editRoom(\''+r.id+'\')">Edit Kamar</button><button class="btn danger small-btn" type="button" onclick="deleteRoom(\''+r.id+'\')">Hapus</button></div></div>';
+    return '<div class="room-card"><div class="room-card-head"><div><div class="room-card-title">'+(r.room_number?'Kamar '+esc(r.room_number):'Slot Kamar '+String(r.slot_no||1).padStart(2,'0'))+' — '+esc(r.hotel)+'</div><div class="room-card-meta">'+esc(r.city)+' · '+esc(r.type)+' · '+members.length+'/'+esc(r.capacity)+' orang</div></div><span class="room-capacity '+cls+'">'+status+'</span></div><div class="room-progress"><span class="'+(members.length>=Number(r.capacity)?'full':'')+'" style="width:'+pct+'%"></span></div><div class="room-member-list">'+(members.length?members.map(m=>'<div class="room-member"><span class="room-member-name">'+esc(m.nama)+'</span><button class="room-member-remove" type="button" onclick="removeRoomMember(\''+r.id+'\',\''+m.id+'\')">Hapus</button></div>').join(''):'<div class="muted" style="font-size:11px">Belum ada jamaah.</div>')+'</div><div class="room-assign"><select onchange="assignRoomMember(\''+r.id+'\',this.value)"><option value="">+ Tambah jamaah</option>'+available.map(m=>'<option value="'+esc(m.id)+'">'+esc(m.nama)+'</option>').join('')+'</select></div><div class="room-card-actions"><button class="btn secondary small-btn" type="button" onclick="editRoom(\''+r.id+'\')">Edit Kamar</button><button class="btn danger small-btn" type="button" onclick="deleteRoom(\''+r.id+'\')">Hapus</button></div></div>';
   }).join('');
 }
 function printRoomList(){
