@@ -285,7 +285,15 @@ table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;border
 }
 <style id="jamaah-departure-filter-style">
 .jamaah-list-filters{display:flex;align-items:center;gap:7px;flex-wrap:wrap}.jamaah-list-filters .search{margin:0}.jamaah-departure-filter{height:34px;min-width:190px;padding:6px 9px;border:1px solid #d8dde0;border-radius:7px;background:#fff;font-size:11px;color:#263b35}@media(max-width:700px){.jamaah-list-filters{width:100%}.jamaah-list-filters .search{flex:1;min-width:180px}.jamaah-departure-filter{flex:1;min-width:180px}}
-</style></style></style>
+<style id="multi-individual-style">
+#multiIndividualCards{display:grid;gap:8px;max-height:470px;overflow:auto;padding-right:2px}
+.multi-individual-card{border:1px solid #dfe7e3;border-radius:9px;padding:10px;background:#fbfcfc}
+.multi-individual-card .multi-card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.multi-individual-card .multi-grid{display:grid;grid-template-columns:1.4fr .8fr 1.1fr 1fr 1.4fr 1.4fr;gap:7px}
+.multi-individual-card label{font-size:10px;margin-bottom:3px}
+.multi-individual-card input,.multi-individual-card select{height:32px;font-size:11px}
+@media(max-width:900px){.multi-individual-card .multi-grid{grid-template-columns:1fr 1fr}}
+</style></style></style></style>
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
@@ -831,6 +839,7 @@ table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;border
     <input type="hidden" id="entryMode" value="individu">
     <div class="full"><label>Kategori Jamaah</label><div class="jamaah-entry-tabs">
       <button type="button" id="tabIndividu" class="jamaah-entry-tab active" onclick="setJamaahEntryMode('individu')">Input Individual</button>
+      <button type="button" id="tabMultiIndividu" class="jamaah-entry-tab" onclick="setJamaahEntryMode('individu-multi')">Multi Input Individual</button>
       <button type="button" id="tabGrup" class="jamaah-entry-tab" onclick="setJamaahEntryMode('grup')">Input Rombongan / Keluarga</button>
     </div></div>
     <div id="individualForm" class="full"><div class="jamaah-individual-form">
@@ -842,6 +851,18 @@ table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;border
       <div><label>Keterangan</label><input id="keterangan" placeholder="Keterangan jamaah"></div>
       <div class="full"><label>Catatan</label><input id="catatan" placeholder="Catatan jamaah"></div>
     </div></div>
+    <div id="individualMultiForm" class="jamaah-group-form hidden">
+      <div class="jamaah-group-head">
+        <div><label>Jumlah Seat</label><input id="multiSeatCount" type="number" min="1" max="100" value="5" onchange="renderMultiIndividualCards()"></div>
+        <div><label>Jadwal Keberangkatan</label><select id="multiDepartureSelect"><option value="">-- Belum ditentukan --</option></select></div>
+      </div>
+      <div class="jamaah-group-head">
+        <div><label>Paket</label><select id="multiPaketSelect" onchange="syncPackagePrice('multiPaketSelect','multiHarga')"></select></div>
+        <div><label>Harga Paket / Orang</label><input id="multiHarga" type="number" min="0" readonly></div>
+      </div>
+      <div class="muted" style="margin:4px 0 12px">Untuk booking banyak seat tanpa membuat rombongan. Isi nama yang sudah tersedia; baris yang kosong tidak akan disimpan.</div>
+      <div id="multiIndividualCards"></div>
+    </div>
     <div id="groupForm" class="jamaah-group-form hidden">
       <div class="jamaah-group-head"><div><label>Nama Rombongan / Keluarga</label><input id="nama_rombongan" placeholder="Contoh: Keluarga Ahmad"></div><div><label>Keterangan Rombongan</label><input id="keterangan_rombongan" placeholder="Opsional"></div></div>
       <div style="margin:0 0 12px"><label>Jadwal Keberangkatan</label><select id="groupDepartureSelect"><option value="">-- Belum ditentukan --</option></select><div class="muted" style="margin-top:4px">Semua anggota rombongan otomatis dimasukkan ke jadwal ini.</div></div>
@@ -2417,22 +2438,64 @@ function renumberJamaahMembers(){
 function removeJamaahMember(btn){btn.closest('.jamaah-member-card')?.remove();renumberJamaahMembers()}
 function setJamaahEntryMode(mode){
   document.getElementById('entryMode').value=mode;
-  document.getElementById('individualForm')?.classList.toggle('hidden',mode!=='individu');
-  document.getElementById('groupForm')?.classList.toggle('hidden',mode!=='grup');
-  document.getElementById('tabIndividu')?.classList.toggle('active',mode==='individu');
-  document.getElementById('tabGrup')?.classList.toggle('active',mode==='grup');
-  const individualFields=['nama','jenis_kelamin','hp','nik','alamat','paket','harga','berangkat','catatan'];
+  const isInd=mode==='individu',isMulti=mode==='individu-multi',isGroup=mode==='grup';
+  document.getElementById('individualForm')?.classList.toggle('hidden',!isInd);
+  document.getElementById('individualMultiForm')?.classList.toggle('hidden',!isMulti);
+  document.getElementById('groupForm')?.classList.toggle('hidden',!isGroup);
+  document.getElementById('tabIndividu')?.classList.toggle('active',isInd);
+  document.getElementById('tabMultiIndividu')?.classList.toggle('active',isMulti);
+  document.getElementById('tabGrup')?.classList.toggle('active',isGroup);
+  const individualFields=['nama','jenis_kelamin','hp','nik','alamat','paket','harga','keterangan','catatan'];
   individualFields.forEach(id=>{
     const el=document.getElementById(id);
     if(el){
-      el.disabled=mode!=='individu';
-      if(['nama','hp','harga'].includes(id))el.required=mode==='individu';
+      el.disabled=!isInd;
+      if(['nama','hp','harga'].includes(id))el.required=isInd;
     }
   });
-  if(mode==='grup'){
+  if(isMulti){
+    fillJamaahDepartureSelects();
+    fillMultiPackageSelect();
+    renderMultiIndividualCards();
+  }
+  if(isGroup){
     const box=document.getElementById('jamaahMembers');
     if(box&&!box.querySelector('.jamaah-member-card'))for(let i=0;i<5;i++)addJamaahMember();
   }
+}
+function fillMultiPackageSelect(selected=''){
+  const src=document.getElementById('jPaketSelect'),dst=document.getElementById('multiPaketSelect');
+  if(!dst)return;
+  if(src?.options?.length)dst.innerHTML=src.innerHTML;
+  if(selected)dst.value=selected;
+}
+function renderMultiIndividualCards(){
+  const box=document.getElementById('multiIndividualCards');if(!box)return;
+  const count=Math.min(100,Math.max(1,Number(document.getElementById('multiSeatCount')?.value)||1));
+  const old=[...box.querySelectorAll('.multi-individual-card')].map(card=>({
+    nama:card.querySelector('[data-field="nama"]')?.value||'',
+    jenis_kelamin:card.querySelector('[data-field="jenis_kelamin"]')?.value||'',
+    nik:card.querySelector('[data-field="nik"]')?.value||'',
+    hp:card.querySelector('[data-field="hp"]')?.value||'',
+    keterangan:card.querySelector('[data-field="keterangan"]')?.value||'',
+    catatan:card.querySelector('[data-field="catatan"]')?.value||''
+  }));
+  let html='';
+  for(let i=0;i<count;i++){
+    const v=old[i]||{};
+    html+=`<div class="multi-individual-card">
+      <div class="multi-card-head"><strong>Seat ${i+1}</strong><span class="muted">Individu</span></div>
+      <div class="multi-grid">
+        <div><label>Nama Lengkap</label><input data-field="nama" value="${esc(v.nama||'')}" placeholder="Nama jamaah"></div>
+        <div><label>Jenis Kelamin</label><select data-field="jenis_kelamin"><option value="">-- Pilih --</option><option value="Laki-laki" ${v.jenis_kelamin==='Laki-laki'?'selected':''}>Laki-laki</option><option value="Perempuan" ${v.jenis_kelamin==='Perempuan'?'selected':''}>Perempuan</option></select></div>
+        <div><label>NIK</label><input data-field="nik" value="${esc(v.nik||'')}" placeholder="NIK"></div>
+        <div><label>No. HP</label><input data-field="hp" value="${esc(v.hp||'')}" placeholder="08xxxxxxxxxx"></div>
+        <div><label>Keterangan</label><input data-field="keterangan" value="${esc(v.keterangan||'')}" placeholder="Keterangan"></div>
+        <div><label>Catatan</label><input data-field="catatan" value="${esc(v.catatan||'')}" placeholder="Catatan"></div>
+      </div>
+    </div>`;
+  }
+  box.innerHTML=html;
 }
 function toggleJamaahCategory(){setJamaahEntryMode(document.getElementById('entryMode')?.value||'individu')}
 function syncJamaahSelectState(){
@@ -2472,7 +2535,7 @@ function fillJamaahDepartureSelects(selected=''){
     const date=d.start_date?(d.start_date+(d.end_date?' s/d '+d.end_date:'')):'Tanggal belum diisi';
     return '<option value="'+esc(d.id)+'">'+esc(d.name||'Jadwal')+' — '+esc(date)+'</option>';
   }).join('');
-  ['jDepartureSelect','groupDepartureSelect'].forEach(id=>{
+  ['jDepartureSelect','groupDepartureSelect','multiDepartureSelect'].forEach(id=>{
     const sel=document.getElementById(id);
     if(!sel)return;
     sel.innerHTML='<option value="">-- Belum ditentukan --</option>'+options;
@@ -2537,6 +2600,25 @@ const jamaahForm=document.getElementById('jamaahForm');
 if(jamaahForm) jamaahForm.addEventListener('submit',async e=>{
   e.preventDefault();
   const id=document.getElementById('editId').value,mode=document.getElementById('entryMode').value||'individu';let result, jamaahSheetRows=[];
+  if(mode==='individu-multi'){
+    const departure_id=document.getElementById('multiDepartureSelect').value||null;
+    const paket=document.getElementById('multiPaketSelect').value||'Other / Belum Diketahui';
+    const harga=Number(document.getElementById('multiHarga').value)||0;
+    const cards=[...document.querySelectorAll('#multiIndividualCards .multi-individual-card')];
+    const rows=cards.map(card=>{
+      const get=k=>card.querySelector('[data-field="'+k+'"]')?.value||'';
+      return {nama:get('nama').trim(),jenis_kelamin:get('jenis_kelamin'),nik:get('nik').trim(),hp:get('hp').trim(),alamat:'',paket,harga,berangkat:null,keterangan:get('keterangan').trim(),catatan:get('catatan').trim(),kategori:'individu',nama_rombongan:null,keterangan_rombongan:null,departure_id};
+    }).filter(x=>x.nama);
+    if(!rows.length){notice('Isi minimal satu nama jamaah pada Multi Input.','error');return}
+    if(!departure_id){notice('Pilih jadwal keberangkatan terlebih dahulu.','error');return}
+    const q=await sb.from('jamaah').insert(rows);
+    if(q.error){notice('Gagal menyimpan Multi Input: '+q.error.message,'error');return}
+    jamaahSheetRows=rows;
+    syncManyToSpreadsheet('jamaah',rows);
+    await loadData();jamaahCurrentPage=1;renderAll();closeForm();
+    notice(rows.length+' jamaah berhasil ditambahkan sebagai individu.');
+    return;
+  }
   if(mode==='grup'){
     const groupName=document.getElementById('nama_rombongan').value.trim();
     const groupNote=document.getElementById('keterangan_rombongan').value.trim();
