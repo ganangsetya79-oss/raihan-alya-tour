@@ -1842,7 +1842,9 @@ function renderJamaah(){
   const visibleRows=jamaahPageSize==='all'?rows:rows.slice(start,start+jamaahPageSize);
   const countEl=document.getElementById('jamaahDataCount');
   const q=(document.getElementById('search')?.value||'').trim();
-  if(countEl)countEl.textContent=q ? (total+' dari '+data.length+' data') : (data.length+' data');
+  const departureFilter=document.getElementById('jamaahDepartureFilter')?.value||'';
+  const hasFilter=!!q||!!departureFilter;
+  if(countEl)countEl.textContent=hasFilter ? (total+' dari '+data.length+' data') : (data.length+' data');
   document.getElementById('jamaahBody').innerHTML=visibleRows.map((x,idx)=>{
     const paid=paidFor(x.id), discount=discountFor(x.id), remain=remainFor(x);
     const isGroup=x.kategori==='grup';
