@@ -3502,6 +3502,34 @@ function initAllTablePagination(){
   });
 }
 
+function exportJamaahCSV(){
+  const rows=(data||[]).slice();
+  if(!rows.length){notice('Belum ada data jamaah untuk diekspor.','error');return}
+  const preferred=['nama','jenis_kelamin','hp','nik','alamat','kategori','paket','harga','group_id','nama_rombongan','departure_id','berangkat','keterangan','catatan','complimentary_reason','created_at'];
+  const keys=[...new Set(preferred.concat(rows.flatMap(x=>Object.keys(x||{}))))].filter(Boolean);
+  const escCsv=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
+  const csv='\\uFEFF'+[keys.map(escCsv).join(','),...rows.map(x=>keys.map(k=>escCsv(x[k])).join(','))].join('\\r\\n');
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download='data-jamaah-raihan-alya-'+new Date().toISOString().slice(0,10)+'.csv';
+  document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
+  notice(rows.length+' data jamaah berhasil diekspor.');
+}
+function initJamaahExportButton(){
+  const body=document.getElementById('jamaahBody');
+  if(!body||document.getElementById('exportJamaahBtn'))return;
+  const table=body.closest('table');
+  const head=table?.previousElementSibling?.querySelector('.panel-head')||document.querySelector('#jamaah .panel-head');
+  if(!head)return;
+  const btn=document.createElement('button');
+  btn.id='exportJamaahBtn';btn.type='button';btn.className='btn secondary';btn.textContent='Export Data Jamaah';
+  btn.title='Unduh seluruh data jamaah yang sedang dimuat di dashboard';
+  btn.onclick=exportJamaahCSV;
+  head.appendChild(btn);
+}
+
 resetExpenseForm();
 initSidebar();
 initAllTablePagination();
