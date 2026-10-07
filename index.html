@@ -968,6 +968,7 @@ async function syncToSpreadsheet(sheet,data){
 function syncManyToSpreadsheet(sheet,rows){if(Array.isArray(rows))rows.forEach(row=>syncToSpreadsheet(sheet,row));}
 
 let data=[], payments=[], documents=[], equipment=[], departures=[], expenses=[], currentUser=null, currentAccess=null;
+let editingGroupMemberIds=[];
 const EXPENSE_STORAGE_KEY='raihan_alya_daily_expenses_v1';
 const APP_VERSION='2026-10-05-dashboard-calendar-1';
 
@@ -978,8 +979,14 @@ const normalizeGroupName=v=>String(v||'').normalize('NFKC').replace(/[\\u200B-\\
 const groupMembersFor=x=>{
   const name=normalizeGroupName(groupNameFor(x));
   if(!name)return[];
-  // Sumber jumlah anggota selalu DATA JAMAAH, bukan transaksi pembayaran.
-  return data.filter(j=>isGroupJamaah(j)&&normalizeGroupName(groupNameFor(j))===name);
+  const departureId=String(x?.departure_id||'').trim();
+  // Sumber anggota selalu DATA JAMAAH. Jika jadwal tersedia, rombongan
+  // dibedakan berdasarkan nama + jadwal agar rombongan lain tidak tercampur.
+  return data.filter(j=>{
+    if(!isGroupJamaah(j)||normalizeGroupName(groupNameFor(j))!==name)return false;
+    const jd=String(j?.departure_id||'').trim();
+    return !departureId || !jd || jd===departureId;
+  });
 };
 const groupTotalFor=x=>groupMembersFor(x).reduce((a,j)=>a+Number(j.harga||0),0);
 const isRombonganPayment=p=>String(p?.note||'').trim().toLowerCase().includes('pembayaran rombongan');
@@ -2478,8 +2485,12 @@ function openForm(id=null){
       // Saat mengedit satu anggota rombongan, buka seluruh anggota yang sudah ada.
       // Jadi admin tidak perlu mengetik ulang nama anggota lainnya.
       const members=groupMembersFor(x);
+      editingGroupMemberIds=members.map(member=>String(member.id)).filter(Boolean);
       members.forEach(member=>addJamaahMember(member));
-      if(!members.length)addJamaahMember(x);
+      if(!members.length){
+        editingGroupMemberIds=[String(x.id)].filter(Boolean);
+        addJamaahMember(x);
+      }
     }else if(x){
       setJamaahEntryMode('individu');
       for(const k of ['nama','jenis_kelamin','hp','nik','alamat','paket','harga','berangkat','catatan']){
@@ -2488,7 +2499,7 @@ function openForm(id=null){
       fillJamaahDepartureSelects(x.departure_id||'');
       if(document.getElementById('jPaketSelect')?.value)syncPackagePrice('jPaketSelect','harga')
     }
-  }else setJamaahEntryMode('individu');
+  }else{editingGroupMemberIds=[];setJamaahEntryMode('individu');}
 }
 function closeForm(){document.getElementById('modal').classList.remove('show')}
 function edit(id){openForm(id)}
@@ -2530,24 +2541,39 @@ if(jamaahForm) jamaahForm.addEventListener('submit',async e=>{
     }).filter(x=>x.nama);
 
     if(!groupName){notice('Nama rombongan / keluarga wajib diisi.','error');return}
-    if(!rows.length){notice('Isi minimal satu nama anggota.','error');return}
+    if(!rows.length && !id){notice('Isi minimal satu nama anggota.','error');return}
+    if(id && !editingGroupMemberIds.length){
+      const current=data.find(x=>String(x.id)===String(id));
+      if(current)editingGroupMemberIds=[String(current.id)];
+    }
 
     jamaahSheetRows=rows;
-    const fallbackRows=rows.map(({id,...row})=>row);
     const existingRows=rows.filter(x=>x.id);
     const newRows=rows.filter(x=>!x.id);
+    const currentIds=new Set(existingRows.map(x=>String(x.id)));
 
-    // Update anggota yang sudah ada, insert hanya anggota baru.
+    // Hapus anggota lama yang sengaja dikosongkan/dihapus dari form.
+    // Hanya ID anggota yang memang dibuka dalam rombongan ini yang boleh dihapus.
+    const removedIds=editingGroupMemberIds.filter(memberId=>!currentIds.has(String(memberId)));
     const results=[];
+
+    if(removedIds.length){
+      const del=await sb.from('jamaah').delete().in('id',removedIds);
+      results.push(del);
+    }
+
+    // Update hanya anggota lama yang masih ada.
     for(const row of existingRows){
-      const {id,...payload}=row;
-      let q=await sb.from('jamaah').update(payload).eq('id',id);
+      const {id:rowId,...payload}=row;
+      let q=await sb.from('jamaah').update(payload).eq('id',rowId);
       if(q.error && /keterangan_rombongan|column.*does not exist|schema cache/i.test(q.error.message||'')){
         const {keterangan_rombongan,...fallback}=payload;
-        q=await sb.from('jamaah').update(fallback).eq('id',id);
+        q=await sb.from('jamaah').update(fallback).eq('id',rowId);
       }
       results.push(q);
     }
+
+    // Insert hanya anggota baru yang benar-benar diisi.
     if(newRows.length){
       let q=await sb.from('jamaah').insert(newRows.map(({id,...row})=>row));
       if(q.error && /keterangan_rombongan|column.*does not exist|schema cache/i.test(q.error.message||'')){
