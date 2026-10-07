@@ -283,7 +283,9 @@ table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;border
   .dashboard-filter-field,.dashboard-filter-departure{min-width:0}
   .dashboard-filter-reset{width:100%;grid-column:1/-1}
 }
-</style></style>
+<style id="jamaah-departure-filter-style">
+.jamaah-list-filters{display:flex;align-items:center;gap:7px;flex-wrap:wrap}.jamaah-list-filters .search{margin:0}.jamaah-departure-filter{height:34px;min-width:190px;padding:6px 9px;border:1px solid #d8dde0;border-radius:7px;background:#fff;font-size:11px;color:#263b35}@media(max-width:700px){.jamaah-list-filters{width:100%}.jamaah-list-filters .search{flex:1;min-width:180px}.jamaah-departure-filter{flex:1;min-width:180px}}
+</style></style></style>
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
@@ -484,7 +486,13 @@ table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;border
 </section>
 
 <section id="jamaah" class="hidden">
-  <div class="top"><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><h1 style="margin:0">Data Jamaah</h1><span id="jamaahDataCount" class="jamaah-data-count">0 data</span></div><input id="search" class="search" placeholder="Cari nama / HP / paket / rombongan / catatan..." oninput="jamaahCurrentPage=1;renderJamaah()"></div>
+  <div class="top">
+  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><h1 style="margin:0">Data Jamaah</h1><span id="jamaahDataCount" class="jamaah-data-count">0 data</span></div>
+  <div class="jamaah-list-filters">
+    <input id="search" class="search" placeholder="Cari nama / HP / paket / rombongan / catatan..." oninput="jamaahCurrentPage=1;renderJamaah()">
+    <select id="jamaahDepartureFilter" class="jamaah-departure-filter" onchange="jamaahCurrentPage=1;renderJamaah()"><option value="">Semua Jadwal</option></select>
+  </div>
+</div>
   <div class="panel">
     <div class="panel-head">
       <div><h2>Daftar Jamaah</h2><div class="muted" style="margin-top:4px">Kelola jamaah individu maupun grup/rombongan.</div></div>
@@ -1779,9 +1787,18 @@ function printPayment(paymentId){
 let jamaahCurrentPage=1;
 let jamaahPageSize=25;
 const jamaahSelectedIds=new Set();
+function fillJamaahDepartureFilter(){
+  const sel=document.getElementById('jamaahDepartureFilter');if(!sel)return;
+  const old=sel.value||'',list=(departures||[]).slice().sort((a,b)=>String(a.start_date||'').localeCompare(String(b.start_date||'')));
+  sel.innerHTML='<option value="">Semua Jadwal</option>'+list.map(d=>{const date=d.start_date?(d.start_date+(d.end_date?' s/d '+d.end_date:'')):'Tanggal belum diisi';return '<option value="'+esc(d.id)+'">'+esc(d.name||'Jadwal')+' — '+esc(date)+'</option>'}).join('');
+  if(list.some(d=>String(d.id)===String(old)))sel.value=old;
+}
 function jamaahFilteredRows(){
-  const q=(document.getElementById('search')?.value||'').trim().toLowerCase();
-  return data.filter(x=>(x.nama+' '+(x.hp||'')+' '+(x.paket||'')+' '+(x.jenis_kelamin||'')+' '+(x.nama_rombongan||'')+' '+(x.keterangan_rombongan||'')+' '+(x.kategori||'')+' '+(x.catatan||'')).toLowerCase().includes(q));
+  const q=(document.getElementById('search')?.value||'').trim().toLowerCase(),departureFilter=document.getElementById('jamaahDepartureFilter')?.value||'';
+  return data.filter(x=>{
+    const hay=(x.nama+' '+(x.hp||'')+' '+(x.paket||'')+' '+(x.jenis_kelamin||'')+' '+(x.nama_rombongan||'')+' '+(x.keterangan_rombongan||'')+' '+(x.kategori||'')+' '+(x.catatan||'')).toLowerCase();
+    return hay.includes(q)&&(!departureFilter||String(x.departure_id||'')===String(departureFilter));
+  });
 }
 function changeJamaahPageSize(value){
   jamaahPageSize=value==='all'?'all':Math.max(1,Number(value)||25);
@@ -1816,6 +1833,7 @@ function renderJamaahPagination(total,start,end){
 }
 
 function renderJamaah(){
+  fillJamaahDepartureFilter();
   const rows=jamaahFilteredRows();
   const total=rows.length;
   const max=jamaahPageCount(total);
