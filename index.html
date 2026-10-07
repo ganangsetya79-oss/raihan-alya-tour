@@ -258,14 +258,31 @@ table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;border
 .all-table-page-btn:disabled{opacity:.45;cursor:not-allowed}
 .all-table-page-ellipsis{padding:0 1px;color:#89938f}
 @media(max-width:650px){.all-table-pagination{align-items:flex-start;flex-direction:column}.all-table-page-buttons{width:100%;justify-content:flex-start}}<style id="dashboard-filter-style">
-.dashboard-filter-panel{margin:0 0 16px;padding:12px 14px;border:1px solid #e4e9e7;border-radius:10px;background:#fff}
-.dashboard-filter-title{font-size:12px;font-weight:700;margin-bottom:9px;color:#23302d}
-.dashboard-filter-controls{display:flex;align-items:flex-end;gap:8px;flex-wrap:wrap}
-.dashboard-filter-field{min-width:180px;flex:1}
-.dashboard-filter-field label{display:block;font-size:10px;color:#687078;margin-bottom:4px}
-.dashboard-filter-field select{width:100%;height:34px;padding:6px 9px;border:1px solid #d8dde0;border-radius:6px;background:#fff;font-size:11px}
-.dashboard-filter-departure{flex:2}
-@media(max-width:650px){.dashboard-filter-controls{align-items:stretch}.dashboard-filter-field,.dashboard-filter-departure{min-width:100%;}.dashboard-filter-controls .btn{width:100%}}
+.dashboard-filter-panel{box-sizing:border-box;width:100%;margin:0 0 14px;padding:10px 12px;border:1px solid #dce7e3;border-radius:10px;background:#fff;box-shadow:0 5px 16px rgba(23,63,53,.045);overflow:visible}
+.dashboard-filter-topbar{display:flex;align-items:center;justify-content:space-between;gap:14px;min-height:52px}
+.dashboard-filter-heading{display:flex;align-items:center;gap:8px;min-width:190px;flex:1}
+.dashboard-filter-heading strong{display:block;font-size:12px;line-height:16px;color:#23302d;white-space:nowrap}
+.dashboard-filter-heading small{display:block;margin-top:1px;font-size:9px;color:#87928f;white-space:nowrap}
+.dashboard-filter-dot{width:7px;height:7px;border-radius:50%;background:#1f705d;flex:none}
+.dashboard-filter-controls{display:flex;align-items:flex-end;gap:7px;flex:0 1 690px;min-width:0}
+.dashboard-filter-field{min-width:145px;flex:1}
+.dashboard-filter-field label{display:block;font-size:9px;color:#687078;margin:0 0 3px 1px}
+.dashboard-filter-field select{box-sizing:border-box;width:100%;height:31px;padding:5px 8px;border:1px solid #d4e2dd;border-radius:6px;background:#fff;box-shadow:0 2px 7px rgba(23,63,53,.035);font-size:10px;color:#29423b}
+.dashboard-filter-departure{flex:1.45;min-width:190px}
+.dashboard-filter-reset{height:31px;min-width:54px;padding:5px 9px!important;font-size:10px!important;margin:0!important}
+@media(max-width:800px){
+  .dashboard-filter-topbar{align-items:stretch;flex-direction:column;gap:9px}
+  .dashboard-filter-heading{min-width:0}
+  .dashboard-filter-heading small{white-space:normal}
+  .dashboard-filter-controls{width:100%;flex-wrap:wrap}
+  .dashboard-filter-field{min-width:145px}
+  .dashboard-filter-departure{min-width:180px;flex:1.5}
+}
+@media(max-width:520px){
+  .dashboard-filter-controls{display:grid;grid-template-columns:1fr 1fr}
+  .dashboard-filter-field,.dashboard-filter-departure{min-width:0}
+  .dashboard-filter-reset{width:100%;grid-column:1/-1}
+}
 </style></style>
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -316,8 +333,11 @@ table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;border
   <div class="top dashboard-top"><div><h1>Dashboard</h1><div class="dashboard-live-datetime"><span id="dashboardLiveDate"></span><span class="dashboard-live-sep">•</span><span id="dashboardLiveTime"></span></div>
     <div class="dashboard-welcome">Ringkasan operasional PT Raihan Alya Tour</div><div class="dashboard-greeting" id="dashboardGreeting">Assalamu'alaikum, <span class="greeting-name" id="dashboardGreetingName">Admin</span> 👋 Selamat datang di Dashboard Raihan Alya Tour.</div><div class="dashboard-running" aria-label="Informasi berjalan"><div class="dashboard-running-track"><div class="dashboard-running-item"><span class="dashboard-running-dot"></span><strong id="dashboardRunningPrimary">Semoga hari ini dimudahkan dalam setiap urusan dan diberikan kelancaran dalam melayani jamaah.</strong></div><div class="dashboard-running-item"><span class="dashboard-running-dot"></span>Terima kasih telah menggunakan Management System PT Raihan Alya Tour.</div><div class="dashboard-running-item"><span class="dashboard-running-dot"></span><strong>Raihan Alya Tour</strong> — Melayani dengan Sepenuh Hati.</div><div class="dashboard-running-item"><span class="dashboard-running-dot"></span><strong id="dashboardRunningPrimary2">Semoga hari ini dimudahkan dalam setiap urusan dan diberikan kelancaran dalam melayani jamaah.</strong></div><div class="dashboard-running-item"><span class="dashboard-running-dot"></span>Terima kasih telah menggunakan Management System PT Raihan Alya Tour.</div><div class="dashboard-running-item"><span class="dashboard-running-dot"></span><strong>Raihan Alya Tour</strong> — Melayani dengan Sepenuh Hati.</div></div></div></div><div class="dashboard-user-actions"><button class="user dashboard-user" onclick="openMyProfile()" type="button"><span class="user-avatar" id="headerAvatar"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.2"/><path d="M5 20a7 7 0 0 1 14 0"/></svg></span><span id="headerUserName">Admin</span></button><button class="header-action" onclick="openMyProfile()" type="button">Profil</button><button class="header-action admin-only-action" onclick="openAccessPage()" type="button">Kelola User</button><button class="header-action icon-action" onclick="openAdminMenu()" type="button" title="Menu akun">⋮</button></div></div>
   <div id="globalNotice"></div>
-  <div class="dashboard-filter-panel">
-    <div class="dashboard-filter-title">Filter Dashboard</div>
+  <div class="dashboard-filter-panel dashboard-filter-topbar">
+    <div class="dashboard-filter-heading">
+      <span class="dashboard-filter-dot"></span>
+      <div><strong>Filter Dashboard</strong><small>Sesuaikan ringkasan berdasarkan bulan dan keberangkatan.</small></div>
+    </div>
     <div class="dashboard-filter-controls">
       <div class="dashboard-filter-field">
         <label for="dashMonth">Bulan</label>
@@ -331,7 +351,7 @@ table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;border
           <option value="">Semua Jadwal</option>
         </select>
       </div>
-      <button type="button" class="btn secondary small-btn" onclick="resetDashFilters()">Reset</button>
+      <button type="button" class="btn secondary small-btn dashboard-filter-reset" onclick="resetDashFilters()">Reset</button>
     </div>
   </div>
 
