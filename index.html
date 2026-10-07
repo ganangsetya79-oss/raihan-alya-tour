@@ -667,7 +667,7 @@ table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;border
   </div>
 
   <div class="panel">
-    <div class="panel-head"><div><h2>Rekap Pengambilan Perlengkapan</h2><span style="font-size:12px;color:#687078">Klik jamaah untuk melihat detail pengambilan.</span></div><div class="bulk-tools"><button class="btn danger small-btn" type="button" onclick="deleteSelectedEquipment()">🗑️ Hapus Rekap Terpilih</button></div></div>
+    <div class="panel-head"><div><h2>Rekap Pengambilan Perlengkapan</h2><span style="font-size:12px;color:#687078">Klik jamaah untuk melihat detail pengambilan.</span></div><div class="bulk-tools"><button class="btn danger small-btn" type="button" onclick="deleteSelectedEquipment()">🗑️ Hapus Rekap Terpilih</button></div></div><div style="margin:0 0 10px"><input id="equipmentSearch" type="search" placeholder="🔎 Cari nama jamaah..." oninput="renderEquipment()" style="width:100%;max-width:360px;padding:8px 10px;border:1px solid #d8dde0;border-radius:7px;font-size:12px"></div>
     <div class="table-wrap"><table><thead><tr><th style="width:38px;text-align:center"><input class="bulk-select-all" id="equipmentSelectAll" type="checkbox" onchange="toggleAllEquipment(this.checked)" title="Pilih semua"></th><th>No</th><th>Nama Jamaah</th><th>Keberangkatan</th><th>Mukena / Ihram</th><th>Batik</th><th>Koper</th><th>Buku Manasik</th><th>Tanggal</th><th>Keterangan</th></tr></thead><tbody id="equipmentBody"></tbody></table></div>
   </div>
 </section>
@@ -2762,10 +2762,12 @@ async function saveEquipment(){
 function eqCell(ok){return ok?'<span class="eq-ok">✓ Diambil</span>':'<span class="eq-no">— Belum</span>'}
 function renderEquipment(){
   const body=document.getElementById('equipmentBody'); if(!body)return;
-  body.innerHTML=data.slice().sort((a,b)=>(a.nama||'').localeCompare(b.nama||'')).map((j,i)=>{
+  const q=(document.getElementById('equipmentSearch')?.value||'').trim().toLowerCase();
+  const rows=data.slice().filter(j=>!q||(j.nama||'').toLowerCase().includes(q)).sort((a,b)=>(a.nama||'').localeCompare(b.nama||''));
+  body.innerHTML=rows.map((j,i)=>{
     const x=getEquipment(j.id)||{}, dep=departureFor(j);
     return `<tr><td style="text-align:center"><input class="bulk-check equipment-check" type="checkbox" value="${esc(j.id)}" onchange="syncBulkState('equipment')"></td><td>${i+1}</td><td><b>${esc(j.nama)}</b></td><td>${esc(dep?.name||j.berangkat||'-')}</td><td>${eqCell(x.ihram)}</td><td>${eqCell(x.mukena)}</td><td>${eqCell(x.batik)}</td><td>${eqCell(x.koper)}</td><td>${eqCell(x.buku)}</td><td>${esc(x.taken_date||'-')}</td><td>${esc(x.note||'-')}</td></tr>`;
-  }).join('')||'<tr><td colspan="11">Belum ada data jamaah.</td></tr>';
+  }).join('')||'<tr><td colspan="11">Nama jamaah tidak ditemukan.</td></tr>';
 }
 function renderDocuments(){
   const body=document.getElementById('docBody');
