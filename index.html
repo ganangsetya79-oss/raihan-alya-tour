@@ -2807,8 +2807,8 @@ function renderEquipment(){
   const rows=data.slice().filter(j=>!q||(j.nama||'').toLowerCase().includes(q)).sort((a,b)=>(a.nama||'').localeCompare(b.nama||''));
   body.innerHTML=rows.map((j,i)=>{
     const x=getEquipment(j.id)||{}, dep=departureFor(j);
-    return `<tr><td style="text-align:center"><input class="bulk-check equipment-check" type="checkbox" value="${esc(j.id)}" onchange="syncBulkState('equipment')"></td><td>${i+1}</td><td><b>${esc(j.nama)}</b></td><td>${esc(dep?.name||j.berangkat||'-')}</td><td>${eqCell(x.ihram)}</td><td>${eqCell(x.mukena)}</td><td>${eqCell(x.batik)}</td><td>${eqCell(x.koper)}</td><td>${eqCell(x.buku)}</td><td>${esc(x.taken_date||'-')}</td><td>${esc(x.note||'-')}</td></tr>`;
-  }).join('')||'<tr><td colspan="11">Nama jamaah tidak ditemukan.</td></tr>';
+    return `<tr><td style="text-align:center"><input class="bulk-check equipment-check" type="checkbox" value="${esc(j.id)}" onchange="syncBulkState('equipment')"></td><td>${i+1}</td><td><b>${esc(j.nama)}</b></td><td>${esc(dep?.name||j.berangkat||'-')}</td><td>${eqCell(x.mukena_ihram ?? x.ihram ?? x.mukena)}</td><td>${eqCell(x.batik)}</td><td>${eqCell(x.koper)}</td><td>${eqCell(x.buku)}</td><td>${esc(x.taken_date||'-')}</td><td>${esc(x.note||'-')}</td></tr>`;
+  }).join('')||'<tr><td colspan="10">Nama jamaah tidak ditemukan.</td></tr>';
 }
 function renderDocuments(){
   const body=document.getElementById('docBody');
