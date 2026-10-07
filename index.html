@@ -3533,6 +3533,7 @@ function initJamaahExportButton(){
 resetExpenseForm();
 initSidebar();
 initAllTablePagination();
+initJamaahExportButton();
 sb.auth.getSession().then(({data})=>{
   if(data.session)startApp();
 });
