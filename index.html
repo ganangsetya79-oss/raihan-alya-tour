@@ -293,7 +293,9 @@ table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;border
 .multi-individual-card label{font-size:10px;margin-bottom:3px}
 .multi-individual-card input,.multi-individual-card select{height:32px;font-size:11px}
 @media(max-width:900px){.multi-individual-card .multi-grid{grid-template-columns:1fr 1fr}}
-</style></style></style></style>
+<style id="roomlist-style">
+.roomlist-filter-grid,.room-create-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.room-create-grid{grid-template-columns:repeat(5,1fr);align-items:end}.room-create-button{display:flex;align-items:end}.room-list-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:10px}.room-card{border:1px solid #dce5e1;border-radius:10px;padding:12px;background:#fff}.room-card-head{display:flex;justify-content:space-between;gap:8px;align-items:start}.room-card-title{font-weight:700}.room-capacity{font-size:10px;padding:4px 7px;border-radius:999px;background:#eef5f2}.room-card-meta{font-size:10px;color:#687078;margin:5px 0 9px}.room-member-list{display:grid;gap:5px;margin-bottom:9px}.room-member{display:flex;justify-content:space-between;gap:8px;padding:7px 8px;background:#f7f9f8;border-radius:7px;font-size:11px}.room-member-remove{border:0;background:none;color:#b84040;cursor:pointer;font-size:10px}.room-assign{display:flex;gap:6px}.room-assign select{flex:1;min-width:0}.room-empty{padding:20px;text-align:center;color:#7a858b;font-size:12px;border:1px dashed #d8e0dc;border-radius:9px}.room-create-button .btn{width:100%}@media(max-width:900px){.roomlist-filter-grid,.room-create-grid{grid-template-columns:1fr 1fr}}@media(max-width:600px){.roomlist-filter-grid,.room-create-grid{grid-template-columns:1fr}}
+</style></style></style></style></style>
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
@@ -333,6 +335,7 @@ table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;border
     <button onclick="show('pengeluaran',this)"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 6h16"/><path d="M6 6v14h12V6"/><path d="M9 10v6M15 10v6"/><path d="M9 6l1-2h4l1 2"/></svg></span><span class="nav-label">Pengeluaran</span></button>
     <button onclick="show('dokumen',this)"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h6"/></svg></span><span class="nav-label">Dokumen</span></button>
     <button onclick="show('perlengkapan',this)"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 8h12l1 13H5z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/><path d="M9 13h6"/></svg></span><span class="nav-label">Perlengkapan</span></button>
+    <button onclick="show('roomlist',this)"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 20V9l8-5 8 5v11"/><path d="M8 20v-6h8v6"/><path d="M7 10h10"/></svg></span><span class="nav-label">Room List</span></button>
     <button onclick="show('keberangkatan',this)"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m3 11 8-2 3-6 2 .7-1 6 6 3.5c1.1.7.9 2.3-.3 2.7l-7.2-1.1-3.3 4.1-1.8-.6 1.6-4.2-5.1-.8z"/></svg></span><span class="nav-label">Keberangkatan</span></button>
     <button onclick="show('laporan',this)"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 20V10"/><path d="M12 20V4"/><path d="M19 20v-7"/></svg></span><span class="nav-label">Laporan</span></button>
   </div>
@@ -748,6 +751,36 @@ table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;border
     <div class="table-wrap"><table><thead><tr><th style="width:38px;text-align:center"><input class="bulk-select-all" id="equipmentSelectAll" type="checkbox" onchange="toggleAllEquipment(this.checked)" title="Pilih semua"></th><th>No</th><th>Nama Jamaah</th><th>Keberangkatan</th><th>Mukena / Ihram</th><th>Batik</th><th>Koper</th><th>Buku Manasik</th><th>Tanggal</th><th>Keterangan</th></tr></thead><tbody id="equipmentBody"></tbody></table></div>
   </div>
 </section>
+<section id="roomlist" class="hidden">
+  <div class="top">
+    <div><h1>Room List</h1><div class="dashboard-welcome">Kelola pembagian kamar jamaah berdasarkan jadwal keberangkatan.</div></div>
+    <div class="roomlist-actions"><button class="btn secondary small-btn" type="button" onclick="printRoomList()">Cetak Room List</button></div>
+  </div>
+  <div class="panel">
+    <div class="panel-head"><div><h2>Filter Room List</h2><div class="muted">Pilih jadwal untuk menampilkan jamaah dan kamar pada keberangkatan tersebut.</div></div></div>
+    <div class="roomlist-filter-grid">
+      <div><label>Jadwal Keberangkatan</label><select id="roomDepartureFilter" onchange="renderRoomList()"><option value="">Pilih jadwal...</option></select></div>
+      <div><label>Hotel</label><input id="roomHotelFilter" placeholder="Filter hotel..." oninput="renderRoomList()"></div>
+      <div><label>Cari Jamaah</label><input id="roomJamaahSearch" placeholder="Cari nama jamaah..." oninput="renderRoomList()"></div>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="panel-head"><div><h2>Buat Kamar</h2><div class="muted">Kamar tersimpan berdasarkan jadwal keberangkatan.</div></div></div>
+    <div class="room-create-grid">
+      <div><label>No. Kamar</label><input id="roomNumber" placeholder="Contoh: 101"></div>
+      <div><label>Hotel</label><input id="roomHotel" placeholder="Contoh: Anjum"></div>
+      <div><label>Kota</label><select id="roomCity"><option>Makkah</option><option>Madinah</option></select></div>
+      <div><label>Tipe Kamar</label><select id="roomType"><option value="Double">Double</option><option value="Triple">Triple</option><option value="Quad" selected>Quad</option></select></div>
+      <div><label>Kapasitas</label><input id="roomCapacity" type="number" min="1" max="10" value="4"></div>
+      <div class="room-create-button"><button class="btn" type="button" onclick="createRoom()">+ Buat Kamar</button></div>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="panel-head"><div><h2>Daftar Kamar</h2><div class="muted">Klik kelola untuk memasukkan jamaah ke kamar.</div></div><span id="roomListSummary" class="jamaah-data-count">0 kamar</span></div>
+    <div id="roomListCards" class="room-list-cards"></div>
+  </div>
+</section>
+
 <section id="keberangkatan" class="hidden">
   <div class="top"><h1>Keberangkatan</h1></div>
   <div class="panel">
@@ -1198,8 +1231,8 @@ function show(id,btn){
 }
 function openAdminMenu(){document.getElementById('adminMenu').classList.add('show')}
 function closeAdminMenu(){document.getElementById('adminMenu').classList.remove('show')}
-const ACCESS_MODULES=['dashboard','jamaah','pembayaran','uangmasuk','pengeluaran','dokumen','perlengkapan','keberangkatan','laporan'];
-const ACCESS_LABELS={dashboard:'Dashboard',jamaah:'Data Jamaah',pembayaran:'Pembayaran',uangmasuk:'Uang Masuk',pengeluaran:'Pengeluaran',dokumen:'Dokumen',perlengkapan:'Perlengkapan',keberangkatan:'Keberangkatan',laporan:'Laporan'};
+const ACCESS_MODULES=['dashboard','jamaah','pembayaran','uangmasuk','pengeluaran','dokumen','perlengkapan','roomlist','keberangkatan','laporan'];
+const ACCESS_LABELS={dashboard:'Dashboard',jamaah:'Data Jamaah',pembayaran:'Pembayaran',uangmasuk:'Uang Masuk',pengeluaran:'Pengeluaran',dokumen:'Dokumen',perlengkapan:'Perlengkapan',keberangkatan:'Keberangkatan',laporan:'Laporan',roomlist:'Room List'};
 async function loadMyProfile(){
   if(!currentUser)return;
   const {data:profile}=await sb.from('user_profiles').select('*').eq('user_id',currentUser.id).maybeSingle();
@@ -1503,7 +1536,67 @@ function printUangMasuk(){
 </body></html>`);
   w.document.close();
 }
-function renderAll(){refreshPackageSelects();renderPackages();renderJamaah();renderPaymentSummary();renderPaymentHistory();renderUangMasuk();renderExpenses();renderDash();setPaymentEntryMode('individual');fillDocumentJamaah();renderDocuments();fillEquipmentJamaah();renderEquipment();renderDepartures();renderReport();}
+const ROOMLIST_STORAGE_KEY='raihan_room_list_v1';
+function loadRoomListStore(){try{const x=JSON.parse(localStorage.getItem(ROOMLIST_STORAGE_KEY)||'[]');return Array.isArray(x)?x:[]}catch(e){return[]}}
+function saveRoomListStore(rows){localStorage.setItem(ROOMLIST_STORAGE_KEY,JSON.stringify(rows||[]))}
+function roomListDepartureOptions(){
+  const sel=document.getElementById('roomDepartureFilter');if(!sel)return;
+  const old=sel.value||'';
+  sel.innerHTML='<option value="">Pilih jadwal...</option>'+((departures||[]).slice().sort((a,b)=>String(a.start_date||'').localeCompare(String(b.start_date||''))).map(d=>'<option value="'+esc(d.id)+'">'+esc(d.name||'Jadwal')+' — '+esc(d.start_date||'')+'</option>').join(''));
+  if((departures||[]).some(d=>String(d.id)===String(old)))sel.value=old;
+}
+function createRoom(){
+  const departure_id=document.getElementById('roomDepartureFilter')?.value||'';
+  if(!departure_id){notice('Pilih jadwal keberangkatan terlebih dahulu.','error');return}
+  const room_number=document.getElementById('roomNumber')?.value.trim()||'';
+  const hotel=document.getElementById('roomHotel')?.value.trim()||'';
+  const city=document.getElementById('roomCity')?.value||'Makkah';
+  const type=document.getElementById('roomType')?.value||'Quad';
+  const capacity=Math.max(1,Number(document.getElementById('roomCapacity')?.value)||4);
+  if(!room_number||!hotel){notice('No. kamar dan hotel wajib diisi.','error');return}
+  const rows=loadRoomListStore();
+  if(rows.some(r=>String(r.departure_id)===String(departure_id)&&r.room_number===room_number&&r.hotel.toLowerCase()===hotel.toLowerCase())){notice('Nomor kamar tersebut sudah ada pada hotel dan jadwal ini.','error');return}
+  rows.push({id:'room_'+Date.now()+'_'+Math.random().toString(36).slice(2,7),departure_id,room_number,hotel,city,type,capacity,member_ids:[]});
+  saveRoomListStore(rows);
+  document.getElementById('roomNumber').value='';renderRoomList();notice('Kamar berhasil dibuat.');
+}
+function assignRoomMember(roomId,jamaahId){
+  if(!jamaahId)return;
+  const rows=loadRoomListStore(),room=rows.find(r=>r.id===roomId);if(!room)return;
+  room.member_ids=Array.isArray(room.member_ids)?room.member_ids:[];
+  if(room.member_ids.includes(String(jamaahId)))return;
+  if(room.member_ids.length>=Number(room.capacity)){notice('Kamar sudah penuh.','error');renderRoomList();return}
+  const already=rows.some(r=>r.id!==roomId&&String(r.departure_id)===String(room.departure_id)&&Array.isArray(r.member_ids)&&r.member_ids.includes(String(jamaahId)));
+  if(already){notice('Jamaah tersebut sudah ditempatkan di kamar lain pada jadwal ini.','error');renderRoomList();return}
+  room.member_ids.push(String(jamaahId));saveRoomListStore(rows);renderRoomList();
+}
+function removeRoomMember(roomId,jamaahId){const rows=loadRoomListStore(),room=rows.find(r=>r.id===roomId);if(!room)return;room.member_ids=(room.member_ids||[]).filter(id=>String(id)!==String(jamaahId));saveRoomListStore(rows);renderRoomList()}
+function deleteRoom(roomId){if(!confirm('Hapus kamar ini? Data jamaah tidak akan dihapus.'))return;saveRoomListStore(loadRoomListStore().filter(r=>r.id!==roomId));renderRoomList()}
+function renderRoomList(){
+  roomListDepartureOptions();
+  const departure_id=document.getElementById('roomDepartureFilter')?.value||'';
+  const hotelQ=(document.getElementById('roomHotelFilter')?.value||'').trim().toLowerCase();
+  const jamaahQ=(document.getElementById('roomJamaahSearch')?.value||'').trim().toLowerCase();
+  const box=document.getElementById('roomListCards');if(!box)return;
+  if(!departure_id){box.innerHTML='<div class="room-empty">Pilih jadwal keberangkatan untuk melihat Room List.</div>';document.getElementById('roomListSummary').textContent='0 kamar';return}
+  const allRooms=loadRoomListStore().filter(r=>String(r.departure_id)===String(departure_id)&&(!hotelQ||String(r.hotel||'').toLowerCase().includes(hotelQ)));
+  const visible=allRooms.filter(r=>!jamaahQ||(r.member_ids||[]).some(id=>String(data.find(j=>String(j.id)===String(id))?.nama||'').toLowerCase().includes(jamaahQ)));
+  document.getElementById('roomListSummary').textContent=allRooms.length+' kamar';
+  if(!visible.length){box.innerHTML='<div class="room-empty">Belum ada kamar pada filter ini.</div>';return}
+  box.innerHTML=visible.map(r=>{
+    const members=(r.member_ids||[]).map(id=>data.find(j=>String(j.id)===String(id))).filter(Boolean);
+    const available=(data||[]).filter(j=>String(j.departure_id)===String(departure_id)&&!allRooms.some(x=>Array.isArray(x.member_ids)&&x.member_ids.includes(String(j.id)))&&(!jamaahQ||String(j.nama||'').toLowerCase().includes(jamaahQ)));
+    return '<div class="room-card"><div class="room-card-head"><div><div class="room-card-title">Kamar '+esc(r.room_number)+' — '+esc(r.hotel)+'</div><div class="room-card-meta">'+esc(r.city)+' · '+esc(r.type)+' · '+members.length+'/'+esc(r.capacity)+'</div></div><span class="room-capacity">'+(members.length>=Number(r.capacity)?'Penuh':'Tersedia '+(Number(r.capacity)-members.length))+'</span></div><div class="room-member-list">'+(members.length?members.map(m=>'<div class="room-member"><span>'+esc(m.nama)+'</span><button class="room-member-remove" type="button" onclick="removeRoomMember(\''+r.id+'\',\''+m.id+'\')">Hapus</button></div>').join(''):'<div class="muted" style="font-size:11px">Belum ada jamaah.</div>')+'</div><div class="room-assign"><select onchange="assignRoomMember(\''+r.id+'\',this.value)"><option value="">+ Tambah jamaah</option>'+available.map(m=>'<option value="'+esc(m.id)+'">'+esc(m.nama)+'</option>').join('')+'</select><button class="btn danger small-btn" type="button" onclick="deleteRoom(\''+r.id+'\')">Hapus</button></div></div>';
+  }).join('');
+}
+function printRoomList(){
+  const departure_id=document.getElementById('roomDepartureFilter')?.value||'';if(!departure_id){notice('Pilih jadwal keberangkatan terlebih dahulu.','error');return}
+  const rooms=loadRoomListStore().filter(r=>String(r.departure_id)===String(departure_id));
+  const dep=departures.find(d=>String(d.id)===String(departure_id));
+  const rows=rooms.map(r=>'<tr><td>'+esc(r.room_number)+'</td><td>'+esc(r.hotel)+'</td><td>'+esc(r.city)+'</td><td>'+esc(r.type)+'</td><td>'+((r.member_ids||[]).map(id=>data.find(j=>String(j.id)===String(id))?.nama).filter(Boolean).map(esc).join(', ')||'-')+'</td></tr>').join('');
+  const w=window.open('','_blank');if(!w)return;w.document.write('<!doctype html><html><head><title>Room List</title><style>body{font:12px Arial;padding:25px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #aaa;padding:7px;text-align:left}th{background:#f2f2f2}</style></head><body><h2>Room List — '+esc(dep?.name||'')+'</h2><p>'+esc(dep?.start_date||'')+' s/d '+esc(dep?.end_date||'')+'</p><table><thead><tr><th>Kamar</th><th>Hotel</th><th>Kota</th><th>Tipe</th><th>Jamaah</th></tr></thead><tbody>'+rows+'</tbody></table><script>window.onload=()=>window.print()<\/script></body></html>');w.document.close();
+}
+function renderAll(){refreshPackageSelects();renderPackages();renderJamaah();renderPaymentSummary();renderPaymentHistory();renderUangMasuk();renderExpenses();renderDash();setPaymentEntryMode('individual');fillDocumentJamaah();renderDocuments();fillEquipmentJamaah();renderEquipment();renderDepartures();renderReport();renderRoomList();}
 
 function loadLocalExpenses(){try{const raw=localStorage.getItem(EXPENSE_STORAGE_KEY);const rows=raw?JSON.parse(raw):[];return Array.isArray(rows)?rows:[]}catch(e){return[]}}
 function saveLocalExpenses(){try{localStorage.setItem(EXPENSE_STORAGE_KEY,JSON.stringify(expenses||[]));return true}catch(e){notice('Penyimpanan pengeluaran gagal: '+e.message,'error');return false}}
