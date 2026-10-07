@@ -245,6 +245,20 @@ table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;border
   .payment-jamaah-picker select,.payment-jamaah-picker input{width:100%}
 }
 @media(min-width:769px){.mobile-menu-btn,.mobile-nav-backdrop{display:none!important}}
+
+<style id="all-table-pagination-style">
+.all-table-pagination{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:12px 0 2px;padding:9px 10px;border:1px solid #e3e8e6;border-radius:9px;background:#fafcfb;font-size:11px;color:#687078}
+.all-table-page-size{display:flex;align-items:center;gap:6px}
+.all-table-page-size select{border:1px solid #d8dde0;border-radius:6px;padding:5px 8px;background:#fff;font-size:11px}
+.all-table-page-info{font-weight:600;white-space:nowrap}
+.all-table-page-buttons{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+.all-table-page-btn{border:1px solid #d8e0dd;background:#fff;color:#31574d;border-radius:6px;min-width:28px;height:28px;padding:0 7px;font-size:11px;cursor:pointer}
+.all-table-page-btn:hover:not(:disabled){background:#eef6f3;border-color:#bcd5cd}
+.all-table-page-btn.active{background:#1f705d;color:#fff;border-color:#1f705d;font-weight:700}
+.all-table-page-btn:disabled{opacity:.45;cursor:not-allowed}
+.all-table-page-ellipsis{padding:0 2px;color:#89938f}
+@media(max-width:650px){.all-table-pagination{align-items:flex-start;flex-direction:column}.all-table-page-buttons{width:100%;justify-content:flex-start}}
+</style>
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
@@ -1511,7 +1525,105 @@ async function saveExpenseFromForm(){
   await syncToSpreadsheet('pengeluaran',row);
   form.dataset.editId='';
   document.querySelector('#expenseForm .btn[type="submit"]').textContent='Simpan Pengeluaran';
-  resetExpenseForm();renderExpenses();
+  
+/* Pagination seluruh tabel/menu */
+const ALL_TABLE_PAGE_TARGETS=[
+  ['dashDepartureBody','dashboard-departures'],
+  ['accessUsersBody','access-users'],
+  ['paymentSummaryBody','payment-summary'],
+  ['historyBody','payment-history'],
+  ['uangMasukBody','uang-masuk'],
+  ['expenseBody','expenses'],
+  ['docBody','documents'],
+  ['equipmentBody','equipment'],
+  ['departureBody','departures'],
+  ['departureJamaahBody','departure-jamaah'],
+  ['packageBody','packages'],
+  ['reportBody','reports']
+];
+const allTablePageState={};
+function allTablePageKey(key){return 'raihan_table_page_'+key}
+function getAllTablePageSize(key){
+  const saved=localStorage.getItem(allTablePageKey(key)+'_size');
+  return saved==='all'?'all':([25,50,100].includes(Number(saved))?Number(saved):25);
+}
+function setAllTablePageSize(key,value){
+  const size=value==='all'?'all':([25,50,100].includes(Number(value))?Number(value):25);
+  localStorage.setItem(allTablePageKey(key)+'_size',String(size));
+  allTablePageState[key]=1;
+  paginateAllTable(key,true);
+}
+function goAllTablePage(key,page){
+  const body=document.getElementById(key);
+  if(!body)return;
+  const target=ALL_TABLE_PAGE_TARGETS.find(x=>x[0]===key);
+  if(!target)return;
+  const rows=[...body.querySelectorAll(':scope > tr')].filter(tr=>!tr.dataset.paginationPlaceholder);
+  const size=getAllTablePageSize(target[1]);
+  const pages=size==='all'?1:Math.max(1,Math.ceil(rows.length/size));
+  allTablePageState[target[1]]=Math.min(Math.max(1,Number(page)||1),pages);
+  paginateAllTable(target[1],false);
+}
+function renderAllTablePagination(key,total,start,end,size){
+  const wrap=document.querySelector('[data-table-pagination="'+key+'"]');
+  if(!wrap)return;
+  const info=wrap.querySelector('.all-table-page-info');
+  const buttons=wrap.querySelector('.all-table-page-buttons');
+  if(info)info.textContent=total?((start+1)+'–'+end+' dari '+total+' data'):'0 data';
+  if(!buttons)return;
+  if(size==='all'||total===0){buttons.innerHTML='';return;}
+  const pages=Math.max(1,Math.ceil(total/size));
+  const current=allTablePageState[key]||1;
+  const nums=[],add=n=>{if(n>=1&&n<=pages&&!nums.includes(n))nums.push(n)};
+  add(1);add(pages);
+  for(let n=current-2;n<=current+2;n++)add(n);
+  nums.sort((a,b)=>a-b);
+  let html='<button class="all-table-page-btn" type="button" '+(current<=1?'disabled':'')+' onclick="goAllTablePage(\''+key+'\','+(current-1)+')">‹ Sebelumnya</button>';
+  let last=0;
+  nums.forEach(n=>{if(last&&n-last>1)html+='<span class="all-table-page-ellipsis">…</span>';html+='<button class="all-table-page-btn '+(n===current?'active':'')+'" type="button" onclick="goAllTablePage(\''+key+'\','+n+')">'+n+'</button>';last=n});
+  html+='<button class="all-table-page-btn" type="button" '+(current>=pages?'disabled':'')+' onclick="goAllTablePage(\''+key+'\','+(current+1)+')">Berikutnya ›</button>';
+  buttons.innerHTML=html;
+}
+function paginateAllTable(key,resetPage){
+  const target=ALL_TABLE_PAGE_TARGETS.find(x=>x[1]===key);
+  if(!target)return;
+  const body=document.getElementById(target[0]);
+  if(!body)return;
+  let rows=[...body.querySelectorAll(':scope > tr')].filter(tr=>!tr.dataset.paginationPlaceholder);
+  if(resetPage||!allTablePageState[key])allTablePageState[key]=1;
+  const size=getAllTablePageSize(key);
+  const pages=size==='all'?1:Math.max(1,Math.ceil(rows.length/size));
+  if(allTablePageState[key]>pages)allTablePageState[key]=pages;
+  const page=allTablePageState[key];
+  const start=size==='all'?0:(page-1)*size;
+  const end=size==='all'?rows.length:Math.min(start+size,rows.length);
+  rows.forEach((tr,i)=>{tr.style.display=(size==='all'||(i>=start&&i<end))?'':'none'});
+  const table=body.closest('table');
+  if(!table)return;
+  let wrap=table.parentElement.querySelector('[data-table-pagination="'+target[0]+'"]');
+  if(!wrap){
+    wrap=document.createElement('div');
+    wrap.className='all-table-pagination';
+    wrap.dataset.tablePagination=target[0];
+    wrap.innerHTML='<div class="all-table-page-size"><span>Tampilkan</span><select onchange="setAllTablePageSize(\''+key+'\',this.value)"><option value="25">25</option><option value="50">50</option><option value="100">100</option><option value="all">Semua</option></select><span>data</span></div><div class="all-table-page-info"></div><div class="all-table-page-buttons"></div>';
+    table.insertAdjacentElement('afterend',wrap);
+  }
+  const select=wrap.querySelector('select');if(select)select.value=String(size);
+  renderAllTablePagination(target[0],rows.length,start,end,size);
+}
+function initAllTablePagination(){
+  const observerOptions={childList:true};
+  ALL_TABLE_PAGE_TARGETS.forEach(([bodyId,key])=>{
+    const body=document.getElementById(bodyId);
+    if(!body)return;
+    body.dataset.paginationReady='1';
+    const observer=new MutationObserver(()=>paginateAllTable(key,true));
+    observer.observe(body,observerOptions);
+    paginateAllTable(key,true);
+  });
+}
+
+resetExpenseForm();renderExpenses();
   addActivityLog((editing?'Memperbarui':'Mencatat')+' pengeluaran '+formatExpenseOriginal(row)+' ('+expenseMoney(amount_idr)+').');
   notice(editing?'Pengeluaran berhasil diperbarui.':'Pengeluaran berhasil disimpan.');
 }
@@ -2933,6 +3045,7 @@ function esc(v){
 
 resetExpenseForm();
 initSidebar();
+initAllTablePagination();
 sb.auth.getSession().then(({data})=>{
   if(data.session)startApp();
 });
