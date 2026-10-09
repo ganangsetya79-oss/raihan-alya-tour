@@ -1102,7 +1102,7 @@ function syncManyToSpreadsheet(sheet,rows){if(Array.isArray(rows))rows.forEach(r
 let data=[], payments=[], documents=[], equipment=[], departures=[], expenses=[], currentUser=null, currentAccess=null;
 let editingGroupMemberIds=[];
 const EXPENSE_STORAGE_KEY='raihan_alya_daily_expenses_v1';
-const APP_VERSION='2026-10-09-roomlist-a4-preview';
+const APP_VERSION='2026-10-09-room-edit-inline';
 
 const rupiah=n=>new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(Number(n)||0);
 const isGroupJamaah=x=>!!(x&&(x.kategori==='grup'||String(x.nama_rombongan||'').trim()));
@@ -1628,15 +1628,36 @@ function resetRoomListFilter(){
   renderRoomList();
 }
 function editRoom(roomId){
-  const room=loadRoomListStore().find(r=>r.id===roomId);if(!room)return;
-  const n=prompt('No. kamar (boleh kosong jika belum diketahui):',room.room_number||'');if(n===null)return;
-  const htl=prompt('Hotel:',room.hotel||'');if(htl===null)return;
-  const cap=prompt('Kapasitas kamar:',String(room.capacity));if(cap===null)return;
-  const note=prompt('Keterangan / permintaan jamaah untuk kamar ini:',room.notes||room.keterangan||'');if(note===null)return;
-  const capacity=Math.max(room.member_ids?.length||0,Math.min(10,Number(cap)||room.capacity));
-  const rows=loadRoomListStore(),target=rows.find(r=>r.id===roomId);if(!target)return;
-  target.room_number=n.trim();target.hotel=htl.trim()||target.hotel;target.capacity=capacity;target.notes=note.trim();
-  saveRoomListStore(rows);renderRoomList();notice(target.room_number?'Nomor kamar berhasil diperbarui.':'Kamar tetap menggunakan nomor sementara.');
+  const room=loadRoomListStore().find(r=>String(r.id)===String(roomId));if(!room)return;
+  let modal=document.getElementById('roomEditModal');
+  if(!modal){
+    modal=document.createElement('div');modal.id='roomEditModal';
+    modal.style.cssText='position:fixed;inset:0;z-index:99998;background:rgba(15,23,42,.55);display:flex;align-items:center;justify-content:center;padding:16px';
+    modal.innerHTML='<div style="width:min(560px,100%);max-height:90vh;overflow:auto;background:white;border-radius:12px;padding:20px;box-shadow:0 20px 60px #0003"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px"><h2 style="margin:0;font-size:18px">Edit Kamar</h2><button type="button" id="roomEditClose" class="btn secondary">Tutup</button></div><form id="roomEditForm" class="form"><div><label>No. Kamar (opsional)</label><input id="roomEditNumber" placeholder="Belum diketahui"></div><div><label>Hotel</label><input id="roomEditHotel" required></div><div><label>Kapasitas</label><input id="roomEditCapacity" type="number" min="1" max="10" required></div><div class="full"><label>Keterangan / permintaan jamaah</label><textarea id="roomEditNotes" rows="3" style="width:100%"></textarea></div><div class="actions full"><button type="button" id="roomEditCancel" class="btn secondary">Batal</button><button type="submit" class="btn">Simpan Perubahan</button></div></form></div>';
+    document.body.appendChild(modal);
+    const close=()=>modal.remove();
+    document.getElementById('roomEditClose').onclick=close;
+    document.getElementById('roomEditCancel').onclick=close;
+    modal.addEventListener('click',e=>{if(e.target===modal)close()});
+    document.getElementById('roomEditForm').addEventListener('submit',e=>{
+      e.preventDefault();
+      const rows=loadRoomListStore(),target=rows.find(r=>String(r.id)===String(modal.dataset.roomId));if(!target)return;
+      const n=document.getElementById('roomEditNumber').value.trim();
+      const hotel=document.getElementById('roomEditHotel').value.trim();
+      const capacityInput=Number(document.getElementById('roomEditCapacity').value);
+      if(!hotel){notice('Hotel wajib diisi.','error');return}
+      if(!Number.isFinite(capacityInput)||capacityInput<1||capacityInput>10){notice('Kapasitas harus antara 1 sampai 10.','error');return}
+      if(n&&rows.some(r=>String(r.id)!==String(target.id)&&String(r.departure_id)===String(target.departure_id)&&String(r.hotel||'').toLowerCase()===hotel.toLowerCase()&&String(r.city||'')===String(target.city||'')&&String(r.room_number||'').toLowerCase()===n.toLowerCase())){notice('Nomor kamar tersebut sudah dipakai pada hotel dan jadwal ini.','error');return}
+      target.room_number=n;target.hotel=hotel;target.capacity=Math.max((target.member_ids||[]).length,capacityInput);target.notes=document.getElementById('roomEditNotes').value.trim();
+      saveRoomListStore(rows);close();renderRoomList();notice('Perubahan kamar berhasil disimpan.');
+    });
+  }
+  modal.dataset.roomId=String(roomId);
+  document.getElementById('roomEditNumber').value=room.room_number||'';
+  document.getElementById('roomEditHotel').value=room.hotel||'';
+  document.getElementById('roomEditCapacity').value=room.capacity||4;
+  document.getElementById('roomEditNotes').value=room.notes||room.keterangan||'';
+  modal.style.display='flex';
 }
 function createRoom(){
   const departure_id=document.getElementById('roomDepartureFilter')?.value||'';
