@@ -2982,11 +2982,12 @@ function filterPaymentJamaahOptions(){
   if(!box||!input)return;
   const q=String(input.value||'').trim().toLowerCase();
   const all=[...box.children];
+  const setVisible=(item,visible)=>item.style.setProperty('display',visible?'flex':'none','important');
 
   if(paymentEntryMode==='group'){
     all.forEach(item=>{
       const hay=String(item.dataset.search||'').toLowerCase();
-      item.style.display=!q||hay.includes(q)?'flex':'none';
+      setVisible(item,!q||hay.includes(q));
     });
     return;
   }
@@ -3002,10 +3003,10 @@ function filterPaymentJamaahOptions(){
       return !q||hay.includes(q);
     });
     const showGroup=headerMatch||memberMatch;
-    currentHeader.style.display=showGroup?'flex':'none';
+    setVisible(currentHeader,showGroup);
     groupItems.forEach(item=>{
       const hay=String(item.dataset.search||'').toLowerCase();
-      item.style.display=(!q||hay.includes(q))?'flex':'none';
+      setVisible(item,!q||hay.includes(q));
     });
     currentHeader=null;
     groupItems=[];
@@ -3019,7 +3020,7 @@ function filterPaymentJamaahOptions(){
       if(currentHeader)groupItems.push(item);
       else{
         const hay=String(item.dataset.search||'').toLowerCase();
-        item.style.display=!q||hay.includes(q)?'flex':'none';
+        setVisible(item,!q||hay.includes(q));
       }
     }
   });
