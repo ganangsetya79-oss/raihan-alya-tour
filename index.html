@@ -299,6 +299,102 @@ table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;border
 @media(max-width:650px){.roomlist-filter-grid,.room-create-grid{grid-template-columns:1fr}.roomlist-summary{grid-template-columns:1fr 1fr}.room-card{min-width:0}.room-edit-grid{grid-template-columns:1fr}.room-filter-actions{align-items:stretch}.room-filter-actions .btn{width:100%}}
 <style id="roomlist-slot-style">.room-slot-note{padding:9px 11px;border:1px dashed #cbded8;border-radius:8px;background:#f8fbfa;font-size:11px;color:#526762;margin-bottom:10px}.room-card-title{font-weight:700}
 .complimentary-highlight{background:#eef8f4;color:#176b58;border:1px solid #cfe8df}@media(max-width:900px){#complimentary .cards{grid-template-columns:1fr!important}}
+
+/* Responsive pass: desktop, tablet, and mobile */
+html{width:100%;max-width:100%;overflow-x:hidden;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{width:100%;max-width:100%;overflow-x:hidden}
+#mainApp,.app,.main,main,.panel,.card,.modal-box,.form,.panel-head{min-width:0}
+img,svg,canvas,video{max-width:100%}
+input,select,textarea,button{font:inherit;max-width:100%}
+input,select,textarea{min-width:0}
+button,.btn{touch-action:manipulation}
+.table-wrap,.table-responsive,.access-table-wrap{max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{max-width:100%}
+.panel-head{flex-wrap:wrap}
+.panel-head>*{min-width:0}
+.form input,.form select,.form textarea{width:100%;max-width:100%}
+@media(min-width:1200px){
+  .main{padding-left:clamp(18px,2vw,32px);padding-right:clamp(18px,2vw,32px)}
+  .main section{max-width:1800px}
+}
+@media(max-width:1024px){
+  .main{padding:18px}
+  .panel{padding:16px}
+  .cards{gap:12px}
+  .panel-head{align-items:flex-start}
+  .panel-head .search{flex:1 1 220px;width:auto;min-width:0}
+  .jamaah-group-head,.jamaah-member-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .doc-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .dashboard-top h1{font-size:clamp(22px,3vw,28px)}
+}
+@media(max-width:768px){
+  .main{padding:14px 12px 24px}
+  .main section{width:100%;max-width:100%}
+  .top,.dashboard-top{gap:10px}
+  .top h1,.dashboard-top h1{font-size:22px;line-height:1.25}
+  .panel{padding:13px;margin-bottom:14px;border-radius:11px}
+  .panel-head{gap:9px;margin-bottom:12px}
+  .panel-head h2,.panel h2{font-size:15px}
+  .panel-head>.btn,.panel-head>button{flex:0 0 auto}
+  .search{width:100%;max-width:100%}
+  .form{grid-template-columns:minmax(0,1fr);gap:11px}
+  .form .full{grid-column:1/-1}
+  .form label{min-width:0}
+  .form input,.form select,.form textarea{font-size:16px;padding:11px}
+  .cards,#dashboard>.cards{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .card{padding:14px}
+  .num{font-size:21px;overflow-wrap:anywhere}
+  table{display:block;width:100%;overflow-x:auto;white-space:nowrap;-webkit-overflow-scrolling:touch}
+  th,td{padding:9px 8px;font-size:12px}
+  .modal{padding:10px;align-items:center}
+  .modal-box{width:100%;max-width:100%;max-height:92dvh;padding:16px;border-radius:12px;overflow:auto}
+  .modal-head{gap:10px}
+  .modal-head h2{font-size:18px}
+  .actions{flex-wrap:wrap;gap:8px}
+  .actions .btn{flex:1 1 auto;min-height:40px}
+  .permission-grid{grid-template-columns:repeat(2,minmax(0,1fr));padding:9px;gap:7px}
+  .permission-grid label{min-width:0;overflow-wrap:anywhere;padding:9px}
+  .doc-grid{grid-template-columns:minmax(0,1fr)}
+  .jamaah-group-head,.jamaah-member-grid{grid-template-columns:minmax(0,1fr)}
+  .jamaah-group-form{padding:10px}
+  .jamaah-members-head{align-items:flex-start;flex-wrap:wrap}
+  .jamaah-group-tools,.bulk-tools,.access-actions{flex-wrap:wrap}
+  .dashboard-user-actions{width:100%;justify-content:flex-start}
+  .dashboard-brand{padding:15px;min-height:0}
+  .dashboard-brand-title{font-size:17px}
+  .dashboard-running-item{padding:8px 14px}
+  .all-table-pagination,.jamaah-pagination{gap:8px;flex-wrap:wrap}
+  .all-table-page-buttons{max-width:100%;overflow-x:auto}
+}
+@media(max-width:480px){
+  .main{padding:12px 9px 20px}
+  .side{width:58px;padding-left:6px;padding-right:6px}
+  .main{margin-left:58px;width:calc(100% - 58px)}
+  .nav button{padding:10px 5px}
+  .nav-icon,.app.sidebar-collapsed .nav-icon{width:22px;height:22px}
+  .cards,#dashboard>.cards{grid-template-columns:minmax(0,1fr)}
+  .card{min-height:0!important}
+  .panel{padding:11px}
+  .panel-head{flex-direction:column;align-items:stretch}
+  .panel-head>.btn,.panel-head>button{width:100%}
+  .panel-head .search{width:100%;flex-basis:auto}
+  .permission-grid{grid-template-columns:minmax(0,1fr)}
+  .modal{padding:6px}
+  .modal-box{padding:13px;max-height:94dvh}
+  .actions .btn{flex:1 1 100%}
+  .dashboard-top .dashboard-user{white-space:normal}
+  .dashboard-top .dashboard-user #headerUserName{max-width:calc(100vw - 160px)}
+  .dashboard-user-actions .header-action{font-size:11px;padding:8px}
+  .jamaah-category-switch label{flex:1 1 100%}
+  .jamaah-entry-tabs{flex-wrap:wrap}
+  .jamaah-entry-tab{flex:1 1 auto}
+  .all-table-page-size{flex-wrap:wrap}
+  .profile-modal-box{width:100%}
+}
+@media(hover:none){
+  .dashboard-top~.cards .card:hover{transform:none}
+  .btn,.nav button,.header-action{min-height:38px}
+}
 </style></style></style></style></style></style>
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
