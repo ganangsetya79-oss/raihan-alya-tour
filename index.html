@@ -924,7 +924,11 @@ table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;border
     <div id="groupForm" class="jamaah-group-form hidden">
       <div class="jamaah-group-head"><div><label>Nama Rombongan / Keluarga</label><input id="nama_rombongan" placeholder="Contoh: Keluarga Ahmad"></div><div><label>Keterangan Rombongan</label><input id="keterangan_rombongan" placeholder="Opsional"></div></div>
       <div style="margin:0 0 12px"><label>Jadwal Keberangkatan</label><select id="groupDepartureSelect"><option value="">-- Belum ditentukan --</option></select><div class="muted" style="margin-top:4px">Semua anggota rombongan otomatis dimasukkan ke jadwal ini.</div></div>
-      <div class="jamaah-members-head"><div><h3 style="margin:0">Anggota Jamaah</h3><div class="muted">Isi nama anggota 1 sampai 5.</div></div><button type="button" class="btn" onclick="addJamaahMember()">+ Tambah Anggota</button></div>
+      <div class="jamaah-members-head"><div><h3 style="margin:0">Anggota Jamaah</h3><div class="muted">Edit semua anggota rombongan sekaligus di bagian ini. Perubahan disimpan bersama melalui tombol Simpan Jamaah.</div></div><button type="button" class="btn" onclick="addJamaahMember()">+ Tambah Anggota</button></div>
+      <div class="jamaah-bulk-package" style="display:flex;gap:8px;align-items:end;flex-wrap:wrap;margin:0 0 12px;padding:10px;border:1px solid #dce8e3;border-radius:8px;background:#f7faf8">
+        <div style="flex:1;min-width:190px"><label for="groupBulkPackage">Ubah paket seluruh anggota</label><select id="groupBulkPackage"><option value="">-- Pilih paket untuk semua --</option></select></div>
+        <button type="button" class="btn secondary" onclick="applyGroupBulkPackage()">Terapkan ke Semua</button>
+      </div>
       <div id="jamaahMembers"></div>
     </div>
     <div class="actions full"><button type="button" class="btn secondary" onclick="closeForm()">Batal</button><button type="submit" class="btn" id="jamaahSaveBtn">Simpan Jamaah</button></div>
@@ -1057,7 +1061,7 @@ function syncManyToSpreadsheet(sheet,rows){if(Array.isArray(rows))rows.forEach(r
 let data=[], payments=[], documents=[], equipment=[], departures=[], expenses=[], currentUser=null, currentAccess=null;
 let editingGroupMemberIds=[];
 const EXPENSE_STORAGE_KEY='raihan_alya_daily_expenses_v1';
-const APP_VERSION='2026-10-07-jamaah-export-2';
+const APP_VERSION='2026-10-09-edit-rombongan-bulk';
 
 const rupiah=n=>new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(Number(n)||0);
 const isGroupJamaah=x=>!!(x&&(x.kategori==='grup'||String(x.nama_rombongan||'').trim()));
@@ -2035,7 +2039,7 @@ function renderJamaah(){
     const paid=paidFor(x.id), discount=discountFor(x.id), remain=remainFor(x);
     const isGroup=x.kategori==='grup';
     const rowNo=start+idx+1;
-    return `<tr><td class="jamaah-no" style="text-align:center;font-weight:600;color:#687078">${rowNo}</td><td style="text-align:center"><input class="jamaah-check" type="checkbox" value="${esc(x.id)}" ${jamaahSelectedIds.has(String(x.id))?'checked':''} onchange="syncJamaahSelectState()" aria-label="Pilih ${esc(x.nama)}"></td><td>${esc(x.nama)}</td><td>${isGroup?'<span class="jamaah-group-badge">Grup / Rombongan</span>':'<span class="jamaah-individual-badge">Individu</span>'}</td><td>${esc(x.nama_rombongan||'-')}</td><td>${esc(x.jenis_kelamin||'-')}</td><td>${esc(x.hp||'')}</td><td>${esc(x.paket||'Other / Belum Diketahui')}</td><td>${rupiah(x.harga)}</td><td>${rupiah(discount)}</td><td>${rupiah(paid)}</td><td>${rupiah(remain)}</td><td>${status(x)}</td><td><span class="jamaah-note-cell" title="${esc((x.keterangan||x.keterangan_rombongan||''))}">${esc(x.keterangan||x.keterangan_rombongan||'-')}</span></td><td><span class="jamaah-note-cell" title="${esc(x.catatan||'')}">${esc(x.catatan||'-')}</span></td><td><button class="btn secondary small-btn" onclick="edit('${x.id}')">Edit</button> <button class="btn small-btn" onclick="printInvoice('${x.id}')">🧾 Invoice</button> <button class="btn danger small-btn" onclick="hapus('${x.id}')">Hapus</button></td></tr>`;
+    return `<tr><td class="jamaah-no" style="text-align:center;font-weight:600;color:#687078">${rowNo}</td><td style="text-align:center"><input class="jamaah-check" type="checkbox" value="${esc(x.id)}" ${jamaahSelectedIds.has(String(x.id))?'checked':''} onchange="syncJamaahSelectState()" aria-label="Pilih ${esc(x.nama)}"></td><td>${esc(x.nama)}</td><td>${isGroup?'<span class="jamaah-group-badge">Grup / Rombongan</span>':'<span class="jamaah-individual-badge">Individu</span>'}</td><td>${esc(x.nama_rombongan||'-')}</td><td>${esc(x.jenis_kelamin||'-')}</td><td>${esc(x.hp||'')}</td><td>${esc(x.paket||'Other / Belum Diketahui')}</td><td>${rupiah(x.harga)}</td><td>${rupiah(discount)}</td><td>${rupiah(paid)}</td><td>${rupiah(remain)}</td><td>${status(x)}</td><td><span class="jamaah-note-cell" title="${esc((x.keterangan||x.keterangan_rombongan||''))}">${esc(x.keterangan||x.keterangan_rombongan||'-')}</span></td><td><span class="jamaah-note-cell" title="${esc(x.catatan||'')}">${esc(x.catatan||'-')}</span></td><td><button class="btn secondary small-btn" onclick="edit('${x.id}')">${isGroup?'Edit Rombongan':'Edit'}</button> <button class="btn small-btn" onclick="printInvoice('${x.id}')">🧾 Invoice</button> <button class="btn danger small-btn" onclick="hapus('${x.id}')">Hapus</button></td></tr>`;
   }).join('')||'<tr><td colspan="16">Belum ada data.</td></tr>';
   renderJamaahPagination(total,start,Math.min(start+visibleRows.length,total));
   syncJamaahSelectState();
@@ -2592,6 +2596,22 @@ function addJamaahMember(data={}){
   const index=box.querySelectorAll('.jamaah-member-card').length+1;
   box.insertAdjacentHTML('beforeend',jamaahMemberTemplate(index,data));
 }
+function fillGroupBulkPackage(selected=''){
+  const sel=document.getElementById('groupBulkPackage');if(!sel)return;
+  sel.innerHTML='<option value="">-- Pilih paket untuk semua --</option>'+packageOptions(selected);
+  if(selected)sel.value=selected;
+}
+function applyGroupBulkPackage(){
+  const sel=document.getElementById('groupBulkPackage'),paket=sel?.value||'';
+  if(!paket){notice('Pilih paket terlebih dahulu.','error');return}
+  const cards=[...document.querySelectorAll('#jamaahMembers .jamaah-member-card')];
+  if(!cards.length){notice('Belum ada anggota rombongan.','error');return}
+  cards.forEach(card=>{
+    const p=card.querySelector('[data-field="paket"]');
+    if(p){p.value=paket;syncPackageMemberPrice(p)}
+  });
+  notice('Paket diterapkan ke '+cards.length+' anggota. Klik Simpan Jamaah untuk menyimpan perubahan.');
+}
 function renumberJamaahMembers(){
   document.querySelectorAll('#jamaahMembers .jamaah-member-card').forEach((card,i)=>{
     card.dataset.memberIndex=i+1;
@@ -2740,6 +2760,7 @@ function openForm(id=null){
       setJamaahEntryMode('grup');
       document.getElementById('nama_rombongan').value=x.nama_rombongan||'';
       document.getElementById('keterangan_rombongan').value=x.keterangan_rombongan||'';
+      fillGroupBulkPackage();
       fillJamaahDepartureSelects(x.departure_id||'');
       // Mode grup biasanya membuat kolom awal otomatis. Untuk EDIT,
       // kosongkan dulu agar yang tampil hanya anggota yang benar-benar tersimpan.
