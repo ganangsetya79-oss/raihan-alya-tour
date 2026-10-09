@@ -293,6 +293,16 @@ table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;border
 .multi-individual-card label{font-size:10px;margin-bottom:3px}
 .multi-individual-card input,.multi-individual-card select{height:32px;font-size:11px}
 @media(max-width:900px){.multi-individual-card .multi-grid{grid-template-columns:1fr 1fr}}
+<style id="room-bulk-delete-style">
+.room-bulk-actions{display:flex;align-items:center;justify-content:flex-end;gap:10px;flex-wrap:wrap}
+.room-select-all-label{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:#52645d;white-space:nowrap;cursor:pointer}
+.room-select-all-label input,.room-card-select input{width:15px;height:15px;accent-color:#18745f;cursor:pointer}
+.room-card-select{display:flex;align-items:center;gap:7px;margin-bottom:9px;font-size:10px;color:#64736d;cursor:pointer}
+.room-card-select input{flex:none}
+.room-card.room-selected{border-color:#18745f;box-shadow:0 0 0 2px #18745f1c}
+#roomDeleteSelectedBtn:disabled{opacity:.45;cursor:not-allowed}
+@media(max-width:650px){.room-bulk-actions{justify-content:flex-start}.room-bulk-actions #roomListSummary{margin-left:auto}}
+</style>
 <style id="roomlist-style">
 /* Room List: form rapi, ringan, tidak tampak seperti kotak-kotak */
 #roomlist .panel{border:0;border-radius:0;box-shadow:none;background:transparent;padding:18px 16px;margin-bottom:8px}
@@ -1077,7 +1087,7 @@ table{max-width:100%}
   <div class="panel">
     <div class="panel-head">
       <div><h2>Daftar Kamar</h2><div class="muted">Masukkan jamaah ke kamar sesuai kapasitas. Satu jamaah hanya boleh berada di satu kamar pada jadwal yang sama.</div></div>
-      <span id="roomListSummary" class="jamaah-data-count">0 kamar</span>
+      <div class="room-bulk-actions"><label class="room-select-all-label"><input id="roomSelectAll" type="checkbox" onchange="toggleAllRoomSelection(this.checked)"> Pilih semua</label><button id="roomDeleteSelectedBtn" class="btn danger small-btn" type="button" onclick="deleteSelectedRooms()" disabled>Hapus dipilih (<span id="roomSelectedCount">0</span>)</button><span id="roomListSummary" class="jamaah-data-count">0 kamar</span></div>
     </div>
     <div id="roomUnassignedNotice"></div>
     <div id="roomListCards" class="room-list-cards"></div>
@@ -1979,6 +1989,26 @@ function addRoomCity(){
  const filter=document.getElementById('roomCityFilter');if(filter)filter.value=city;
  renderRoomList();
 }
+const ROOM_SELECTED_KEY='raihan_roomlist_selected_ids_v1';
+function getSelectedRoomIds(){return [...document.querySelectorAll('#roomListCards .room-select-checkbox:checked')].map(el=>String(el.value))}
+function updateRoomSelection(){
+ const ids=getSelectedRoomIds();
+ const count=document.getElementById('roomSelectedCount');if(count)count.textContent=ids.length;
+ const btn=document.getElementById('roomDeleteSelectedBtn');if(btn)btn.disabled=!ids.length;
+ const all=[...document.querySelectorAll('#roomListCards .room-select-checkbox')];
+ const selectAll=document.getElementById('roomSelectAll');if(selectAll){selectAll.checked=all.length>0&&all.every(el=>el.checked);selectAll.indeterminate=all.some(el=>el.checked)&&!selectAll.checked}
+ all.forEach(el=>el.closest('.room-card')?.classList.toggle('room-selected',el.checked));
+}
+function toggleAllRoomSelection(checked){document.querySelectorAll('#roomListCards .room-select-checkbox').forEach(el=>el.checked=checked);updateRoomSelection()}
+function deleteSelectedRooms(){
+ const ids=getSelectedRoomIds();if(!ids.length)return;
+ if(!confirm('Hapus '+ids.length+' kamar yang dipilih? Data jamaah tidak akan dihapus, hanya penempatan kamarnya yang dihapus.'))return;
+ const idSet=new Set(ids);
+ saveRoomListStore(loadRoomListStore().filter(room=>!idSet.has(String(room.id))));
+ const all=document.getElementById('roomSelectAll');if(all){all.checked=false;all.indeterminate=false}
+ renderRoomList();
+ notice(ids.length+' kamar berhasil dihapus. Data jamaah tetap tersimpan.','ok');
+}
 function renderRoomList(){
   refreshRoomCityOptions();
   roomListDepartureOptions();
@@ -2014,8 +2044,9 @@ function renderRoomList(){
     const pct=Math.min(100,Math.round((members.length/Math.max(1,Number(r.capacity)))*100));
     const status=members.length>=Number(r.capacity)?'Penuh':'Tersedia '+(Number(r.capacity)-members.length);
     const cls=members.length>=Number(r.capacity)?'full':'warn';
-    return '<div class="room-card"><div class="room-card-head"><div><div class="room-card-title">'+(r.room_number?'Kamar '+esc(r.room_number):'Slot Kamar '+String(r.slot_no||1).padStart(2,'0'))+' — '+esc(r.hotel)+'</div><div class="room-card-meta">'+esc(r.city)+' · '+esc(r.type)+' · '+members.length+'/'+esc(r.capacity)+' orang</div></div><span class="room-capacity '+cls+'">'+status+'</span></div><div class="room-progress"><span class="'+(members.length>=Number(r.capacity)?'full':'')+'" style="width:'+pct+'%"></span></div><div class="room-member-list">'+(members.length?members.map(m=>'<div class="room-member"><span class="room-member-name">'+esc(m.nama)+'</span><button class="room-member-remove" type="button" onclick="removeRoomMember(\''+r.id+'\',\''+m.id+'\')">Hapus</button></div>').join(''):'<div class="muted" style="font-size:11px">Belum ada jamaah.</div>')+'</div><div class="room-assign"><select aria-label="Tambah atau pindahkan jamaah" onchange="moveRoomMember(\''+r.id+'\',this.value)"><option value="">+ Tambah / pindah jamaah</option>'+available.map(m=>'<option value="'+esc(m.id)+'">'+esc(m.nama)+(assignedIds.has(String(m.id))?' · sudah ditempatkan':'')+'</option>').join('')+'</select></div><div class="room-card-actions"><button class="btn secondary small-btn" type="button" onclick="editRoom(\''+r.id+'\')">Edit Kamar</button><button class="btn danger small-btn" type="button" onclick="deleteRoom(\''+r.id+'\')">Hapus</button></div></div>';
+    return '<div class="room-card" data-room-card="'+esc(r.id)+'"><label class="room-card-select"><input type="checkbox" class="room-select-checkbox" value="'+esc(r.id)+'" onchange="updateRoomSelection()"> Pilih kamar</label><div class="room-card-head"><div><div class="room-card-title">'+(r.room_number?'Kamar '+esc(r.room_number):'Slot Kamar '+String(r.slot_no||1).padStart(2,'0'))+' — '+esc(r.hotel)+'</div><div class="room-card-meta">'+esc(r.city)+' · '+esc(r.type)+' · '+members.length+'/'+esc(r.capacity)+' orang</div></div><span class="room-capacity '+cls+'">'+status+'</span></div><div class="room-progress"><span class="'+(members.length>=Number(r.capacity)?'full':'')+'" style="width:'+pct+'%"></span></div><div class="room-member-list">'+(members.length?members.map(m=>'<div class="room-member"><span class="room-member-name">'+esc(m.nama)+'</span><button class="room-member-remove" type="button" onclick="removeRoomMember(\''+r.id+'\',\''+m.id+'\')">Hapus</button></div>').join(''):'<div class="muted" style="font-size:11px">Belum ada jamaah.</div>')+'</div><div class="room-assign"><select aria-label="Tambah atau pindahkan jamaah" onchange="moveRoomMember(\''+r.id+'\',this.value)"><option value="">+ Tambah / pindah jamaah</option>'+available.map(m=>'<option value="'+esc(m.id)+'">'+esc(m.nama)+(assignedIds.has(String(m.id))?' · sudah ditempatkan':'')+'</option>').join('')+'</select></div><div class="room-card-actions"><button class="btn secondary small-btn" type="button" onclick="editRoom(\''+r.id+'\')">Edit Kamar</button><button class="btn danger small-btn" type="button" onclick="deleteRoom(\''+r.id+'\')">Hapus</button></div></div>';
   }).join('');
+  updateRoomSelection();
 }
 function printRoomList(){
   const departure_id=document.getElementById('roomDepartureFilter')?.value||'';
