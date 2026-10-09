@@ -831,7 +831,8 @@ table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;border
       <div><label>Kota</label><select id="roomCity"><option>Makkah</option><option>Madinah</option></select></div>
       <div><label>Tipe Kamar</label><select id="roomType" onchange="syncRoomCapacity()"><option value="Double">Double</option><option value="Triple">Triple</option><option value="Quad" selected>Quad</option></select></div>
       <div><label>Kapasitas</label><input id="roomCapacity" type="number" min="1" max="10" value="4"></div>
-      <div class="room-create-button"><button class="btn" type="button" onclick="createRoom()">+ Buat Kamar</button></div>
+      <div><label>Jumlah Slot</label><input id="roomBatchCount" type="number" min="1" max="50" value="1" title="Jumlah slot kamar yang ingin dibuat"></div>
+      <div class="room-create-button"><button class="btn" type="button" onclick="createRoom()">+ Buat Slot Kamar</button></div>
     </div>
   </div>
 
@@ -1101,7 +1102,7 @@ function syncManyToSpreadsheet(sheet,rows){if(Array.isArray(rows))rows.forEach(r
 let data=[], payments=[], documents=[], equipment=[], departures=[], expenses=[], currentUser=null, currentAccess=null;
 let editingGroupMemberIds=[];
 const EXPENSE_STORAGE_KEY='raihan_alya_daily_expenses_v1';
-const APP_VERSION='2026-10-09-global-wide-layout';
+const APP_VERSION='2026-10-09-roomlist-upgrade';
 
 const rupiah=n=>new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(Number(n)||0);
 const isGroupJamaah=x=>!!(x&&(x.kategori==='grup'||String(x.nama_rombongan||'').trim()));
@@ -1644,15 +1645,21 @@ function createRoom(){
   const city=document.getElementById('roomCity')?.value||'Makkah';
   const type=document.getElementById('roomType')?.value||'Quad';
   const capacity=Math.max(1,Math.min(10,Number(document.getElementById('roomCapacity')?.value)||4));
+  const batch=Math.max(1,Math.min(50,Number(document.getElementById('roomBatchCount')?.value)||1));
   if(!hotel){notice('Hotel wajib diisi. Nomor kamar boleh dikosongkan dulu.','error');return}
   const rows=loadRoomListStore();
   const sameSchedule=rows.filter(r=>String(r.departure_id)===String(departure_id)&&String(r.hotel||'').toLowerCase()===hotel.toLowerCase()&&String(r.city||'')===city);
   if(room_number && sameSchedule.some(r=>String(r.room_number||'').toLowerCase()===room_number.toLowerCase())){notice('Nomor kamar tersebut sudah ada pada hotel dan jadwal ini.','error');return}
-  const slotNo=sameSchedule.length+1;
-  rows.push({id:'room_'+Date.now()+'_'+Math.random().toString(36).slice(2,7),departure_id,room_number,slot_no:slotNo,hotel,city,type,capacity,member_ids:[]});
+  if(room_number&&batch>1){notice('Nomor kamar spesifik hanya bisa dipakai untuk satu kamar. Kosongkan nomor kamar untuk membuat beberapa slot.','error');return}
+  const now=Date.now();
+  for(let i=0;i<batch;i++){
+    const slotNo=sameSchedule.length+i+1;
+    rows.push({id:'room_'+(now+i)+'_'+Math.random().toString(36).slice(2,7),departure_id,room_number:batch===1?room_number:'',slot_no:slotNo,hotel,city,type,capacity,member_ids:[],created_at:new Date().toISOString()});
+  }
   saveRoomListStore(rows);
   const n=document.getElementById('roomNumber');if(n)n.value='';
-  renderRoomList();notice(room_number?'Kamar berhasil dibuat.':'Slot kamar '+String(slotNo).padStart(2,'0')+' berhasil dibuat. Nomor kamar bisa diisi nanti.');
+  const b=document.getElementById('roomBatchCount');if(b)b.value='1';
+  renderRoomList();notice(batch===1?(room_number?'Kamar berhasil dibuat.':'Slot kamar '+String(sameSchedule.length+1).padStart(2,'0')+' berhasil dibuat. Nomor kamar bisa diisi nanti.'):batch+' slot kamar berhasil dibuat. Nomor kamar dapat diisi setelah dikonfirmasi hotel.');
 }
 function assignRoomMember(roomId,jamaahId){
   if(!jamaahId)return;
@@ -1667,6 +1674,20 @@ function assignRoomMember(roomId,jamaahId){
   room.member_ids.push(String(jamaahId));saveRoomListStore(rows);renderRoomList();
 }
 function removeRoomMember(roomId,jamaahId){const rows=loadRoomListStore(),room=rows.find(r=>r.id===roomId);if(!room)return;room.member_ids=(room.member_ids||[]).filter(id=>String(id)!==String(jamaahId));saveRoomListStore(rows);renderRoomList()}
+function moveRoomMember(targetRoomId,jamaahId){
+  if(!jamaahId)return;
+  const rows=loadRoomListStore(),target=rows.find(r=>String(r.id)===String(targetRoomId));
+  if(!target)return;
+  const person=(data||[]).find(j=>String(j.id)===String(jamaahId));
+  if(!person||String(person.departure_id||'')!==String(target.departure_id)){notice('Jamaah harus berasal dari jadwal keberangkatan yang sama.','error');renderRoomList();return}
+  const current=rows.find(r=>String(r.departure_id)===String(target.departure_id)&&(r.member_ids||[]).some(id=>String(id)===String(jamaahId)));
+  if(current&&String(current.id)===String(target.id)){renderRoomList();return}
+  if((target.member_ids||[]).length>=Number(target.capacity)){notice('Kamar tujuan sudah penuh.','error');renderRoomList();return}
+  if(current)current.member_ids=current.member_ids.filter(id=>String(id)!==String(jamaahId));
+  target.member_ids=Array.isArray(target.member_ids)?target.member_ids:[];
+  if(!target.member_ids.some(id=>String(id)===String(jamaahId)))target.member_ids.push(String(jamaahId));
+  saveRoomListStore(rows);renderRoomList();notice('Jamaah berhasil dipindahkan ke kamar tujuan.');
+}
 function deleteRoom(roomId){if(!confirm('Hapus kamar ini? Data jamaah tidak akan dihapus.'))return;saveRoomListStore(loadRoomListStore().filter(r=>r.id!==roomId));renderRoomList()}
 function renderRoomList(){
   roomListDepartureOptions();
@@ -1682,26 +1703,27 @@ function renderRoomList(){
   }
   const journeyJamaah=(data||[]).filter(j=>String(j.departure_id||'')===String(departure_id));
   const rows=loadRoomListStore();
-  const allRooms=rows.filter(r=>String(r.departure_id)===String(departure_id)&&(!cityQ||String(r.city||'')===cityQ)&&(!hotelQ||String(r.hotel||'').toLowerCase().includes(hotelQ)));
-  const assignedIds=new Set();allRooms.forEach(r=>(r.member_ids||[]).forEach(id=>assignedIds.add(String(id))));
+  const journeyRooms=rows.filter(r=>String(r.departure_id)===String(departure_id));
+  const allRooms=journeyRooms.filter(r=>(!cityQ||String(r.city||'')===cityQ)&&(!hotelQ||String(r.hotel||'').toLowerCase().includes(hotelQ)));
+  const assignedIds=new Set();journeyRooms.forEach(r=>(r.member_ids||[]).forEach(id=>assignedIds.add(String(id))));
   const unassigned=journeyJamaah.filter(j=>!assignedIds.has(String(j.id)));
   const assignedCount=journeyJamaah.length-unassigned.length;
-  document.getElementById('roomStatRooms').textContent=allRooms.length;
+  document.getElementById('roomStatRooms').textContent=journeyRooms.length;
   document.getElementById('roomStatJamaah').textContent=journeyJamaah.length;
   document.getElementById('roomStatAssigned').textContent=assignedCount;
   document.getElementById('roomStatUnassigned').textContent=unassigned.length;
-  document.getElementById('roomListSummary').textContent=allRooms.length+' kamar';
+  document.getElementById('roomListSummary').textContent=allRooms.length+' kamar ditampilkan dari '+journeyRooms.length;
   const noticeBox=document.getElementById('roomUnassignedNotice');
   if(noticeBox)noticeBox.innerHTML=unassigned.length?'<div class="room-unassigned"><b>'+unassigned.length+' jamaah belum mendapat kamar.</b> '+(unassigned.slice(0,8).map(j=>esc(j.nama)).join(', '))+(unassigned.length>8?' dan lainnya.':'')+'</div>':'';
   const visible=allRooms.filter(r=>!jamaahQ||(r.member_ids||[]).some(id=>String(data.find(j=>String(j.id)===String(id))?.nama||'').toLowerCase().includes(jamaahQ)));
   if(!visible.length){box.innerHTML='<div class="room-empty">Belum ada kamar yang sesuai dengan filter.</div>';return}
   box.innerHTML=visible.map(r=>{
     const members=(r.member_ids||[]).map(id=>data.find(j=>String(j.id)===String(id))).filter(Boolean);
-    const available=journeyJamaah.filter(j=>!assignedIds.has(String(j.id))&&(!jamaahQ||String(j.nama||'').toLowerCase().includes(jamaahQ)));
+    const available=journeyJamaah.filter(j=>(!jamaahQ||String(j.nama||'').toLowerCase().includes(jamaahQ)));
     const pct=Math.min(100,Math.round((members.length/Math.max(1,Number(r.capacity)))*100));
     const status=members.length>=Number(r.capacity)?'Penuh':'Tersedia '+(Number(r.capacity)-members.length);
     const cls=members.length>=Number(r.capacity)?'full':'warn';
-    return '<div class="room-card"><div class="room-card-head"><div><div class="room-card-title">'+(r.room_number?'Kamar '+esc(r.room_number):'Slot Kamar '+String(r.slot_no||1).padStart(2,'0'))+' — '+esc(r.hotel)+'</div><div class="room-card-meta">'+esc(r.city)+' · '+esc(r.type)+' · '+members.length+'/'+esc(r.capacity)+' orang</div></div><span class="room-capacity '+cls+'">'+status+'</span></div><div class="room-progress"><span class="'+(members.length>=Number(r.capacity)?'full':'')+'" style="width:'+pct+'%"></span></div><div class="room-member-list">'+(members.length?members.map(m=>'<div class="room-member"><span class="room-member-name">'+esc(m.nama)+'</span><button class="room-member-remove" type="button" onclick="removeRoomMember(\''+r.id+'\',\''+m.id+'\')">Hapus</button></div>').join(''):'<div class="muted" style="font-size:11px">Belum ada jamaah.</div>')+'</div><div class="room-assign"><select onchange="assignRoomMember(\''+r.id+'\',this.value)"><option value="">+ Tambah jamaah</option>'+available.map(m=>'<option value="'+esc(m.id)+'">'+esc(m.nama)+'</option>').join('')+'</select></div><div class="room-card-actions"><button class="btn secondary small-btn" type="button" onclick="editRoom(\''+r.id+'\')">Edit Kamar</button><button class="btn danger small-btn" type="button" onclick="deleteRoom(\''+r.id+'\')">Hapus</button></div></div>';
+    return '<div class="room-card"><div class="room-card-head"><div><div class="room-card-title">'+(r.room_number?'Kamar '+esc(r.room_number):'Slot Kamar '+String(r.slot_no||1).padStart(2,'0'))+' — '+esc(r.hotel)+'</div><div class="room-card-meta">'+esc(r.city)+' · '+esc(r.type)+' · '+members.length+'/'+esc(r.capacity)+' orang</div></div><span class="room-capacity '+cls+'">'+status+'</span></div><div class="room-progress"><span class="'+(members.length>=Number(r.capacity)?'full':'')+'" style="width:'+pct+'%"></span></div><div class="room-member-list">'+(members.length?members.map(m=>'<div class="room-member"><span class="room-member-name">'+esc(m.nama)+'</span><button class="room-member-remove" type="button" onclick="removeRoomMember(\''+r.id+'\',\''+m.id+'\')">Hapus</button></div>').join(''):'<div class="muted" style="font-size:11px">Belum ada jamaah.</div>')+'</div><div class="room-assign"><select aria-label="Tambah atau pindahkan jamaah" onchange="moveRoomMember(\''+r.id+'\',this.value)"><option value="">+ Tambah / pindah jamaah</option>'+available.map(m=>'<option value="'+esc(m.id)+'">'+esc(m.nama)+(assignedIds.has(String(m.id))?' · sudah ditempatkan':'')+'</option>').join('')+'</select></div><div class="room-card-actions"><button class="btn secondary small-btn" type="button" onclick="editRoom(\''+r.id+'\')">Edit Kamar</button><button class="btn danger small-btn" type="button" onclick="deleteRoom(\''+r.id+'\')">Hapus</button></div></div>';
   }).join('');
 }
 function printRoomList(){
