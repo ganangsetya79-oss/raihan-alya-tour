@@ -4153,12 +4153,12 @@ function filterRoomMemberChoices(roomId,query=''){
   const rooms=loadRoomListStore().filter(r=>String(r.departure_id)===String(room.departure_id));
   const assigned=new Set(rooms.flatMap(r=>(r.member_ids||[]).map(id=>String(id))));
   const options=(data||[]).filter(j=>String(j.departure_id||'')===String(room.departure_id))
-    .filter(j=>!q||[j.nama,j.jenis_kelamin,j.family_group,j.nama_rombongan,j.family_relation,j.mahram_name,j.nik,j.hp].some(v=>String(v||'').toLocaleLowerCase('id').includes(q)))
+    .filter(j=>!q||[j.nama,j.jenis_kelamin,j.family_group,j.nama_rombongan,j.family_relation,j.mahram_name,j.nik,j.hp,j.keterangan,j.catatan,j.keterangan_rombongan].some(v=>String(v||'').toLocaleLowerCase('id').includes(q)))
     .sort((a,b)=>String(a.nama||'').localeCompare(String(b.nama||''),'id'));
   result.classList.add('open');
   result.innerHTML=options.length?options.map(j=>{
     const already=assigned.has(String(j.id));
-    const meta=[j.jenis_kelamin||'Jenis kelamin belum diisi',j.family_group||j.nama_rombongan?'Keluarga: '+(j.family_group||j.nama_rombongan):'',j.family_relation||'',j.mahram_name?'Pendamping: '+j.mahram_name:'',already?'Sudah ditempatkan di kamar lain':'Belum ditempatkan'].filter(Boolean).join(' · ');
+    const meta=[j.jenis_kelamin||'Jenis kelamin belum diisi',j.family_group||j.nama_rombongan?'Keluarga: '+(j.family_group||j.nama_rombongan):'',j.family_relation?'Hubungan: '+j.family_relation:'',j.mahram_name?'Pendamping/mahram: '+j.mahram_name:'',j.keterangan?'Keterangan: '+j.keterangan:'',j.catatan?'Catatan: '+j.catatan:'',j.keterangan_rombongan?'Catatan rombongan: '+j.keterangan_rombongan:'',already?'Sudah ditempatkan di kamar lain':'Belum ditempatkan'].filter(Boolean).join(' · ');
     return '<button type="button" class="room-assignee-option" onclick="moveRoomMember(\''+roomId+'\',\''+String(j.id).replace(/'/g,'\\\\\\\'')+'\')"><span>'+esc(j.nama||'-')+'</span><small>'+esc(meta)+'</small></button>';
   }).join(''):'<div class="room-assignee-empty">'+(q?'Tidak ada jamaah yang cocok dengan pencarian.':'Tidak ada jamaah pada jadwal ini.')+'</div>';
 }
