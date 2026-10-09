@@ -3432,7 +3432,7 @@ async function editPayment(id){
       let target=groupPayment?'':'';
       if(groupPayment){
         const groupName=owner?groupNameFor(owner):'';
-        const option=[...sel.options].find(o=>o.value.startsWith('group::')&&normalizeGroupName(o.textContent.replace(/^👥\\s*/,''))===normalizeGroupName(groupName));
+        const option=[...sel.options].find(o=>o.value.startsWith('group::')&&normalizeGroupName(o.textContent.replace(/^👥\s*/,''))===normalizeGroupName(groupName));
         target=option?.value||'';
       }else{
         target=String(p.jamaah_id||'');
@@ -3501,14 +3501,24 @@ document.getElementById('paymentForm').addEventListener('submit',async e=>{
     const paymentNote=isGroupPayment?('Pembayaran Rombongan: '+groupNameFor(selectedJamaah)+(note?' — '+note:'')):note;
     const payload={jamaah_id,amount,discount,payment_date,method,bank:method==='Transfer'?bank:null,note:paymentNote};
 
-    const query=editingPaymentId
-      ? sb.from('payments').update(payload).eq('id',editingPaymentId)
-      : sb.from('payments').insert(payload);
+    const wasEdit=!!editingPaymentId;
+    const query=wasEdit
+      ? sb.from('payments').update(payload).eq('id',editingPaymentId).select('id')
+      : sb.from('payments').insert(payload).select('id');
     const timeoutPromise=new Promise(resolve=>setTimeout(()=>resolve({error:{message:'Waktu penyimpanan habis (timeout). Periksa koneksi Supabase/RLS.'}}),15000));
     const result=await Promise.race([query,timeoutPromise]);
-    if(result?.error){console.error('Simpan/update pembayaran gagal:',JSON.stringify(result.error,null,2));notice((editingPaymentId?'Gagal memperbarui pembayaran: ':'Gagal menyimpan pembayaran: ')+(result.error.message||'Kesalahan Supabase')+(result.error.details?' — '+result.error.details:''),'error');return}
+    if(result?.error){
+      console.error('Simpan/update pembayaran gagal:',JSON.stringify(result.error,null,2));
+      notice((wasEdit?'Gagal memperbarui pembayaran: ':'Gagal menyimpan pembayaran: ')+(result.error.message||'Kesalahan Supabase')+(result.error.details?' — '+result.error.details:''),'error');
+      return;
+    }
+    if(wasEdit&&(!Array.isArray(result.data)||result.data.length===0)){
+      console.error('Update pembayaran tidak mengubah baris. Periksa ID transaksi dan izin UPDATE pada tabel payments.');
+      notice('Pembayaran belum tersimpan: data tidak berhasil diperbarui. Periksa izin UPDATE (RLS) tabel payments di Supabase.','error');
+      return;
+    }
 
-    const wasEdit=!!editingPaymentId;
+    
     const changedId=editingPaymentId;
     cancelPaymentEdit();
     await loadData();
