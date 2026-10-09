@@ -505,7 +505,7 @@ table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;border
   <div class="top">
   <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><h1 style="margin:0">Data Jamaah</h1><span id="jamaahDataCount" class="jamaah-data-count">0 data</span></div>
   <div class="jamaah-list-filters">
-    <input id="search" class="search" placeholder="Cari nama / HP / paket / rombongan / catatan..." oninput="jamaahCurrentPage=1;renderJamaah()">
+    <input id="search" class="search" placeholder="Cari nama / NIK / HP / paket / rombongan / catatan..." oninput="jamaahCurrentPage=1;renderJamaah()">
     <select id="jamaahDepartureFilter" class="jamaah-departure-filter" onchange="jamaahCurrentPage=1;renderJamaah()"><option value="">Semua Jadwal</option></select>
     <select id="jamaahStatusFilter" class="jamaah-departure-filter" onchange="jamaahCurrentPage=1;renderJamaah()" aria-label="Filter status pembayaran">
       <option value="">Semua Status Pembayaran</option>
@@ -522,7 +522,7 @@ table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;border
       <div class="jamaah-group-tools"><button class="btn secondary small-btn" type="button" onclick="assignSelectedGroup()">Buat/Atur Rombongan</button><button class="btn danger small-btn" type="button" onclick="hapusTerpilihJamaah()">🗑️ Hapus Terpilih</button><button class="btn" onclick="openForm()">+ Tambah Jamaah</button></div>
     </div>
     <div class="muted" style="margin-bottom:10px;font-size:11px">Centang beberapa jamaah untuk memasukkannya ke satu grup/rombongan.</div>
-    <table><thead><tr><th style="width:38px;text-align:center">No.</th><th style="width:38px;text-align:center"><input class="jamaah-select-all" id="jamaahSelectAll" type="checkbox" onchange="toggleAllJamaah(this.checked)" title="Pilih semua"></th><th>Nama</th><th>Kategori</th><th>Rombongan</th><th>Jenis Kelamin</th><th>No. HP</th><th>Paket</th><th>Harga</th><th>Diskon</th><th>Dibayar</th><th>Sisa</th><th>Status</th><th>Keterangan</th><th>Catatan</th><th>Aksi</th></tr></thead><tbody id="jamaahBody"></tbody></table>
+    <table><thead><tr><th style="width:38px;text-align:center">No.</th><th style="width:38px;text-align:center"><input class="jamaah-select-all" id="jamaahSelectAll" type="checkbox" onchange="toggleAllJamaah(this.checked)" title="Pilih semua"></th><th>Nama</th><th>Kategori</th><th>Rombongan</th><th>Jenis Kelamin</th><th>NIK</th><th>No. HP</th><th>Paket</th><th>Harga</th><th>Diskon</th><th>Dibayar</th><th>Sisa</th><th>Status</th><th>Keterangan</th><th>Catatan</th><th>Aksi</th></tr></thead><tbody id="jamaahBody"></tbody></table>
     <div class="jamaah-pagination" id="jamaahPagination">
       <div class="jamaah-page-size"><span>Tampilkan</span><select id="jamaahPageSize" onchange="changeJamaahPageSize(this.value)"><option value="25" selected>25</option><option value="50">50</option><option value="100">100</option><option value="all">Semua</option></select><span>data</span></div>
       <div class="jamaah-page-info" id="jamaahPageInfo">0 data</div>
@@ -1068,7 +1068,7 @@ function syncManyToSpreadsheet(sheet,rows){if(Array.isArray(rows))rows.forEach(r
 let data=[], payments=[], documents=[], equipment=[], departures=[], expenses=[], currentUser=null, currentAccess=null;
 let editingGroupMemberIds=[];
 const EXPENSE_STORAGE_KEY='raihan_alya_daily_expenses_v1';
-const APP_VERSION='2026-10-09-fix-group-bulk-package';
+const APP_VERSION='2026-10-09-jamaah-show-nik';
 
 const rupiah=n=>new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(Number(n)||0);
 const isGroupJamaah=x=>!!(x&&(x.kategori==='grup'||String(x.nama_rombongan||'').trim()));
@@ -1995,7 +1995,7 @@ function jamaahFilteredRows(){
   const departureFilter=document.getElementById('jamaahDepartureFilter')?.value||'';
   const statusFilter=document.getElementById('jamaahStatusFilter')?.value||'';
   return data.filter(x=>{
-    const hay=(x.nama+' '+(x.hp||'')+' '+(x.paket||'')+' '+(x.jenis_kelamin||'')+' '+(x.nama_rombongan||'')+' '+(x.keterangan_rombongan||'')+' '+(x.kategori||'')+' '+(x.keterangan||'')+' '+(x.catatan||'')).toLowerCase();
+    const hay=(x.nama+' '+(x.nik||'')+' '+(x.hp||'')+' '+(x.paket||'')+' '+(x.jenis_kelamin||'')+' '+(x.nama_rombongan||'')+' '+(x.keterangan_rombongan||'')+' '+(x.kategori||'')+' '+(x.keterangan||'')+' '+(x.catatan||'')).toLowerCase();
     const matchesSearch=hay.includes(q);
     const matchesDeparture=!departureFilter||String(x.departure_id||'')===String(departureFilter);
     const matchesStatus=!statusFilter
@@ -2056,7 +2056,7 @@ function renderJamaah(){
     const paid=paidFor(x.id), discount=discountFor(x.id), remain=remainFor(x);
     const isGroup=x.kategori==='grup';
     const rowNo=start+idx+1;
-    return `<tr><td class="jamaah-no" style="text-align:center;font-weight:600;color:#687078">${rowNo}</td><td style="text-align:center"><input class="jamaah-check" type="checkbox" value="${esc(x.id)}" ${jamaahSelectedIds.has(String(x.id))?'checked':''} onchange="syncJamaahSelectState()" aria-label="Pilih ${esc(x.nama)}"></td><td>${esc(x.nama)}</td><td>${isGroup?'<span class="jamaah-group-badge">Grup / Rombongan</span>':'<span class="jamaah-individual-badge">Individu</span>'}</td><td>${esc(x.nama_rombongan||'-')}</td><td>${esc(x.jenis_kelamin||'-')}</td><td>${esc(x.hp||'')}</td><td>${esc(x.paket||'Other / Belum Diketahui')}</td><td>${rupiah(x.harga)}</td><td>${rupiah(discount)}</td><td>${rupiah(paid)}</td><td>${rupiah(remain)}</td><td>${status(x)}</td><td><span class="jamaah-note-cell" title="${esc((x.keterangan||x.keterangan_rombongan||''))}">${esc(x.keterangan||x.keterangan_rombongan||'-')}</span></td><td><span class="jamaah-note-cell" title="${esc(x.catatan||'')}">${esc(x.catatan||'-')}</span></td><td><button class="btn secondary small-btn" onclick="edit('${x.id}')">${isGroup?'Edit Rombongan':'Edit'}</button> <button class="btn small-btn" onclick="printInvoice('${x.id}')">🧾 Invoice</button> <button class="btn danger small-btn" onclick="hapus('${x.id}')">Hapus</button></td></tr>`;
+    return `<tr><td class="jamaah-no" style="text-align:center;font-weight:600;color:#687078">${rowNo}</td><td style="text-align:center"><input class="jamaah-check" type="checkbox" value="${esc(x.id)}" ${jamaahSelectedIds.has(String(x.id))?'checked':''} onchange="syncJamaahSelectState()" aria-label="Pilih ${esc(x.nama)}"></td><td>${esc(x.nama)}</td><td>${isGroup?'<span class="jamaah-group-badge">Grup / Rombongan</span>':'<span class="jamaah-individual-badge">Individu</span>'}</td><td>${esc(x.nama_rombongan||'-')}</td><td>${esc(x.jenis_kelamin||'-')}</td><td>${esc(x.nik||'-')}</td><td>${esc(x.hp||'')}</td><td>${esc(x.paket||'Other / Belum Diketahui')}</td><td>${rupiah(x.harga)}</td><td>${rupiah(discount)}</td><td>${rupiah(paid)}</td><td>${rupiah(remain)}</td><td>${status(x)}</td><td><span class="jamaah-note-cell" title="${esc((x.keterangan||x.keterangan_rombongan||''))}">${esc(x.keterangan||x.keterangan_rombongan||'-')}</span></td><td><span class="jamaah-note-cell" title="${esc(x.catatan||'')}">${esc(x.catatan||'-')}</span></td><td><button class="btn secondary small-btn" onclick="edit('${x.id}')">${isGroup?'Edit Rombongan':'Edit'}</button> <button class="btn small-btn" onclick="printInvoice('${x.id}')">🧾 Invoice</button> <button class="btn danger small-btn" onclick="hapus('${x.id}')">Hapus</button></td></tr>`;
   }).join('')||'<tr><td colspan="16">Belum ada data.</td></tr>';
   renderJamaahPagination(total,start,Math.min(start+visibleRows.length,total));
   syncJamaahSelectState();
