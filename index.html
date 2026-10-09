@@ -501,7 +501,7 @@ table{max-width:100%}
 @media(max-width:650px){.payment-subnav{display:grid;grid-template-columns:1fr;gap:5px}.payment-subnav-btn{width:100%;min-width:0;justify-content:flex-start;padding:12px}.payment-view-panel{padding:12px}}
 </style>
 <style>
-.payment-history-filters{display:grid;grid-template-columns:minmax(220px,2fr) repeat(4,minmax(125px,1fr));gap:10px;align-items:end;margin:0 0 14px}
+.payment-history-filters{display:grid;grid-template-columns:minmax(220px,2fr) repeat(5,minmax(125px,1fr));gap:10px;align-items:end;margin:0 0 14px}
 .payment-history-filters>input{width:100%;min-width:0;max-width:none;margin:0}
 .payment-history-filters label{display:flex;flex-direction:column;gap:5px;min-width:0;font-size:11px;color:#65716c;font-weight:700}
 .payment-history-filters select,.payment-history-filters input[type=date]{width:100%;min-width:0;max-width:100%;height:38px;padding:8px;border:1px solid #d8e2dd;border-radius:7px;background:#fff;color:#283b34;font-size:12px}
@@ -804,6 +804,7 @@ table{max-width:100%}
       <label>Sampai tanggal<input id="paymentHistoryEnd" type="date" onchange="renderPaymentHistory()"></label>
       <label>Metode<select id="paymentHistoryMethod" onchange="togglePaymentHistoryBank();renderPaymentHistory()"><option value="">Semua metode</option><option value="Cash">Cash</option><option value="Transfer">Transfer</option></select></label>
       <label id="paymentHistoryBankFilterWrap">Bank<select id="paymentHistoryBank" onchange="renderPaymentHistory()"><option value="">Semua bank</option><option value="Bank Muamalat">Bank Muamalat</option><option value="BSI">BSI</option></select></label>
+      <label>Jenis Transaksi<select id="paymentHistoryType" onchange="renderPaymentHistory()"><option value="">Semua jenis</option><option value="individu">Pembayaran Individu</option><option value="anggota">Anggota Rombongan</option><option value="rombongan">Pembayaran Rombongan</option></select></label>
       <button class="btn secondary small-btn" type="button" onclick="clearPaymentHistorySearch()">Reset Filter</button>
     </div>
     <div class="payment-history-wrap">
@@ -2394,6 +2395,7 @@ function renderPaymentHistory(){
   const end=String(document.getElementById('paymentHistoryEnd')?.value||'');
   const method=String(document.getElementById('paymentHistoryMethod')?.value||'');
   const bank=String(document.getElementById('paymentHistoryBank')?.value||'');
+  const type=String(document.getElementById('paymentHistoryType')?.value||'');
   const newestFirst=payments.slice().sort((a,b)=>{
     const ca=Date.parse(a.created_at||'')||0, cb=Date.parse(b.created_at||'')||0;
     if(ca!==cb)return cb-ca;
@@ -2408,13 +2410,17 @@ function renderPaymentHistory(){
     if(method&&String(p.method||'')!==method)return false;
     if(bank&&String(p.bank||'')!==bank)return false;
     if(method==='Cash'&&bank)return false;
-    if(!q)return true;
     const j=data.find(x=>x.id===p.jamaah_id);
     const group=isGroupJamaah(j);
+    const rombonganPayment=group&&isRombonganPayment(p);
+    if(type==='individu'&&group)return false;
+    if(type==='anggota'&&(!group||rombonganPayment))return false;
+    if(type==='rombongan'&&!rombonganPayment)return false;
+    if(!q)return true;
     const members=group?groupMembersFor(j):[];
     const names=group?members.map(m=>m.nama).join(' '):(j?.nama||'');
     const groupName=group?groupNameFor(j):'';
-    const hay=[p.invoice_no,p.payment_date,p.amount,p.discount,p.method,p.bank,p.note,names,groupName,j?.paket].join(' ').toLowerCase();
+    const hay=[p.invoice_no,p.payment_date,p.amount,p.discount,p.method,p.bank,p.note,names,groupName,j?.paket,rombonganPayment?'pembayaran rombongan':(group?'anggota rombongan':'individu')].join(' ').toLowerCase();
     return hay.includes(q);
   });
   body.innerHTML=filtered.map(p=>{
@@ -2445,7 +2451,7 @@ function togglePaymentHistoryBank(){
   if(method==='Cash'&&bank)bank.value='';
 }
 function clearPaymentHistorySearch(){
-  ['paymentHistorySearch','paymentHistoryStart','paymentHistoryEnd','paymentHistoryMethod','paymentHistoryBank'].forEach(id=>{
+  ['paymentHistorySearch','paymentHistoryStart','paymentHistoryEnd','paymentHistoryMethod','paymentHistoryBank','paymentHistoryType'].forEach(id=>{
     const el=document.getElementById(id);
     if(el)el.value='';
   });
