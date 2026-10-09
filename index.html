@@ -1102,7 +1102,7 @@ function syncManyToSpreadsheet(sheet,rows){if(Array.isArray(rows))rows.forEach(r
 let data=[], payments=[], documents=[], equipment=[], departures=[], expenses=[], currentUser=null, currentAccess=null;
 let editingGroupMemberIds=[];
 const EXPENSE_STORAGE_KEY='raihan_alya_daily_expenses_v1';
-const APP_VERSION='2026-10-09-roomlist-upgrade';
+const APP_VERSION='2026-10-09-roomlist-print-layout';
 
 const rupiah=n=>new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(Number(n)||0);
 const isGroupJamaah=x=>!!(x&&(x.kategori==='grup'||String(x.nama_rombongan||'').trim()));
@@ -1632,9 +1632,10 @@ function editRoom(roomId){
   const n=prompt('No. kamar (boleh kosong jika belum diketahui):',room.room_number||'');if(n===null)return;
   const htl=prompt('Hotel:',room.hotel||'');if(htl===null)return;
   const cap=prompt('Kapasitas kamar:',String(room.capacity));if(cap===null)return;
+  const note=prompt('Keterangan / permintaan jamaah untuk kamar ini:',room.notes||room.keterangan||'');if(note===null)return;
   const capacity=Math.max(room.member_ids?.length||0,Math.min(10,Number(cap)||room.capacity));
   const rows=loadRoomListStore(),target=rows.find(r=>r.id===roomId);if(!target)return;
-  target.room_number=n.trim();target.hotel=htl.trim()||target.hotel;target.capacity=capacity;
+  target.room_number=n.trim();target.hotel=htl.trim()||target.hotel;target.capacity=capacity;target.notes=note.trim();
   saveRoomListStore(rows);renderRoomList();notice(target.room_number?'Nomor kamar berhasil diperbarui.':'Kamar tetap menggunakan nomor sementara.');
 }
 function createRoom(){
@@ -1727,11 +1728,45 @@ function renderRoomList(){
   }).join('');
 }
 function printRoomList(){
-  const departure_id=document.getElementById('roomDepartureFilter')?.value||'';if(!departure_id){notice('Pilih jadwal keberangkatan terlebih dahulu.','error');return}
+  const departure_id=document.getElementById('roomDepartureFilter')?.value||'';
+  if(!departure_id){notice('Pilih jadwal keberangkatan terlebih dahulu.','error');return}
   const rooms=loadRoomListStore().filter(r=>String(r.departure_id)===String(departure_id));
+  if(!rooms.length){notice('Belum ada slot kamar untuk jadwal ini. Buat slot kamar dan tempatkan jamaah terlebih dahulu.','error');return}
   const dep=departures.find(d=>String(d.id)===String(departure_id));
-  const rows=rooms.map(r=>'<tr><td>'+esc(r.room_number)+'</td><td>'+esc(r.hotel)+'</td><td>'+esc(r.city)+'</td><td>'+esc(r.type)+'</td><td>'+((r.member_ids||[]).map(id=>data.find(j=>String(j.id)===String(id))?.nama).filter(Boolean).map(esc).join(', ')||'-')+'</td><td>'+((r.member_ids||[]).length)+' / '+esc(r.capacity)+'</td></tr>').join('');
-  const w=window.open('','_blank');if(!w)return;w.document.write('<!doctype html><html><head><title>Room List</title><style>body{font:12px Arial;padding:25px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #aaa;padding:7px;text-align:left}th{background:#f2f2f2}</style></head><body><h2>Room List — '+esc(dep?.name||'')+'</h2><p>'+esc(dep?.start_date||'')+' s/d '+esc(dep?.end_date||'')+'</p><table><thead><tr><th>Kamar</th><th>Hotel</th><th>Kota</th><th>Tipe</th><th>Jamaah</th><th>Kapasitas</th></tr></thead><tbody>'+rows+'</tbody></table><script>window.onload=()=>window.print()<\/script></body></html>');w.document.close();
+  const metaKey='raihan_room_list_print_meta_v1';
+  let allMeta={};try{allMeta=JSON.parse(localStorage.getItem(metaKey)||'{}')||{}}catch(e){}
+  const meta=allMeta[departure_id]||{};
+  const ask=(label,value)=>{const v=prompt(label,value||'');return v===null?null:v.trim()};
+  const hotel=ask('Judul hotel / room list:',meta.hotel||rooms[0]?.hotel||'');
+  if(hotel===null)return;
+  const bus=ask('Keterangan bis / rombongan:',meta.bus||'BIS 1');
+  if(bus===null)return;
+  const checkin=ask('Tanggal check-in (contoh: 08 OKTOBER 2026):',meta.checkin||dep?.start_date||'');
+  if(checkin===null)return;
+  const checkout=ask('Tanggal check-out (contoh: 10 OKTOBER 2026):',meta.checkout||dep?.end_date||'');
+  if(checkout===null)return;
+  allMeta[departure_id]={hotel,bus,checkin,checkout};try{localStorage.setItem(metaKey,JSON.stringify(allMeta))}catch(e){}
+  const people=(rooms.flatMap(room=>(room.member_ids||[]).map(id=>({room,person:(data||[]).find(j=>String(j.id)===String(id))}))).filter(x=>x.person));
+  const male=people.filter(x=>String(x.person.jenis_kelamin||'').toLowerCase().startsWith('l')).length;
+  const female=people.filter(x=>String(x.person.jenis_kelamin||'').toLowerCase().startsWith('p')).length;
+  const countType=t=>rooms.filter(r=>String(r.type||'').toLowerCase()===t.toLowerCase()).length;
+  const typeTotals=['Double','Triple','Quad'].map(t=>({name:t,count:countType(t)}));
+  const rows=rooms.map(room=>{
+    const members=(room.member_ids||[]).map(id=>(data||[]).find(j=>String(j.id)===String(id))).filter(Boolean);
+    if(!members.length)return '<tr class="empty-room"><td>-</td><td colspan="3">Slot '+esc(String(room.slot_no||''))+' — Belum ada jamaah</td><td>'+esc(room.room_number||'Belum ditentukan')+' / '+esc(room.type||'')+'</td></tr>';
+    return members.map((person,index)=>{
+      const name=esc(person.nama||'-');
+      const gender=String(person.jenis_kelamin||'').toLowerCase().startsWith('l')?'L':String(person.jenis_kelamin||'').toLowerCase().startsWith('p')?'P':'-';
+      const note=esc(room.notes||room.keterangan||'');
+      const roomLabel=room.room_number?'KAMAR '+esc(room.room_number):esc(String(room.type||'DOUBLE').toUpperCase());
+      return '<tr><td class="no">'+(index+1)+'</td><td>'+name+'</td><td class="gender">'+gender+'</td>'+(index===0?'<td class="note" rowspan="'+members.length+'">'+(note||'&nbsp;')+'</td><td class="room" rowspan="'+members.length+'">'+roomLabel+'</td>':'')+'</tr>';
+    }).join('');
+  }).join('');
+  const w=window.open('','_blank');if(!w){notice('Izinkan pop-up browser untuk mencetak Room List.','error');return}
+  w.document.write('<!doctype html><html lang="id"><head><meta charset="utf-8"><title>Room List '+esc(hotel)+'</title><style>'+
+  '@page{size:A4 portrait;margin:10mm}*{box-sizing:border-box}body{font:10px Arial,sans-serif;color:#111;margin:0}header{text-align:center;margin-bottom:8px}.brand{font-size:23px;font-weight:900;letter-spacing:.5px;margin-bottom:2px}.permit{font-size:9px;color:#27836b;font-weight:bold}.address{font-size:8px;margin:4px 0}.title{font-size:15px;font-weight:bold;margin:8px 0 5px;text-transform:uppercase}.summary{display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:10px;margin:8px 0}.summary table{border:0;width:100%}.summary td{border:0;padding:2px 3px}.summary .value{text-align:right;font-weight:bold}.dates{display:flex;justify-content:space-between;font-weight:bold;margin:8px 0}.bus{text-align:center;font-size:23px;font-weight:900;margin:8px 0}table.roster{width:100%;border-collapse:collapse;table-layout:fixed;font-size:9px}table.roster th,table.roster td{border:1px solid #222;padding:4px 5px;vertical-align:middle}table.roster th{text-align:center;font-weight:bold}table.roster .no{width:7%;text-align:right}table.roster th:nth-child(2){width:44%}table.roster .gender{width:9%;text-align:center}table.roster .note{width:24%;text-align:center;white-space:pre-wrap}table.roster .room{width:16%;text-align:center;font-weight:bold}tr.empty-room td{background:#f7f7f7;color:#555}.foot{font-size:8px;color:#555;margin-top:8px}@media print{button{display:none}}'+
+  '</style></head><body><header><div class="brand">PT. RAIHAN ALYA TOUR</div><div class="permit">Izin PPIU: 182/2020, Izin PIHK: 435/2021</div><div class="address">Alamat: Jl. Seth Adji No. 7 Palangkaraya – Kalteng – Indonesia · Hp. 0536 4287982 · www.raihanalyatour.com</div><div class="title">ROOMLIST '+esc(hotel)+'</div></header><div class="summary"><table>'+typeTotals.map(t=>'<tr><td>'+t.name.toUpperCase()+'</td><td class="value">'+t.count+'</td></tr>').join('')+'<tr><td><b>TOTAL KAMAR</b></td><td class="value">'+rooms.length+'</td></tr></table><table><tr><td>LAKI-LAKI</td><td class="value">'+male+'</td></tr><tr><td>PEREMPUAN</td><td class="value">'+female+'</td></tr><tr><td><b>TOTAL</b></td><td class="value">'+people.length+'</td></tr></table></div><div class="dates"><span>CEK IN: '+esc(checkin||'-')+'</span><span>CEK OUT: '+esc(checkout||'-')+'</span></div><div class="bus">'+esc(bus||'ROOM LIST')+'</div><table class="roster"><thead><tr><th class="no">NO</th><th>NAMA</th><th class="gender">L/P</th><th class="note">KETERANGAN</th><th class="room">KAMAR</th></tr></thead><tbody>'+rows+'</tbody></table><div class="foot">Catatan: Slot tanpa nomor kamar menampilkan tipe kamar sebagai penanda sementara. Nomor kamar dapat diperbarui setelah konfirmasi hotel.</div><script>window.onload=()=>window.print()<\/script></body></html>');
+  w.document.close();
 }
 function renderAll(){refreshPackageSelects();renderPackages();renderJamaah();renderComplimentary();renderPaymentSummary();renderPaymentHistory();renderUangMasuk();renderExpenses();renderDash();setPaymentEntryMode('individual');fillDocumentJamaah();renderDocuments();fillEquipmentJamaah();renderEquipment();renderDepartures();renderReport();renderRoomList();}
 
