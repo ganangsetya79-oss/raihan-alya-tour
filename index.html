@@ -1195,6 +1195,9 @@ table{max-width:100%}
     <div id="individualForm" class="full"><div class="jamaah-individual-form">
       <div><label>Nama Lengkap</label><input id="nama" required></div><div><label>Jenis Kelamin</label><select id="jenis_kelamin"><option value="">-- Pilih --</option><option value="Laki-laki">Laki-laki</option><option value="Perempuan">Perempuan</option></select></div>
       <div><label>No. HP</label><input id="hp" required></div><div><label>NIK</label><input id="nik"></div><div><label>Alamat</label><input id="alamat"></div>
+      <div><label>Nama Keluarga / Rombongan</label><input id="family_group" placeholder="Contoh: Keluarga Ahmad"></div>
+      <div><label>Hubungan dalam Keluarga</label><select id="family_relation"><option value="">-- Pilih hubungan --</option><option>Suami</option><option>Istri</option><option>Ayah</option><option>Ibu</option><option>Anak</option><option>Kakak</option><option>Adik</option><option>Saudara</option><option>Orang tua</option><option>Wali</option><option>Lainnya</option></select></div>
+      <div class="full"><label>Nama Mahram / Pendamping (sesuai keterangan jamaah)</label><input id="mahram_name" placeholder="Nama orang yang menjadi acuan pendamping/mahram"></div>
       <div><label>Paket</label><select id="jPaketSelect" onchange="syncPackagePrice('jPaketSelect','harga')"></select></div>
       <div><label>Harga Paket</label><input id="harga" type="number" min="0" required readonly title="Harga otomatis mengikuti data paket"></div>
       <div class="full upgrade-billing-panel"><h3 style="margin:0 0 5px;font-size:14px">Upgrade / Biaya Tambahan</h3><div class="muted" style="margin-bottom:10px">Biaya ini ditambahkan ke tagihan paket dan ikut dihitung pada status pembayaran.</div><div class="jamaah-individual-form"><div><label>Jenis Upgrade</label><input id="upgradeDescription" placeholder="Contoh: Upgrade kamar Quad ke Triple"></div><div><label>Biaya Tambahan (Rp)</label><input id="upgradeAmount" type="number" min="0" value="0" placeholder="0"></div></div></div>
@@ -1967,6 +1970,20 @@ function moveRoomMember(targetRoomId,jamaahId){
   const current=rows.find(r=>String(r.departure_id)===String(target.departure_id)&&(r.member_ids||[]).some(id=>String(id)===String(jamaahId)));
   if(current&&String(current.id)===String(target.id)){renderRoomList();return}
   if((target.member_ids||[]).length>=Number(target.capacity)){notice('Kamar tujuan sudah penuh.','error');renderRoomList();return}
+  const currentMembers=(target.member_ids||[]).map(mid=>(data||[]).find(j=>String(j.id)===String(mid))).filter(Boolean);
+  const genderKey=x=>{const g=String(x?.jenis_kelamin||'').toLowerCase();return g.startsWith('l')?'L':g.startsWith('p')?'P':''};
+  const targetGender=genderKey(person);
+  const opposite=currentMembers.find(m=>targetGender&&genderKey(m)&&genderKey(m)!==targetGender);
+  if(opposite){
+    const fam=String(person.family_group||person.nama_rombongan||'').trim().toLowerCase();
+    const otherFam=String(opposite.family_group||opposite.nama_rombongan||'').trim().toLowerCase();
+    const mahramListed=String(person.mahram_name||'').trim().toLowerCase()===String(opposite.nama||'').trim().toLowerCase()||String(opposite.mahram_name||'').trim().toLowerCase()===String(person.nama||'').trim().toLowerCase();
+    const sameFamily=!!fam&&fam===otherFam;
+    if(!sameFamily&&!mahramListed){
+      notice('Peringatan jenis kelamin: kamar ini sudah berisi jamaah berbeda jenis kelamin. Isi dan verifikasi data keluarga/mahram di Data Jamaah sebelum menempatkan bersama.','error');renderRoomList();return;
+    }
+    if(!confirm('PERIKSA KEMBALI: kamar ini berisi jamaah berbeda jenis kelamin. Data menunjukkan nama keluarga yang sama atau nama pendamping/mahram, tetapi sistem tidak dapat memastikan status mahram secara agama. Sudah diverifikasi oleh admin dan jamaah?')){renderRoomList();return}
+  }
   if(current)current.member_ids=current.member_ids.filter(id=>String(id)!==String(jamaahId));
   target.member_ids=Array.isArray(target.member_ids)?target.member_ids:[];
   if(!target.member_ids.some(id=>String(id)===String(jamaahId)))target.member_ids.push(String(jamaahId));
@@ -2050,7 +2067,7 @@ function renderRoomList(){
     const pct=Math.min(100,Math.round((members.length/Math.max(1,Number(r.capacity)))*100));
     const status=members.length>=Number(r.capacity)?'Penuh':'Tersedia '+(Number(r.capacity)-members.length);
     const cls=members.length>=Number(r.capacity)?'full':'warn';
-    return '<div class="room-card" data-room-card="'+esc(r.id)+'"><label class="room-card-select"><input type="checkbox" class="room-select-checkbox" value="'+esc(r.id)+'" onchange="updateRoomSelection()"> Pilih kamar</label><div class="room-card-head"><div><div class="room-card-title">'+(r.room_number?'Kamar '+esc(r.room_number):'Slot Kamar '+String(r.slot_no||1).padStart(2,'0'))+' — '+esc(r.hotel)+'</div><div class="room-card-meta">'+esc(r.city)+' · '+esc(r.type)+' · '+members.length+'/'+esc(r.capacity)+' orang</div></div><span class="room-capacity '+cls+'">'+status+'</span></div><div class="room-progress"><span class="'+(members.length>=Number(r.capacity)?'full':'')+'" style="width:'+pct+'%"></span></div><div class="room-member-list">'+(members.length?members.map(m=>'<div class="room-member"><span class="room-member-name">'+esc(m.nama)+'</span><button class="room-member-remove" type="button" onclick="removeRoomMember(\''+r.id+'\',\''+m.id+'\')">Hapus</button></div>').join(''):'<div class="muted" style="font-size:11px">Belum ada jamaah.</div>')+'</div><div class="room-assign"><select aria-label="Tambah atau pindahkan jamaah" onchange="moveRoomMember(\''+r.id+'\',this.value)"><option value="">+ Tambah / pindah jamaah</option>'+available.map(m=>'<option value="'+esc(m.id)+'">'+esc(m.nama)+(assignedIds.has(String(m.id))?' · sudah ditempatkan':'')+'</option>').join('')+'</select></div><div class="room-card-actions"><button class="btn secondary small-btn" type="button" onclick="editRoom(\''+r.id+'\')">Edit Kamar</button><button class="btn danger small-btn" type="button" onclick="deleteRoom(\''+r.id+'\')">Hapus</button></div></div>';
+    return '<div class="room-card" data-room-card="'+esc(r.id)+'"><label class="room-card-select"><input type="checkbox" class="room-select-checkbox" value="'+esc(r.id)+'" onchange="updateRoomSelection()"> Pilih kamar</label><div class="room-card-head"><div><div class="room-card-title">'+(r.room_number?'Kamar '+esc(r.room_number):'Slot Kamar '+String(r.slot_no||1).padStart(2,'0'))+' — '+esc(r.hotel)+'</div><div class="room-card-meta">'+esc(r.city)+' · '+esc(r.type)+' · '+members.length+'/'+esc(r.capacity)+' orang</div></div><span class="room-capacity '+cls+'">'+status+'</span></div><div class="room-progress"><span class="'+(members.length>=Number(r.capacity)?'full':'')+'" style="width:'+pct+'%"></span></div><div class="room-member-list">'+(members.length?members.map(m=>'<div class="room-member"><span class="room-member-name">'+esc(m.nama)+' <small style="display:block;color:#64716c;font-size:11px">'+esc(m.jenis_kelamin||'Jenis kelamin belum diisi')+' · '+esc(m.family_relation||'Hubungan belum diisi')+(m.family_group||m.nama_rombongan?' · Keluarga: '+esc(m.family_group||m.nama_rombongan):'')+(m.mahram_name?' · Pendamping: '+esc(m.mahram_name):'')+'</small></span><button class="room-member-remove" type="button" onclick="removeRoomMember(\''+r.id+'\',\''+m.id+'\')">Hapus</button></div>').join(''):'<div class="muted" style="font-size:11px">Belum ada jamaah.</div>')+'</div><div class="room-assign"><select aria-label="Tambah atau pindahkan jamaah" onchange="moveRoomMember(\''+r.id+'\',this.value)"><option value="">+ Tambah / pindah jamaah</option>'+available.map(m=>'<option value="'+esc(m.id)+'">'+esc(m.nama)+(assignedIds.has(String(m.id))?' · sudah ditempatkan':'')+'</option>').join('')+'</select></div><div class="room-card-actions"><button class="btn secondary small-btn" type="button" onclick="editRoom(\''+r.id+'\')">Edit Kamar</button><button class="btn danger small-btn" type="button" onclick="deleteRoom(\''+r.id+'\')">Hapus</button></div></div>';
   }).join('');
   updateRoomSelection();
 }
@@ -3074,6 +3091,9 @@ function jamaahMemberTemplate(index,data={}){
       <div><label>Jenis Kelamin</label><select data-field="jenis_kelamin"><option value="">-- Pilih --</option><option value="Laki-laki" ${data.jenis_kelamin==='Laki-laki'?'selected':''}>Laki-laki</option><option value="Perempuan" ${data.jenis_kelamin==='Perempuan'?'selected':''}>Perempuan</select></div>
       <div><label>NIK</label><input data-field="nik" placeholder="NIK" value="${esc(data.nik||'')}"></div>
       <div><label>No. HP</label><input data-field="hp" type="tel" placeholder="08xxxxxxxxxx" value="${esc(data.hp||'')}"></div>
+      <div><label>Nama Keluarga / Rombongan</label><input data-field="family_group" placeholder="Contoh: Keluarga Ahmad" value="${esc(data.family_group||data.nama_rombongan||'')}"></div>
+      <div><label>Hubungan dalam Keluarga</label><select data-field="family_relation"><option value="">-- Pilih hubungan --</option>${['Suami','Istri','Ayah','Ibu','Anak','Kakak','Adik','Saudara','Orang tua','Wali','Lainnya'].map(v=>'<option '+((data.family_relation||'')===v?'selected':'')+'>'+v+'</option>').join('')}</select></div>
+      <div><label>Nama Mahram / Pendamping</label><input data-field="mahram_name" placeholder="Nama pendamping sesuai keterangan jamaah" value="${esc(data.mahram_name||'')}"></div>
       <div><label>Paket</label><select data-field="paket" onchange="syncPackageMemberPrice(this)"><option value="" ${!data.paket?'selected':''}>Pilih</option>${packageOptions(data.paket||'')}</select></div>
       <div><label>Harga Paket</label><input data-field="harga" type="number" min="0" placeholder="Otomatis dari paket" value="${data.harga??''}" readonly title="Harga otomatis mengikuti data paket"></div>
       <div><label>Jenis Upgrade</label><input data-field="upgrade_description" placeholder="Contoh: Quad ke Triple" value="${esc(data.upgrade_description||'')}"></div>
@@ -3148,7 +3168,7 @@ function setJamaahEntryMode(mode){
     el.disabled=!isGroup;
   });
 
-  const individualFields=['nama','jenis_kelamin','hp','nik','alamat','harga','keterangan','catatan'];
+  const individualFields=['nama','jenis_kelamin','hp','nik','alamat','family_group','family_relation','mahram_name','harga','keterangan','catatan'];
   individualFields.forEach(id=>{
     const el=document.getElementById(id);
     if(el){
@@ -3289,7 +3309,7 @@ function openForm(id=null){
       document.getElementById('editingGroupId').value=editGroupId;
     }else if(x){
       setJamaahEntryMode('individu');
-      for(const k of ['nama','jenis_kelamin','hp','nik','alamat','paket','harga','keterangan','catatan','upgradeDescription','upgradeAmount']){
+      for(const k of ['nama','jenis_kelamin','hp','nik','alamat','family_group','family_relation','mahram_name','paket','harga','keterangan','catatan','upgradeDescription','upgradeAmount']){
         const el=document.getElementById(k);if(el)el.value=x[k]??''
       }
       fillJamaahDepartureSelects(x.departure_id||'');
@@ -3352,6 +3372,9 @@ if(jamaahForm) jamaahForm.addEventListener('submit',async e=>{
         jenis_kelamin:get('jenis_kelamin'),
         nik:get('nik').trim(),
         hp:get('hp').trim(),
+        family_group:get('family_group').trim(),
+        family_relation:get('family_relation'),
+        mahram_name:get('mahram_name').trim(),
         paket:get('paket')||'Other / Belum Diketahui',
         harga:Number(get('harga'))||0,
         upgrade_description:get('upgrade_description').trim(),
@@ -3409,7 +3432,7 @@ if(jamaahForm) jamaahForm.addEventListener('submit',async e=>{
     }
     result=results.find(x=>x?.error)||{error:null};
   }else{
-    const payload={nama:document.getElementById('nama').value.trim(),jenis_kelamin:document.getElementById('jenis_kelamin').value,hp:document.getElementById('hp').value.trim(),nik:document.getElementById('nik').value.trim(),alamat:document.getElementById('alamat').value.trim(),group_id:null,paket:document.getElementById('jPaketSelect').value||'Other / Belum Diketahui',harga:Number(document.getElementById('harga').value)||0,upgrade_description:document.getElementById('upgradeDescription')?.value.trim()||'',upgrade_amount:Math.max(0,Number(document.getElementById('upgradeAmount')?.value)||0),berangkat:null,keterangan:document.getElementById('keterangan').value.trim(),catatan:document.getElementById('catatan').value.trim(),departure_id:document.getElementById('jDepartureSelect').value||null};
+    const payload={nama:document.getElementById('nama').value.trim(),jenis_kelamin:document.getElementById('jenis_kelamin').value,hp:document.getElementById('hp').value.trim(),nik:document.getElementById('nik').value.trim(),alamat:document.getElementById('alamat').value.trim(),family_group:document.getElementById('family_group')?.value.trim()||'',family_relation:document.getElementById('family_relation')?.value||'',mahram_name:document.getElementById('mahram_name')?.value.trim()||'',group_id:null,paket:document.getElementById('jPaketSelect').value||'Other / Belum Diketahui',harga:Number(document.getElementById('harga').value)||0,upgrade_description:document.getElementById('upgradeDescription')?.value.trim()||'',upgrade_amount:Math.max(0,Number(document.getElementById('upgradeAmount')?.value)||0),berangkat:null,keterangan:document.getElementById('keterangan').value.trim(),catatan:document.getElementById('catatan').value.trim(),departure_id:document.getElementById('jDepartureSelect').value||null};
     jamaahSheetRows=[{...payload,id:id||undefined}];
     if(id)result=await sb.from('jamaah').update(payload).eq('id',id);else result=await sb.from('jamaah').insert(payload);
     if(result.error){console.error('Simpan jamaah gagal:',JSON.stringify(result.error,null,2));notice('Gagal menyimpan jamaah: '+(result.error.message||'Kesalahan Supabase')+(result.error.details?' — '+result.error.details:'')+' Pastikan kolom keterangan tersedia di tabel jamaah.','error');return}
