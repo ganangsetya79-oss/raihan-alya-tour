@@ -2724,7 +2724,16 @@ function dashDateFor(j){
   return d?.start_date || j.berangkat || '';
 }
 function monthKey(dateStr){
-  return dateStr ? dateStr.slice(0,7) : '';
+  const raw=String(dateStr||'').trim();
+  if(!raw)return '';
+  // Terima format ISO (YYYY-MM-DD), datetime ISO, dan tanggal tampilan DD/MM/YYYY atau DD-MM-YYYY.
+  let m=raw.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+  if(m)return m[1]+'-'+String(Number(m[2])).padStart(2,'0');
+  m=raw.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
+  if(m)return m[3]+'-'+String(Number(m[2])).padStart(2,'0');
+  const parsed=new Date(raw);
+  if(!Number.isNaN(parsed.getTime()))return parsed.getFullYear()+'-'+String(parsed.getMonth()+1).padStart(2,'0');
+  return '';
 }
 function monthLabel(key){
   if(!key)return 'Semua Bulan';
@@ -2868,7 +2877,7 @@ function renderDash(){
   });
 
   const lunas=filtered.filter(isPaid).length;
-  const nilai=filtered.reduce((a,x)=>a+Number(x.harga||0),0);
+  const nilai=filtered.reduce((a,x)=>a+totalBillFor(x),0);
   const terbayar=filtered.reduce((a,x)=>a+paidFor(x.id),0);
   const sisa=filtered.reduce((a,x)=>a+remainFor(x),0);
 
@@ -2889,7 +2898,7 @@ function renderDash(){
   }).map(d=>{
     const rows=filtered.filter(j=>j.departure_id===d.id);
     const paid=rows.reduce((a,j)=>a+paidFor(j.id),0);
-    const value=rows.reduce((a,j)=>a+Number(j.harga||0),0);
+    const value=rows.reduce((a,j)=>a+totalBillFor(j),0);
     const remain=rows.reduce((a,j)=>a+remainFor(j),0);
     const lunasCount=rows.filter(isPaid).length;
     return `<tr><td>${esc(d.name)}</td><td>${d.start_date||'-'}${d.end_date?' s/d '+d.end_date:''}</td><td>${rows.length}</td><td>${lunasCount}</td><td>${rupiah(value)}</td><td>${rupiah(paid)}</td><td>${rupiah(remain)}</td></tr>`;
