@@ -518,6 +518,41 @@ table{max-width:100%}
  #pembayaran .payment-subnav-btn{justify-content:flex-start!important;text-align:left;padding:12px!important}
 }
 </style>
+<style id="roomlist-layout-polish">
+/* Rapikan Room List: label, input, filter dan form menjadi konsisten */
+#roomlist .roomlist-filter-grid,
+#roomlist .room-create-grid{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px 16px;align-items:end}
+#roomlist .roomlist-filter-grid>div,
+#roomlist .room-create-grid>div{display:flex;flex-direction:column;gap:6px;min-width:0}
+#roomlist label{display:block;margin:0;color:#43534d;font-size:12px;font-weight:600;line-height:1.4}
+#roomlist input:not([type=checkbox]),#roomlist select,#roomlist textarea{display:block;width:100%;max-width:100%;min-width:0;height:40px;padding:9px 11px;border:1px solid #d5e0db;border-radius:8px;background:#fff;color:#243a32;font-size:13px;box-sizing:border-box;outline:none;transition:border-color .15s,box-shadow .15s}
+#roomlist input:focus,#roomlist select:focus,#roomlist textarea:focus{border-color:#368773;box-shadow:0 0 0 3px #3687731a}
+#roomlist .room-filter-actions,#roomlist .room-create-button{display:flex;align-items:flex-end;justify-content:flex-start}
+#roomlist .room-filter-actions .btn,#roomlist .room-create-button .btn{min-height:40px;white-space:nowrap}
+#roomlist .panel{padding:18px}
+#roomlist .panel-head{margin-bottom:15px;gap:12px;align-items:flex-start}
+#roomlist .roomlist-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:0 0 16px}
+#roomlist .room-stat{min-width:0;border:1px solid #e0e9e4;border-radius:12px;padding:15px;background:linear-gradient(180deg,#fff,#fbfdfc)}
+#roomlist .room-stat-label{font-size:12px;color:#687870;margin-bottom:7px}
+#roomlist .room-stat-value{font-size:24px;line-height:1.2;font-weight:750;color:#1f705d}
+#roomlist .room-list-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:14px}
+#roomlist .room-card{min-width:0;border:1px solid #dce7e1;border-radius:12px;padding:15px;background:#fff;box-shadow:0 3px 12px #173d2c0a}
+#roomlist .room-card input,#roomlist .room-card select{width:100%;min-width:0}
+#roomlist .muted{line-height:1.5}
+@media(max-width:900px){
+ #roomlist .roomlist-filter-grid,#roomlist .room-create-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ #roomlist .roomlist-summary{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:560px){
+ #roomlist .roomlist-filter-grid,#roomlist .room-create-grid{grid-template-columns:minmax(0,1fr);gap:12px}
+ #roomlist .roomlist-summary{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+ #roomlist .room-stat{padding:12px}
+ #roomlist .room-stat-value{font-size:21px}
+ #roomlist .panel{padding:13px}
+ #roomlist .room-filter-actions .btn,#roomlist .room-create-button .btn{width:100%}
+ #roomlist .room-list-cards{grid-template-columns:minmax(0,1fr)}
+}
+</style>
 </head>
 <body>
 <button type="button" class="mobile-menu-btn" id="mobileMenuBtn" onclick="toggleMobileNav()" aria-label="Buka menu" title="Buka menu"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"></path></svg></button>
