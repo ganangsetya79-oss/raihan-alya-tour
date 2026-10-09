@@ -3052,8 +3052,8 @@ function jamaahMemberTemplate(index,data={}){
       <div><label>No. HP</label><input data-field="hp" type="tel" placeholder="08xxxxxxxxxx" value="${esc(data.hp||'')}"></div>
       <div><label>Paket</label><select data-field="paket" onchange="syncPackageMemberPrice(this)"><option value="" ${!data.paket?'selected':''}>Pilih</option>${packageOptions(data.paket||'')}</select></div>
       <div><label>Harga Paket</label><input data-field="harga" type="number" min="0" placeholder="Otomatis dari paket" value="${data.harga??''}" readonly title="Harga otomatis mengikuti data paket"></div>
-      <div><label>Upgrade / Biaya Tambahan</label><input data-field="upgrade_description" placeholder="Contoh: Upgrade Quad ke Triple" value="${esc(data.upgrade_description||'')}"></div>
-      <div><label>Biaya Upgrade (Rp)</label><input data-field="upgrade_amount" type="number" min="0" value="${Math.max(0,Number(data.upgrade_amount)||0)}" placeholder="0"></div>
+      <div><label>Jenis Upgrade</label><input data-field="upgrade_description" placeholder="Contoh: Quad ke Triple" value="${esc(data.upgrade_description||'')}"></div>
+      <div><label>Nominal Upgrade (Rp)</label><input data-field="upgrade_amount" type="number" min="0" value="${Math.max(0,Number(data.upgrade_amount)||0)}" placeholder="0"></div>
       <div class="jamaah-field-wide"><label>Catatan</label><input data-field="catatan" placeholder="Catatan anggota (opsional)" value="${esc(data.catatan||'')}"></div>
     </div>
   </div>`;
