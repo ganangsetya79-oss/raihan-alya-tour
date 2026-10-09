@@ -1068,7 +1068,7 @@ function syncManyToSpreadsheet(sheet,rows){if(Array.isArray(rows))rows.forEach(r
 let data=[], payments=[], documents=[], equipment=[], departures=[], expenses=[], currentUser=null, currentAccess=null;
 let editingGroupMemberIds=[];
 const EXPENSE_STORAGE_KEY='raihan_alya_daily_expenses_v1';
-const APP_VERSION='2026-10-09-jamaah-status-filter';
+const APP_VERSION='2026-10-09-fix-group-bulk-package';
 
 const rupiah=n=>new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(Number(n)||0);
 const isGroupJamaah=x=>!!(x&&(x.kategori==='grup'||String(x.nama_rombongan||'').trim()));
@@ -2615,19 +2615,36 @@ function addJamaahMember(data={}){
 }
 function fillGroupBulkPackage(selected=''){
   const sel=document.getElementById('groupBulkPackage');if(!sel)return;
-  sel.innerHTML='<option value="">-- Pilih paket untuk semua --</option>'+packageOptions(selected);
-  if(selected)sel.value=selected;
+  const current=selected||sel.value||'';
+  sel.innerHTML='<option value="">-- Pilih paket untuk semua --option>'.replace('--option>','--option>')+packageOptions(current);
+  sel.value=current;
 }
 function applyGroupBulkPackage(){
-  const sel=document.getElementById('groupBulkPackage'),paket=sel?.value||'';
-  if(!paket){notice('Pilih paket terlebih dahulu.','error');return}
-  const cards=[...document.querySelectorAll('#jamaahMembers .jamaah-member-card')];
-  if(!cards.length){notice('Belum ada anggota rombongan.','error');return}
+  const sel=document.getElementById('groupBulkPackage');
+  const paket=String(sel?.value||'').trim();
+  if(!paket){notice('Pilih paket terlebih dahulu pada dropdown “Ubah paket seluruh anggota”.','error');return}
+  const box=document.getElementById('jamaahMembers');
+  const cards=[...(box?.querySelectorAll('.jamaah-member-card')||[])];
+  if(!cards.length){notice('Belum ada anggota rombongan. Tambahkan anggota terlebih dahulu.','error');return}
+  let applied=0;
   cards.forEach(card=>{
-    const p=card.querySelector('[data-field="paket"]');
-    if(p){p.value=paket;syncPackageMemberPrice(p)}
+    const p=card.querySelector('select[data-field="paket"]');
+    const price=card.querySelector('[data-field="harga"]');
+    if(!p)return;
+    // Perbarui pilihan pada tiap anggota agar paket yang baru ditambahkan juga tersedia.
+    const current=p.value;
+    p.innerHTML=packageOptions(current);
+    if(![...p.options].some(option=>option.value===paket)){
+      p.insertAdjacentHTML('beforeend','<option value="'+esc(paket)+'">'+esc(paket)+'</option>');
+    }
+    p.value=paket;
+    if(p.value!==paket)return;
+    const item=packageByName(paket);
+    if(price)price.value=(item&&item.price!=='')?(Number(item.price)||0):'';
+    applied++;
   });
-  notice('Paket diterapkan ke '+cards.length+' anggota. Klik Simpan Jamaah untuk menyimpan perubahan.');
+  if(!applied){notice('Paket tidak berhasil diterapkan. Coba pilih ulang paketnya.','error');return}
+  notice('Paket “'+paket+'” diterapkan ke '+applied+' anggota. Perubahan belum tersimpan; klik Simpan Jamaah untuk menyimpan.');
 }
 function renumberJamaahMembers(){
   document.querySelectorAll('#jamaahMembers .jamaah-member-card').forEach((card,i)=>{
@@ -2674,6 +2691,8 @@ function setJamaahEntryMode(mode){
   }
 
   if(isGroup){
+    // Pastikan dropdown paket massal terisi saat tambah maupun edit rombongan.
+    fillGroupBulkPackage();
     const box=document.getElementById('jamaahMembers');
     if(box&&!box.querySelector('.jamaah-member-card'))for(let i=0;i<5;i++)addJamaahMember();
   }
