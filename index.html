@@ -395,6 +395,46 @@ table{max-width:100%}
   .dashboard-top~.cards .card:hover{transform:none}
   .btn,.nav button,.header-action{min-height:38px}
 }
+
+/* Payment form layout repair */
+#pembayaran{min-width:0}
+#pembayaran>.top{margin-bottom:16px}
+#pembayaran>.panel{width:100%;min-width:0}
+#paymentForm{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px 18px;align-items:start}
+#paymentForm>.full{grid-column:1/-1;min-width:0}
+#paymentForm>div:not(.full){min-width:0}
+#paymentForm label{display:block;margin-bottom:5px;font-size:12px;color:#52615c}
+#paymentForm input:not([type=checkbox]),#paymentForm select,#paymentForm textarea{width:100%;min-width:0;max-width:100%;min-height:42px;padding:10px 12px;border:1px solid #d4ded9;border-radius:8px;background:#fff;font-size:14px}
+#paymentForm input:focus,#paymentForm select:focus{outline:2px solid #d9eee6;border-color:#6aa895}
+#paymentForm .payment-entry-tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-bottom:12px}
+#paymentForm .payment-entry-tab{min-width:0;min-height:42px;white-space:normal;line-height:1.35;padding:10px}
+#paymentForm .payment-entry-desc{margin:0 0 2px;line-height:1.5}
+#paymentForm .payment-jamaah-picker{grid-column:1;grid-row:auto;min-width:0;width:100%}
+#paymentJamaahSearch{display:block;width:100%;min-width:0}
+#paymentJamaahChecklist{display:block;width:100%;max-width:100%;max-height:260px;overflow-y:auto;overflow-x:hidden;padding:5px}
+#paymentJamaahChecklist .payment-check-item{display:flex!important;align-items:center;gap:10px;width:100%;max-width:100%;min-width:0;white-space:normal;overflow-wrap:anywhere;padding:10px;border-bottom:1px solid #edf1ef}
+#paymentJamaahChecklist .payment-check-item input[type=checkbox]{width:16px!important;height:16px!important;min-width:16px;flex:0 0 16px;margin:0}
+#paymentJamaahChecklist .payment-check-label{display:flex;flex:1 1 auto;min-width:0;max-width:100%;white-space:normal;overflow-wrap:anywhere;line-height:1.35}
+#paymentJamaahChecklist .payment-check-label strong,#paymentJamaahChecklist .payment-check-label small{display:block;max-width:100%;white-space:normal;overflow-wrap:anywhere}
+#paymentJamaahChecklist .payment-check-group-header{flex-wrap:wrap;min-width:0}
+#paymentForm .payment-selected-info,#paymentForm .payment-search-hint{line-height:1.45;overflow-wrap:anywhere}
+#paymentForm .actions.full{grid-column:1/-1;display:flex;justify-content:flex-end;flex-wrap:wrap;margin-top:2px}
+#paymentForm #paymentSubmitBtn,#paymentForm #paymentCancelBtn{min-height:42px}
+#paymentForm #paymentBankWrap.hidden{display:none!important}
+@media(max-width:900px){
+ #paymentForm{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px}
+ #paymentJamaahChecklist{max-height:230px}
+}
+@media(max-width:650px){
+ #paymentForm{grid-template-columns:minmax(0,1fr);gap:13px}
+ #paymentForm>.full,#paymentForm .actions.full{grid-column:1}
+ #paymentForm .payment-jamaah-picker{grid-column:1}
+ #paymentForm .payment-entry-tabs{grid-template-columns:minmax(0,1fr)}
+ #paymentForm .payment-entry-tab{min-height:40px}
+ #paymentJamaahChecklist{max-height:240px}
+ #paymentForm .actions.full{display:grid;grid-template-columns:minmax(0,1fr)}
+ #paymentForm .actions.full .btn{width:100%}
+}
 </style></style></style></style></style></style>
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
