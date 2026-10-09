@@ -294,6 +294,24 @@ table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;border
 .multi-individual-card input,.multi-individual-card select{height:32px;font-size:11px}
 @media(max-width:900px){.multi-individual-card .multi-grid{grid-template-columns:1fr 1fr}}
 <style id="roomlist-style">
+/* Room List: form rapi, ringan, tidak tampak seperti kotak-kotak */
+#roomlist .panel{border:0;border-radius:0;box-shadow:none;background:transparent;padding:18px 16px;margin-bottom:8px}
+#roomlist .roomlist-filter-grid{display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap}
+#roomlist .roomlist-filter-grid>div{display:flex;flex-direction:column;gap:5px;min-width:145px;flex:1}
+#roomlist .roomlist-filter-grid label,#roomlist .room-create-grid label{font-size:11px;font-weight:700;color:#65736d}
+#roomlist .roomlist-filter-grid input,#roomlist .roomlist-filter-grid select,#roomlist .room-create-grid input,#roomlist .room-create-grid select{width:100%;min-height:36px;padding:8px 10px;border:1px solid #dce5e1;border-radius:8px;background:#fff;font-size:12px;outline:none}
+#roomlist .roomlist-filter-grid input:focus,#roomlist .roomlist-filter-grid select:focus,#roomlist .room-create-grid input:focus,#roomlist .room-create-grid select:focus{border-color:#72ad9c;box-shadow:0 0 0 3px #1f705d12}
+#roomlist .room-city-filter-line{display:flex;gap:6px;align-items:center}
+#roomlist .room-city-filter-line select{min-width:110px}
+#roomlist .room-filter-actions{flex:0 0 auto;display:flex;align-items:flex-end}
+#roomlist .room-create-grid{display:grid;grid-template-columns:repeat(4,minmax(130px,1fr));gap:14px;align-items:end}
+#roomlist .room-create-button{align-items:flex-end}
+#roomlist .roomlist-summary{gap:0;border-top:1px solid #e8eeeb;border-bottom:1px solid #e8eeeb;background:#fff}
+#roomlist .room-stat{border:0;border-right:1px solid #e8eeeb;border-radius:0;box-shadow:none;padding:14px 16px}
+#roomlist .room-stat:last-child{border-right:0}
+#roomlist .room-card{box-shadow:none;border-radius:10px}
+@media(max-width:700px){#roomlist .room-create-grid{grid-template-columns:repeat(2,minmax(0,1fr))}#roomlist .roomlist-filter-grid>div{min-width:calc(50% - 10px)}}
+@media(max-width:480px){#roomlist .room-create-grid{grid-template-columns:1fr}#roomlist .roomlist-filter-grid>div{min-width:100%}#roomlist .roomlist-summary{grid-template-columns:1fr 1fr}}
 .roomlist-filter-grid,.room-create-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.room-create-grid{grid-template-columns:repeat(5,1fr);align-items:end}.room-create-button{display:flex;align-items:end}.roomlist-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:14px}.room-stat{background:#fff;border:1px solid #e1e8e5;border-radius:10px;padding:12px}.room-stat-label{font-size:10px;color:#718078}.room-stat-value{font-size:20px;font-weight:800;color:#173f35;margin-top:4px}.room-list-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px}.room-card{border:1px solid #dce5e1;border-radius:12px;padding:13px;background:#fff;box-shadow:0 2px 8px #00000008}.room-card-head{display:flex;justify-content:space-between;gap:8px;align-items:start}.room-card-title{font-weight:800;color:#173f35;font-size:14px}.room-capacity{font-size:10px;padding:5px 8px;border-radius:999px;background:#eef5f2;color:#286253;font-weight:700;white-space:nowrap}.room-capacity.full{background:#e4f5ec;color:#197044}.room-capacity.warn{background:#fff0dc;color:#a45b00}.room-card-meta{font-size:10px;color:#687078;margin:5px 0 10px}.room-progress{height:7px;background:#edf1ef;border-radius:99px;overflow:hidden;margin:6px 0 10px}.room-progress span{display:block;height:100%;background:#1f705d;border-radius:99px;transition:width .2s}.room-progress span.full{background:#197044}.room-member-list{display:grid;gap:5px;margin-bottom:10px;min-height:34px}.room-member{display:flex;justify-content:space-between;gap:8px;padding:8px 9px;background:#f7f9f8;border-radius:7px;font-size:11px;align-items:center}.room-member-name{font-weight:700;color:#35413d;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.room-member-remove{border:0;background:none;color:#b84040;cursor:pointer;font-size:10px;flex:none}.room-assign{display:flex;gap:6px}.room-assign select{flex:1;min-width:0}.room-card-actions{display:flex;gap:6px;margin-top:9px}.room-card-actions .btn{flex:1}.room-empty{padding:24px;text-align:center;color:#7a858b;font-size:12px;border:1px dashed #d8e0dc;border-radius:9px;background:#fafcfb}.room-create-button .btn{width:100%}.room-unassigned{margin-top:12px;padding:10px 12px;border-radius:9px;background:#fff8ea;border:1px solid #f0dfbb;color:#805d16;font-size:11px}.room-edit-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:9px;padding-top:9px;border-top:1px solid #edf0ef}.room-edit-grid input,.room-edit-grid select{width:100%;padding:7px 8px;border:1px solid #d8dde0;border-radius:7px;font-size:11px}.room-filter-actions{display:flex;gap:7px;align-items:end}.room-filter-actions .btn{height:35px;white-space:nowrap}
 @media(max-width:1000px){.roomlist-filter-grid{grid-template-columns:repeat(2,1fr)}.room-create-grid{grid-template-columns:repeat(3,1fr)}.roomlist-summary{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:650px){.roomlist-filter-grid,.room-create-grid{grid-template-columns:1fr}.roomlist-summary{grid-template-columns:1fr 1fr}.room-card{min-width:0}.room-edit-grid{grid-template-columns:1fr}.room-filter-actions{align-items:stretch}.room-filter-actions .btn{width:100%}}
@@ -1027,7 +1045,7 @@ table{max-width:100%}
     <div class="panel-head"><div><h2>Filter Room List</h2><div class="muted">Room List dipisahkan berdasarkan jadwal keberangkatan.</div></div></div>
     <div class="roomlist-filter-grid">
       <div><label>Jadwal Keberangkatan</label><select id="roomDepartureFilter" onchange="renderRoomList()"><option value="">Pilih jadwal...</option></select></div>
-      <div><label>Kota</label><select id="roomCityFilter" onchange="renderRoomList()"><option value="">Semua Kota</option><option value="Makkah">Makkah</option><option value="Madinah">Madinah</option></select></div>
+      <div class="room-city-filter-field"><label>Kota</label><div class="room-city-filter-line"><select id="roomCityFilter" onchange="renderRoomList()"><option value="">Semua Kota</option><option value="Makkah">Makkah</option><option value="Madinah">Madinah</option></select><button class="btn secondary small-btn" type="button" onclick="addRoomCity()">+ Kota</button></div></div>
       <div><label>Hotel</label><input id="roomHotelFilter" placeholder="Cari hotel..." oninput="renderRoomList()"></div>
       <div><label>Cari Jamaah</label><input id="roomJamaahSearch" placeholder="Cari nama jamaah..." oninput="renderRoomList()"></div>
       <div class="room-filter-actions"><button class="btn secondary small-btn" type="button" onclick="resetRoomListFilter()">Reset Filter</button></div>
@@ -1939,7 +1957,30 @@ function moveRoomMember(targetRoomId,jamaahId){
   saveRoomListStore(rows);renderRoomList();notice('Jamaah berhasil dipindahkan ke kamar tujuan.');
 }
 function deleteRoom(roomId){if(!confirm('Hapus kamar ini? Data jamaah tidak akan dihapus.'))return;saveRoomListStore(loadRoomListStore().filter(r=>r.id!==roomId));renderRoomList()}
+const ROOM_CITY_KEY='raihan_roomlist_custom_cities_v1';
+function getRoomCities(){try{return [...new Set(['Makkah','Madinah',...(JSON.parse(localStorage.getItem(ROOM_CITY_KEY)||'[]')||[])])]}catch(e){return ['Makkah','Madinah']}}
+function refreshRoomCityOptions(){
+ const cities=getRoomCities();
+ ['roomCity','roomCityFilter'].forEach(id=>{
+  const el=document.getElementById(id);if(!el)return;
+  const selected=el.value;
+  const isFilter=id==='roomCityFilter';
+  el.innerHTML=(isFilter?'<option value="">Semua Kota</option>':'')+cities.map(c=>'<option value="'+esc(c)+'">'+esc(c)+'</option>').join('');
+  if(cities.includes(selected)||isFilter&&!selected)el.value=selected;
+ });
+}
+function addRoomCity(){
+ const name=prompt('Masukkan nama kota baru, contoh: Jeddah atau Thaif');if(name===null)return;
+ const city=name.trim().replace(/\s+/g,' ');if(!city){alert('Nama kota tidak boleh kosong.');return}
+ const cities=getRoomCities();if(cities.some(c=>c.toLowerCase()===city.toLowerCase())){alert('Kota tersebut sudah tersedia.');return}
+ cities.push(city);localStorage.setItem(ROOM_CITY_KEY,JSON.stringify(cities.filter(c=>!['Makkah','Madinah'].includes(c))));
+ refreshRoomCityOptions();
+ const create=document.getElementById('roomCity');if(create)create.value=city;
+ const filter=document.getElementById('roomCityFilter');if(filter)filter.value=city;
+ renderRoomList();
+}
 function renderRoomList(){
+  refreshRoomCityOptions();
   roomListDepartureOptions();
   const departure_id=document.getElementById('roomDepartureFilter')?.value||'';
   const cityQ=document.getElementById('roomCityFilter')?.value||'';
