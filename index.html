@@ -2604,7 +2604,7 @@ function printInvoice(jamaahId, preferredInvoiceNo=''){
   const today=new Date().toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'});
   const logo=getPrintLogo();
   const logoHtml=logo?'<img class="invoice-logo" src="'+logo+'" alt="Logo PT Raihan Alya Tour">':'<div class="logo-mark">RA</div>';
-  const memberRows=members.map((m,i)=>'<tr><td style="text-align:center">'+(i+1)+'</td><td>'+esc(m.nama||'-')+'</td><td>'+esc(m.paket||'-')+'</td><td class="right">'+rupiah(m.harga)+'</td></tr>').join('');
+  const memberRows=members.map((m,i)=>'<tr><td style="text-align:center">'+(i+1)+'</td><td>'+esc(m.nama||'-')+(m.upgrade_description?'<div class="muted">Upgrade: '+esc(m.upgrade_description)+'</div>':'')+'</td><td>'+esc(m.paket||'-')+'</td><td class="right">'+rupiah(m.harga)+'</td><td class="right">'+rupiah(m.upgrade_amount)+'</td><td class="right">'+rupiah(Number(m.harga||0)+Math.max(0,Number(m.upgrade_amount||0)))+'</td></tr>').join('');
   const body='<div class="head invoice-head">'+logoHtml+'<div><div class="company">PT RAIHAN ALYA TOUR</div><div class="sub">Palangka Raya, Kalimantan Tengah</div><div class="invoice-company-note">Umroh & Haji • Melayani dengan Sepenuh Hati</div></div></div>'+
     '<div class="title">'+(group?'INVOICE TAGIHAN ROMBONGAN':'INVOICE TAGIHAN')+'</div>'+
     '<div class="meta"><div><span>No. Invoice</span><br><b>'+esc(invNo)+'</b></div><div><span>Tanggal</span><br><b>'+esc(today)+'</b></div><div><span>'+(group?'Nama Rombongan':'Nama Jamaah')+'</span><br><b>'+esc(name)+'</b></div><div><span>Paket</span><br><b>'+esc(group?'Sesuai anggota':(j.paket||'-'))+'</b></div></div>'+
@@ -3052,6 +3052,8 @@ function jamaahMemberTemplate(index,data={}){
       <div><label>No. HP</label><input data-field="hp" type="tel" placeholder="08xxxxxxxxxx" value="${esc(data.hp||'')}"></div>
       <div><label>Paket</label><select data-field="paket" onchange="syncPackageMemberPrice(this)"><option value="" ${!data.paket?'selected':''}>Pilih</option>${packageOptions(data.paket||'')}</select></div>
       <div><label>Harga Paket</label><input data-field="harga" type="number" min="0" placeholder="Otomatis dari paket" value="${data.harga??''}" readonly title="Harga otomatis mengikuti data paket"></div>
+      <div><label>Upgrade / Biaya Tambahan</label><input data-field="upgrade_description" placeholder="Contoh: Upgrade Quad ke Triple" value="${esc(data.upgrade_description||'')}"></div>
+      <div><label>Biaya Upgrade (Rp)</label><input data-field="upgrade_amount" type="number" min="0" value="${Math.max(0,Number(data.upgrade_amount)||0)}" placeholder="0"></div>
       <div class="jamaah-field-wide"><label>Catatan</label><input data-field="catatan" placeholder="Catatan anggota (opsional)" value="${esc(data.catatan||'')}"></div>
     </div>
   </div>`;
@@ -3328,6 +3330,8 @@ if(jamaahForm) jamaahForm.addEventListener('submit',async e=>{
         hp:get('hp').trim(),
         paket:get('paket')||'Other / Belum Diketahui',
         harga:Number(get('harga'))||0,
+        upgrade_description:get('upgrade_description').trim(),
+        upgrade_amount:Math.max(0,Number(get('upgrade_amount'))||0),
         alamat:'',
         berangkat:null,
         catatan:get('catatan').trim(),
