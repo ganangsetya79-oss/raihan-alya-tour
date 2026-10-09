@@ -2752,7 +2752,14 @@ function fillDashFilters(){
   const depSel=document.getElementById('dashDeparture');
   if(!monthSel||!depSel)return;
   const oldMonth=monthSel.value, oldDep=depSel.value;
-  const months=[...new Set(departures.map(d=>monthKey(d.start_date)).filter(Boolean))].sort().reverse();
+  // Gabungkan bulan dari jadwal, tanggal keberangkatan jamaah, transaksi pembayaran, dan pengeluaran.
+  // Dengan begitu bulan transaksi tetap muncul meskipun tidak ada jadwal keberangkatan pada bulan tersebut.
+  const months=[...new Set([
+    ...(departures||[]).map(d=>monthKey(d.start_date)),
+    ...(data||[]).map(j=>monthKey(departureFor(j)?.start_date||j.berangkat)),
+    ...(payments||[]).map(p=>monthKey(p.payment_date||p.tanggal)),
+    ...(expenses||[]).map(x=>monthKey(x.date||x.tanggal))
+  ].filter(Boolean))].sort().reverse();
   monthSel.innerHTML='<option value="">Semua Bulan</option>'+months.map(m=>`<option value="${m}">${monthLabel(m)}</option>`).join('');
   monthSel.value=months.includes(oldMonth)?oldMonth:'';
   const selectedMonth=monthSel.value;
@@ -4071,7 +4078,7 @@ function renderDashboardExtras(){const el=document.getElementById('dashboardAler
 (data||[]).forEach(j=>{const remain=remainFor(j),d=departureFor(j);if(remain>0)alerts.push({type:'warning',text:j.nama+' masih memiliki sisa '+rupiah(remain),btn:'Hubungi',action:"waJamaah('"+j.id+"')"});if(d&&d.start_date){const days=Math.ceil((new Date(d.start_date)-today)/86400000);if(days>=0&&days<=7)alerts.push({type:'danger',text:j.nama+' berangkat dalam '+days+' hari',btn:'Detail',action:"show('jamaah',document.querySelectorAll('.nav button')[1])"})}});
 const incomplete=(documents||[]).filter(d=>d&&DOC_TYPES&&DOC_TYPES.some(([k])=>!d[k+'_path']));if(incomplete.length)alerts.push({type:'info',text:incomplete.length+' jamaah memiliki dokumen belum lengkap',btn:'Dokumen',action:"show('dokumen',document.querySelectorAll('.nav button')[6])"});
 el.innerHTML=alerts.slice(0,10).map(a=>'<div class="dashboard-alert-item '+a.type+'"><div><strong>'+esc(a.text)+'</strong></div><button class="btn secondary small-btn" type="button" onclick="'+a.action+'">'+a.btn+'</button></div>').join('')||'<div class="muted">Tidak ada perhatian khusus.</div>';
-const month=document.getElementById('dashMonth')?.value||'';const filteredPayments=(payments||[]).filter(p=>!month||monthKey(p.payment_date)===month);const income=filteredPayments.reduce((a,p)=>a+Number(p.amount||0),0);const expense=(expenses||[]).filter(x=>!month||monthKey(x.date)===month).reduce((a,x)=>a+Number(x.amount||0),0);document.getElementById('dashIncomeExtra').textContent=rupiah(income);document.getElementById('dashExpenseExtra').textContent=rupiah(expense);document.getElementById('dashNetExtra').textContent=rupiah(income-expense);renderDepartureChecklist();renderActivityLog()}
+const month=document.getElementById('dashMonth')?.value||'';const filteredPayments=(payments||[]).filter(p=>!month||monthKey(p.payment_date||p.tanggal)===month);const income=filteredPayments.reduce((a,p)=>a+Number(p.amount||p.nominal||0),0);const expense=(expenses||[]).filter(x=>!month||monthKey(x.date||x.tanggal)===month).reduce((a,x)=>a+expenseAmountIdr(x),0);document.getElementById('dashIncomeExtra').textContent=rupiah(income);document.getElementById('dashExpenseExtra').textContent=rupiah(expense);document.getElementById('dashNetExtra').textContent=rupiah(income-expense);renderDepartureChecklist();renderActivityLog()}
 
 </script>
 </body>
