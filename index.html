@@ -1424,7 +1424,7 @@ async function loadData(){
   // Data utama wajib dimuat terlebih dahulu agar form pembayaran tetap bisa
   // menampilkan daftar jamaah walaupun salah satu modul tambahan bermasalah.
   const j=await sb.from('jamaah').select('*').order('created_at',{ascending:false});
-  const p=await sb.from('payments').select('*').order('created_at',{ascending:false});
+  const p=await sb.from('payments').select('*').order('payment_date',{ascending:false});
   if(j.error){notice('Gagal membaca tabel jamaah: '+j.error.message,'error');return false}
   if(p.error){notice('Gagal membaca tabel pembayaran: '+p.error.message,'error');return false}
 
