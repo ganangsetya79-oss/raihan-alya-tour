@@ -293,7 +293,12 @@ table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;border
 .multi-individual-card label{font-size:10px;margin-bottom:3px}
 .multi-individual-card input,.multi-individual-card select{height:32px;font-size:11px}
 @media(max-width:900px){.multi-individual-card .multi-grid{grid-template-columns:1fr 1fr}}
-<style id="room-bulk-delete-style">
+<style id="upgrade-billing-style">
+.upgrade-billing-panel{padding:14px;border:1px solid #dce9e3;border-radius:10px;background:#f7fbf9}
+.upgrade-billing-panel h3{color:#1d5547}
+.upgrade-billing-panel .jamaah-individual-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+@media(max-width:600px){.upgrade-billing-panel .jamaah-individual-form{grid-template-columns:1fr}}
+</style><style id="room-bulk-delete-style">
 .room-bulk-actions{display:flex;align-items:center;justify-content:flex-end;gap:10px;flex-wrap:wrap}
 .room-select-all-label{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:#52645d;white-space:nowrap;cursor:pointer}
 .room-select-all-label input,.room-card-select input{width:15px;height:15px;accent-color:#18745f;cursor:pointer}
@@ -1194,6 +1199,7 @@ table{max-width:100%}
       <div><label>No. HP</label><input id="hp" required></div><div><label>NIK</label><input id="nik"></div><div><label>Alamat</label><input id="alamat"></div>
       <div><label>Paket</label><select id="jPaketSelect" onchange="syncPackagePrice('jPaketSelect','harga')"></select></div>
       <div><label>Harga Paket</label><input id="harga" type="number" min="0" required readonly title="Harga otomatis mengikuti data paket"></div>
+      <div class="full upgrade-billing-panel"><h3 style="margin:0 0 5px;font-size:14px">Upgrade / Biaya Tambahan</h3><div class="muted" style="margin-bottom:10px">Biaya ini ditambahkan ke tagihan paket dan ikut dihitung pada status pembayaran.</div><div class="jamaah-individual-form"><div><label>Jenis Upgrade</label><input id="upgradeDescription" placeholder="Contoh: Upgrade kamar Quad ke Triple"></div><div><label>Biaya Tambahan (Rp)</label><input id="upgradeAmount" type="number" min="0" value="0" placeholder="0"></div></div></div>
       <div><label>Jadwal Keberangkatan</label><select id="jDepartureSelect"><option value="">-- Belum ditentukan --</option></select></div>
       <div><label>Keterangan</label><input id="keterangan" placeholder="Keterangan jamaah"></div>
       <div class="full"><label>Catatan</label><input id="catatan" placeholder="Catatan jamaah"></div>
@@ -1378,7 +1384,7 @@ const groupMembersFor=x=>{
     return departureId ? jd===departureId : jd==='';
   });
 };
-const groupTotalFor=x=>groupMembersFor(x).reduce((a,j)=>a+Number(j.harga||0),0);
+const groupTotalFor=x=>groupMembersFor(x).reduce((a,j)=>a+Number(j.harga||0)+Math.max(0,Number(j.upgrade_amount||0)),0);
 const isRombonganPayment=p=>String(p?.note||'').trim().toLowerCase().includes('pembayaran rombongan');
 const groupMembersForPayment=x=>groupMembersFor(x);
 const groupPaymentsFor=x=>{
@@ -1424,7 +1430,9 @@ const paymentContributionFor=id=>{
 };
 const paidFor=id=>paymentContributionFor(id).paid;
 const discountFor=id=>paymentContributionFor(id).discount;
-const netBillFor=x=>Math.max(0,Number(x.harga||0)-discountFor(x.id));
+const upgradeAmountFor=x=>Math.max(0,Number(x?.upgrade_amount||0));
+const totalBillFor=x=>Math.max(0,Number(x?.harga||0)+upgradeAmountFor(x));
+const netBillFor=x=>Math.max(0,totalBillFor(x)-discountFor(x.id));
 // Jamaah tanpa paket yang jelas atau tanpa harga paket tidak boleh dianggap lunas,
 // meskipun nominal pembayarannya sudah mencapai/lebih dari tagihan yang tersimpan.
 const hasKnownPackage=x=>{
@@ -2463,7 +2471,7 @@ function renderJamaah(){
     const paid=paidFor(x.id), discount=discountFor(x.id), remain=remainFor(x);
     const isGroup=x.kategori==='grup';
     const rowNo=start+idx+1;
-    return `<tr><td class="jamaah-no" style="text-align:center;font-weight:600;color:#687078">${rowNo}</td><td style="text-align:center"><input class="jamaah-check" type="checkbox" value="${esc(x.id)}" ${jamaahSelectedIds.has(String(x.id))?'checked':''} onchange="syncJamaahSelectState()" aria-label="Pilih ${esc(x.nama)}"></td><td>${esc(x.nama)}</td><td>${isGroup?'<span class="jamaah-group-badge">Grup / Rombongan</span>':'<span class="jamaah-individual-badge">Individu</span>'}</td><td>${esc(x.nama_rombongan||'-')}</td><td>${esc(x.jenis_kelamin||'-')}</td><td>${esc(x.nik||'-')}</td><td>${esc(x.hp||'')}</td><td>${esc(x.paket||'Other / Belum Diketahui')}</td><td>${rupiah(x.harga)}</td><td>${rupiah(discount)}</td><td>${rupiah(paid)}</td><td>${rupiah(remain)}</td><td>${status(x)}</td><td><span class="jamaah-note-cell" title="${esc((x.keterangan||x.keterangan_rombongan||''))}">${esc(x.keterangan||x.keterangan_rombongan||'-')}</span></td><td><span class="jamaah-note-cell" title="${esc(x.catatan||'')}">${esc(x.catatan||'-')}</span></td><td><button class="btn secondary small-btn" onclick="edit('${x.id}')">${isGroup?'Edit Rombongan':'Edit'}</button> <button class="btn small-btn" onclick="printInvoice('${x.id}')">🧾 Invoice</button> <button class="btn danger small-btn" onclick="hapus('${x.id}')">Hapus</button></td></tr>`;
+    return `<tr><td class="jamaah-no" style="text-align:center;font-weight:600;color:#687078">${rowNo}</td><td style="text-align:center"><input class="jamaah-check" type="checkbox" value="${esc(x.id)}" ${jamaahSelectedIds.has(String(x.id))?'checked':''} onchange="syncJamaahSelectState()" aria-label="Pilih ${esc(x.nama)}"></td><td>${esc(x.nama)}</td><td>${isGroup?'<span class="jamaah-group-badge">Grup / Rombongan</span>':'<span class="jamaah-individual-badge">Individu</span>'}</td><td>${esc(x.nama_rombongan||'-')}</td><td>${esc(x.jenis_kelamin||'-')}</td><td>${esc(x.nik||'-')}</td><td>${esc(x.hp||'')}</td><td>${esc(x.paket||'Other / Belum Diketahui')}</td><td>${rupiah(totalBillFor(x))}${upgradeAmountFor(x)>0?'<div class="muted" style="font-size:10px">Termasuk upgrade ${rupiah(upgradeAmountFor(x))}</div>':''}</td><td>${rupiah(discount)}</td><td>${rupiah(paid)}</td><td>${rupiah(remain)}</td><td>${status(x)}</td><td><span class="jamaah-note-cell" title="${esc((x.keterangan||x.keterangan_rombongan||''))}">${esc(x.keterangan||x.keterangan_rombongan||'-')}</span></td><td><span class="jamaah-note-cell" title="${esc(x.catatan||'')}">${esc(x.catatan||'-')}</span></td><td><button class="btn secondary small-btn" onclick="edit('${x.id}')">${isGroup?'Edit Rombongan':'Edit'}</button> <button class="btn small-btn" onclick="printInvoice('${x.id}')">🧾 Invoice</button> <button class="btn danger small-btn" onclick="hapus('${x.id}')">Hapus</button></td></tr>`;
   }).join('')||'<tr><td colspan="16">Belum ada data.</td></tr>';
   renderJamaahPagination(total,start,Math.min(start+visibleRows.length,total));
   syncJamaahSelectState();
@@ -3255,7 +3263,7 @@ function openForm(id=null){
       document.getElementById('editingGroupId').value=editGroupId;
     }else if(x){
       setJamaahEntryMode('individu');
-      for(const k of ['nama','jenis_kelamin','hp','nik','alamat','paket','harga','keterangan','catatan']){
+      for(const k of ['nama','jenis_kelamin','hp','nik','alamat','paket','harga','keterangan','catatan','upgradeDescription','upgradeAmount']){
         const el=document.getElementById(k);if(el)el.value=x[k]??''
       }
       fillJamaahDepartureSelects(x.departure_id||'');
@@ -3373,7 +3381,7 @@ if(jamaahForm) jamaahForm.addEventListener('submit',async e=>{
     }
     result=results.find(x=>x?.error)||{error:null};
   }else{
-    const payload={nama:document.getElementById('nama').value.trim(),jenis_kelamin:document.getElementById('jenis_kelamin').value,hp:document.getElementById('hp').value.trim(),nik:document.getElementById('nik').value.trim(),alamat:document.getElementById('alamat').value.trim(),group_id:null,paket:document.getElementById('jPaketSelect').value||'Other / Belum Diketahui',harga:Number(document.getElementById('harga').value)||0,berangkat:null,keterangan:document.getElementById('keterangan').value.trim(),catatan:document.getElementById('catatan').value.trim(),departure_id:document.getElementById('jDepartureSelect').value||null};
+    const payload={nama:document.getElementById('nama').value.trim(),jenis_kelamin:document.getElementById('jenis_kelamin').value,hp:document.getElementById('hp').value.trim(),nik:document.getElementById('nik').value.trim(),alamat:document.getElementById('alamat').value.trim(),group_id:null,paket:document.getElementById('jPaketSelect').value||'Other / Belum Diketahui',harga:Number(document.getElementById('harga').value)||0,upgrade_description:document.getElementById('upgradeDescription')?.value.trim()||'',upgrade_amount:Math.max(0,Number(document.getElementById('upgradeAmount')?.value)||0),berangkat:null,keterangan:document.getElementById('keterangan').value.trim(),catatan:document.getElementById('catatan').value.trim(),departure_id:document.getElementById('jDepartureSelect').value||null};
     jamaahSheetRows=[{...payload,id:id||undefined}];
     if(id)result=await sb.from('jamaah').update(payload).eq('id',id);else result=await sb.from('jamaah').insert(payload);
     if(result.error){console.error('Simpan jamaah gagal:',JSON.stringify(result.error,null,2));notice('Gagal menyimpan jamaah: '+(result.error.message||'Kesalahan Supabase')+(result.error.details?' — '+result.error.details:'')+' Pastikan kolom keterangan tersedia di tabel jamaah.','error');return}
