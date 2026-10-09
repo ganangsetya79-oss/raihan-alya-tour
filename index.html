@@ -2589,7 +2589,7 @@ function printInvoice(jamaahId, preferredInvoiceNo=''){
   const group=isGroupJamaah(j);
   const members=group?groupMembersFor(j):[j];
   if(group&&!members.length){notice('Anggota rombongan tidak ditemukan.','error');return}
-  const totalBill=group?groupTotalFor(j):Number(j.harga||0);
+  const totalBill=group?groupTotalFor(j):totalBillFor(j);
   const totalPaid=group?groupPaidFor(j):paidFor(j.id);
   const totalDiscount=group?groupDiscountFor(j):discountFor(j.id);
   const netBill=Math.max(0,totalBill-totalDiscount);
@@ -2608,7 +2608,7 @@ function printInvoice(jamaahId, preferredInvoiceNo=''){
   const body='<div class="head invoice-head">'+logoHtml+'<div><div class="company">PT RAIHAN ALYA TOUR</div><div class="sub">Palangka Raya, Kalimantan Tengah</div><div class="invoice-company-note">Umroh & Haji • Melayani dengan Sepenuh Hati</div></div></div>'+
     '<div class="title">'+(group?'INVOICE TAGIHAN ROMBONGAN':'INVOICE TAGIHAN')+'</div>'+
     '<div class="meta"><div><span>No. Invoice</span><br><b>'+esc(invNo)+'</b></div><div><span>Tanggal</span><br><b>'+esc(today)+'</b></div><div><span>'+(group?'Nama Rombongan':'Nama Jamaah')+'</span><br><b>'+esc(name)+'</b></div><div><span>Paket</span><br><b>'+esc(group?'Sesuai anggota':(j.paket||'-'))+'</b></div></div>'+
-    (group?'<div class="box"><h3>Rincian Anggota ('+members.length+' orang)</h3><table><thead><tr><th>No</th><th>Nama Jamaah</th><th>Paket</th><th class="right">Harga</th></tr></thead><tbody>'+memberRows+'</tbody></table></div>':'')+
+    (group?'<div class="box"><h3>Rincian Anggota ('+members.length+' orang)</h3><table><thead><tr><th>No</th><th>Nama Jamaah</th><th>Paket</th><th class="right">Harga Paket</th><th class="right">Upgrade</th><th class="right">Total</th></tr></thead><tbody>'+memberRows+'</tbody></table></div>':'')+
     '<div class="box"><h3>Ringkasan Tagihan</h3><div class="total"><div><span>Total Tagihan</span><b>'+rupiah(totalBill)+'</b></div><div><span>Diskon</span><b>'+rupiah(totalDiscount)+'</b></div><div><span>Sudah Dibayar</span><b>'+rupiah(totalPaid)+'</b></div><div class="grand"><span>SISA TAGIHAN</span><b>'+rupiah(remain)+'</b></div></div><div class="status">Status: '+(remain<=0?'LUNAS':'BELUM LUNAS')+'</div></div>'+
     '<div class="sign"><div>Admin / Petugas<div class="space"></div>(________________)</div><div>Jamaah<div class="space"></div>(________________)</div></div><div class="foot">Invoice ini merupakan dokumen tagihan PT Raihan Alya Tour.</div>';
   openPrintWindow(invNo,body);
