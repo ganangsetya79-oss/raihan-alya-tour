@@ -3420,34 +3420,40 @@ if(jamaahForm) jamaahForm.addEventListener('submit',async e=>{
 
 function fillComplimentarySelects(selectedJamaah=''){const p=document.getElementById('complimentaryJamaah');if(p){const current=selectedJamaah||document.getElementById('complimentaryEditId')?.value||'';const rows=(data||[]).filter(x=>!isComplimentary(x)||String(x.id)===String(current)).slice().sort((a,b)=>String(a.nama||'').localeCompare(String(b.nama||''),'id'));p.innerHTML='<option value="">-- Pilih Jamaah dari Data Jamaah --</option>'+rows.map(x=>'<option value="'+esc(x.id)+'">'+esc(x.nama||'-')+' — '+esc(x.nik||x.hp||'')+'</option>').join('');if(current)p.value=current}}function syncComplimentaryJamaah(){const id=document.getElementById('complimentaryJamaah')?.value||'',x=(data||[]).find(v=>String(v.id)===String(id));const set=(id,val)=>{const el=document.getElementById(id);if(el)el.value=val??''};if(!x){['complimentaryNama','complimentaryJenis','complimentaryHp','complimentaryNik','complimentaryAlamat','complimentaryPaket','complimentaryHarga','complimentaryDeparture'].forEach(id=>set(id,''));return}set('complimentaryNama',x.nama);set('complimentaryJenis',x.jenis_kelamin);set('complimentaryHp',x.hp);set('complimentaryNik',x.nik);set('complimentaryAlamat',x.alamat);set('complimentaryPaket',x.paket);set('complimentaryHarga',Number(x.harga||0));const d=(departures||[]).find(y=>String(y.id)===String(x.departure_id));set('complimentaryDeparture',d?(d.name||'')+' — '+(d.start_date||'-'):(x.departure_id||'Belum ditentukan'))}function complimentaryRows(){const q=(document.getElementById('complimentarySearch')?.value||'').trim().toLowerCase(),dep=document.getElementById('complimentaryDepartureFilter')?.value||'';return(data||[]).filter(x=>isComplimentary(x)&&(!q||[x.nama,x.paket,x.keterangan,x.catatan,x.complimentary_reason].some(v=>String(v||'').toLowerCase().includes(q)))&&(!dep||String(x.departure_id||'')===String(dep)))}function renderComplimentary(){const body=document.getElementById('complimentaryBody');if(!body)return;fillComplimentarySelects();const rows=complimentaryRows(),total=rows.reduce((a,x)=>a+Number(x.harga||0),0);const count=document.getElementById('complimentaryCount');if(count)count.textContent=rows.length;const value=document.getElementById('complimentaryValue');if(value)value.textContent=rupiah(total);body.innerHTML=rows.map((x,i)=>{const d=(departures||[]).find(y=>String(y.id)===String(x.departure_id));return'<tr><td>'+(i+1)+'</td><td><b>'+esc(x.nama)+'</b><div class="muted">'+esc(x.hp||'')+'</div></td><td>'+esc(d?.name||'-')+'</td><td>'+esc(x.paket||'-')+'</td><td>'+rupiah(x.harga||0)+'</td><td>'+esc(x.complimentary_reason||x.keterangan||'-')+'</td><td><span class="badge paid">COMPLIMENTARY</span></td><td><button class="btn secondary small-btn" type="button" onclick="editComplimentary(\''+esc(x.id)+'\')">Edit</button> <button class="btn danger small-btn" type="button" onclick="deleteComplimentary(\''+esc(x.id)+'\')">Hapus</button></td></tr>'}).join('')||'<tr><td colspan="8">Belum ada data complimentary.</td></tr>'}function openComplimentaryForm(id=''){const form=document.getElementById('complimentaryForm');if(!form)return;form.reset();document.getElementById('complimentaryEditId').value=id||'';fillComplimentarySelects(id||'');const x=id?(data||[]).find(v=>String(v.id)===String(id)):null;document.getElementById('complimentaryFormTitle').textContent=x?'Edit Complimentary':'Tambah Complimentary';document.getElementById('complimentarySaveBtn').textContent=x?'Update Complimentary':'Simpan Complimentary';if(x){document.getElementById('complimentaryJamaah').value=x.id;syncComplimentaryJamaah();document.getElementById('complimentaryReason').value=x.complimentary_reason||'';document.getElementById('complimentaryKeterangan').value=x.keterangan||'';document.getElementById('complimentaryCatatan').value=x.catatan||''}document.getElementById('complimentaryModal').classList.add('show')}function closeComplimentaryForm(){document.getElementById('complimentaryModal')?.classList.remove('show')}function editComplimentary(id){openComplimentaryForm(id)}async function deleteComplimentary(id){const x=(data||[]).find(v=>String(v.id)===String(id));if(!x)return;if(!confirm('Batalkan status complimentary untuk '+(x.nama||'jamaah ini')+'? Data jamaah tidak akan dihapus.'))return;const restoreKategori=x.group_id?'grup':'individual';let result=await sb.from('jamaah').update({kategori:restoreKategori,complimentary_reason:null}).eq('id',id);if(result.error&&/complimentary_reason|column.*does not exist|schema cache/i.test(result.error.message||'')){result=await sb.from('jamaah').update({kategori:restoreKategori}).eq('id',id)}if(result.error){notice('Gagal membatalkan complimentary: '+result.error.message,'error');return}await loadData();renderAll();notice('Status complimentary berhasil dibatalkan. Data jamaah tetap ada')}document.getElementById('complimentaryForm')?.addEventListener('submit',async e=>{e.preventDefault();const id=document.getElementById('complimentaryEditId').value||document.getElementById('complimentaryJamaah').value;const x=(data||[]).find(v=>String(v.id)===String(id));const reason=document.getElementById('complimentaryReason').value;if(!id||!x){notice('Silakan pilih jamaah dari Data Jamaah.','error');return}if(!reason){notice('Alasan complimentary wajib dipilih.','error');return}const payload={kategori:'complimentary',complimentary_reason:reason,keterangan:document.getElementById('complimentaryKeterangan').value.trim(),catatan:document.getElementById('complimentaryCatatan').value.trim()};const btn=document.getElementById('complimentarySaveBtn');if(btn){btn.disabled=true;btn.textContent='Menyimpan...'}try{let result=await sb.from('jamaah').update(payload).eq('id',id);if(result.error&&/complimentary_reason|column.*does not exist|schema cache/i.test(result.error.message||'')){const fallback={kategori:'complimentary',keterangan:(reason+(payload.keterangan?' — '+payload.keterangan:'')).trim(),catatan:payload.catatan};result=await sb.from('jamaah').update(fallback).eq('id',id)}if(result.error){notice('Gagal menyimpan complimentary: '+result.error.message,'error');return}await syncToSpreadsheet('jamaah',{...x,...payload,id});closeComplimentaryForm();await loadData();renderAll();notice('Jamaah berhasil ditandai sebagai complimentary.')}finally{if(btn){btn.disabled=false;btn.textContent=id?'Update Complimentary':'Simpan Complimentary'}}})
 let editingPaymentId='';
-function editPayment(id){
+async function editPayment(id){
   const p=payments.find(x=>String(x.id)===String(id));
   if(!p){notice('Transaksi pembayaran tidak ditemukan.','error');return}
   editingPaymentId=p.id;
-  fillPaymentJamaah();
-  setTimeout(()=>{
-    const sel=document.getElementById('paymentJamaah');
-    if(sel){
-      const target=(isRombonganPayment(p)?'group::':'')+(p.jamaah_id||'');
-      const editMode=isRombonganPayment(p)?'group':'individual';
-      setPaymentEntryMode(editMode,true);
-      const value=[...sel.options].some(o=>o.value===target)?target:(p.jamaah_id||'');
-      setPaymentSelection(value);
-      syncPaymentJamaahName();
-      syncPaymentJamaahSearch();
-    }
-    document.getElementById('paymentAmount').value=p.amount??'';
-    document.getElementById('paymentDiscount').value=p.discount??0;
-    document.getElementById('paymentDate').value=p.payment_date||'';
-    document.getElementById('paymentMethod').value=p.method||'';
-    document.getElementById('paymentBank').value=p.bank||'';
-    document.getElementById('paymentNote').value=p.note||'';
-    togglePaymentBank();
-    document.getElementById('paymentSubmitBtn').textContent='Update Pembayaran';
-    document.getElementById('paymentCancelBtn').classList.add('show');
-    document.getElementById('paymentEditingNote').classList.add('show');
-    document.querySelector('#pembayaran .panel')?.scrollIntoView({behavior:'smooth',block:'start'});
-  },0);
+  const groupPayment=isRombonganPayment(p);
+  const editMode=groupPayment?'group':'individual';
+  // Bangun ulang daftar pilihan terlebih dahulu agar pilihan yang diedit tidak hilang karena render async.
+  paymentEntryMode=editMode;
+  document.getElementById('paymentTabIndividual')?.classList.toggle('active',editMode==='individual');
+  document.getElementById('paymentTabGroup')?.classList.toggle('active',editMode==='group');
+  const desc=document.getElementById('paymentEntryDesc');
+  if(desc)desc.textContent=editMode==='group'
+    ?'Pilih satu rombongan untuk mencatat pembayaran yang dibayar untuk seluruh anggota rombongan.'
+    :'Pilih satu jamaah, termasuk anggota rombongan yang membayar secara terpisah. Setiap anggota dicatat sebagai transaksi sendiri.';
+  await fillPaymentJamaah(false);
+  const sel=document.getElementById('paymentJamaah');
+  if(sel){
+    const target=(groupPayment?'group::':'')+(p.jamaah_id||'');
+    const value=[...sel.options].some(o=>o.value===target)?target:(p.jamaah_id||'');
+    setPaymentSelection(value);
+    syncPaymentJamaahName();
+    syncPaymentJamaahSearch();
+  }
+  document.getElementById('paymentAmount').value=p.amount??'';
+  document.getElementById('paymentDiscount').value=p.discount??0;
+  document.getElementById('paymentDate').value=p.payment_date||'';
+  document.getElementById('paymentMethod').value=p.method||'';
+  document.getElementById('paymentBank').value=p.bank||'';
+  document.getElementById('paymentNote').value=p.note||'';
+  togglePaymentBank();
+  document.getElementById('paymentSubmitBtn').textContent='Update Pembayaran';
+  document.getElementById('paymentCancelBtn').classList.add('show');
+  document.getElementById('paymentEditingNote').classList.add('show');
+  document.querySelector('#pembayaran .panel')?.scrollIntoView({behavior:'smooth',block:'start'});
 }
 function cancelPaymentEdit(){
   editingPaymentId='';
