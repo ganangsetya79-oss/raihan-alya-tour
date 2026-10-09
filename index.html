@@ -720,13 +720,17 @@ table{max-width:100%}
       <div id="dashboardAlerts" class="dashboard-alert-list"></div>
     </div>
     <div class="panel dashboard-finance-panel">
-      <div class="panel-head"><div><h2>Ringkasan Keuangan</h2><div class="muted">Periode sesuai filter dashboard.</div></div></div>
+      <div class="panel-head"><div><h2>Ringkasan Keuangan Umum</h2><div class="muted">Gabungan seluruh pemasukan dan pengeluaran, tidak mengikuti filter jadwal.</div></div></div>
       <div class="dashboard-finance-grid">
-        <div><span>Pemasukan</span><b id="dashIncomeExtra">Rp 0</b></div>
-        <div><span>Pengeluaran</span><b id="dashExpenseExtra">Rp 0</b></div>
+        <div><span>Total Pemasukan</span><b id="dashIncomeExtra">Rp 0</b></div>
+        <div><span>Total Pengeluaran</span><b id="dashExpenseExtra">Rp 0</b></div>
         <div><span>Saldo Bersih</span><b id="dashNetExtra">Rp 0</b></div>
       </div>
     </div>
+  <div class="panel dashboard-finance-panel dashboard-finance-schedule-panel">
+    <div class="panel-head"><div><h2>Ringkasan Keuangan per Jadwal Keberangkatan</h2><div class="muted">Pemasukan dihitung dari pembayaran jamaah pada jadwal terkait. Pengeluaran mengikuti jadwal yang dipilih saat transaksi dicatat.</div></div></div>
+    <div class="table-wrap"><table class="data-table"><thead><tr><th>Jadwal Keberangkatan</th><th>Tanggal</th><th>Pemasukan</th><th>Pengeluaran</th><th>Saldo Bersih</th></tr></thead><tbody id="dashFinanceScheduleBody"><tr><td colspan="5">Memuat ringkasan...</td></tr></tbody></table></div>
+  </div>
   </div>
 
   <div class="panel dashboard-checklist-panel">
@@ -4081,7 +4085,9 @@ function renderDashboardExtras(){const el=document.getElementById('dashboardAler
 (data||[]).forEach(j=>{const remain=remainFor(j),d=departureFor(j);if(remain>0)alerts.push({type:'warning',text:j.nama+' masih memiliki sisa '+rupiah(remain),btn:'Hubungi',action:"waJamaah('"+j.id+"')"});if(d&&d.start_date){const days=Math.ceil((new Date(d.start_date)-today)/86400000);if(days>=0&&days<=7)alerts.push({type:'danger',text:j.nama+' berangkat dalam '+days+' hari',btn:'Detail',action:"show('jamaah',document.querySelectorAll('.nav button')[1])"})}});
 const incomplete=(documents||[]).filter(d=>d&&DOC_TYPES&&DOC_TYPES.some(([k])=>!d[k+'_path']));if(incomplete.length)alerts.push({type:'info',text:incomplete.length+' jamaah memiliki dokumen belum lengkap',btn:'Dokumen',action:"show('dokumen',document.querySelectorAll('.nav button')[6])"});
 el.innerHTML=alerts.slice(0,10).map(a=>'<div class="dashboard-alert-item '+a.type+'"><div><strong>'+esc(a.text)+'</strong></div><button class="btn secondary small-btn" type="button" onclick="'+a.action+'">'+a.btn+'</button></div>').join('')||'<div class="muted">Tidak ada perhatian khusus.</div>';
-const depId=document.getElementById('dashDeparture')?.value||'';const scheduleIds=new Set((data||[]).filter(j=>!depId||String(j.departure_id||'')===String(depId)).map(j=>String(j.id)));const income=(payments||[]).filter(p=>scheduleIds.has(String(p.jamaah_id||''))).reduce((a,p)=>a+Number(p.amount||p.nominal||0),0);const expense=(expenses||[]).filter(x=>depId?String(x.departure_id||'')===String(depId):!x.departure_id).reduce((a,x)=>a+expenseAmountIdr(x),0);document.getElementById('dashIncomeExtra').textContent=rupiah(income);document.getElementById('dashExpenseExtra').textContent=rupiah(expense);document.getElementById('dashNetExtra').textContent=rupiah(income-expense);renderDepartureChecklist();renderActivityLog()}
+const allIncome=(payments||[]).reduce((a,p)=>a+Number(p.amount||p.nominal||0),0);const allExpense=(expenses||[]).reduce((a,x)=>a+expenseAmountIdr(x),0);document.getElementById('dashIncomeExtra').textContent=rupiah(allIncome);document.getElementById('dashExpenseExtra').textContent=rupiah(allExpense);document.getElementById('dashNetExtra').textContent=rupiah(allIncome-allExpense);
+const financeBody=document.getElementById('dashFinanceScheduleBody');if(financeBody){const rows=(departures||[]).map(d=>{const ids=new Set((data||[]).filter(j=>String(j.departure_id||'')===String(d.id)).map(j=>String(j.id)));const inc=(payments||[]).filter(p=>ids.has(String(p.jamaah_id||''))).reduce((a,p)=>a+Number(p.amount||p.nominal||0),0);const out=(expenses||[]).filter(x=>String(x.departure_id||'')===String(d.id)).reduce((a,x)=>a+expenseAmountIdr(x),0);return {d,inc,out}});const generalOut=(expenses||[]).filter(x=>!x.departure_id).reduce((a,x)=>a+expenseAmountIdr(x),0);financeBody.innerHTML=rows.map(({d,inc,out})=>'<tr><td>'+esc(d.name||'-')+'</td><td>'+esc(d.start_date||'-')+'</td><td>'+rupiah(inc)+'</td><td>'+rupiah(out)+'</td><td>'+rupiah(inc-out)+'</td></tr>').join('')+'<tr><td colspan="3"><strong>Pengeluaran umum (tidak terkait jadwal)</strong></td><td>'+rupiah(generalOut)+'</td><td>—</td></tr>'||'<tr><td colspan="5">Belum ada jadwal keberangkatan.</td></tr>'}
+renderDepartureChecklist();renderActivityLog()}
 
 </script>
 </body>
