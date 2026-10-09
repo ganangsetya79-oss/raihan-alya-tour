@@ -325,6 +325,24 @@ table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;border
 #jamaah table th:nth-child(16),#jamaah table td:nth-child(16){min-width:88px}
 @media(min-width:1200px){.main section#jamaah{max-width:none!important}}
 </style>
+<style id="global-wide-layout-fix">
+/* Gunakan seluruh ruang konten untuk SEMUA menu, termasuk Dashboard. */
+.main{min-width:0}
+.main section{width:100%;max-width:none!important;margin-left:0;margin-right:0}
+.main section>.panel,.main section>.top,.main section>.cards,.main section>.dashboard-top{width:100%;max-width:none}
+.main .panel{min-width:0}
+.main .panel table{max-width:100%}
+@media(min-width:1200px){
+  .main{padding-left:24px;padding-right:24px}
+  .main section{max-width:none!important}
+}
+@media(max-width:900px){
+  .main{padding-left:16px;padding-right:16px}
+}
+@media(max-width:650px){
+  .main{padding-left:12px;padding-right:12px}
+}
+</style>
 </head>
 <body>
 <button type="button" class="mobile-menu-btn" id="mobileMenuBtn" onclick="toggleMobileNav()" aria-label="Buka menu" title="Buka menu"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"></path></svg></button>
@@ -1083,7 +1101,7 @@ function syncManyToSpreadsheet(sheet,rows){if(Array.isArray(rows))rows.forEach(r
 let data=[], payments=[], documents=[], equipment=[], departures=[], expenses=[], currentUser=null, currentAccess=null;
 let editingGroupMemberIds=[];
 const EXPENSE_STORAGE_KEY='raihan_alya_daily_expenses_v1';
-const APP_VERSION='2026-10-09-jamaah-wide-layout';
+const APP_VERSION='2026-10-09-global-wide-layout';
 
 const rupiah=n=>new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(Number(n)||0);
 const isGroupJamaah=x=>!!(x&&(x.kategori==='grup'||String(x.nama_rombongan||'').trim()));
