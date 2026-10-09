@@ -1585,7 +1585,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 
 function defaultPermissions(role){
   if(role==='admin')return [...ACCESS_MODULES];
-  if(role==='finance')return ['dashboard','pembayaran','uangmasuk','pengeluaran','laporan'];
+  if(role==='finance')return ['dashboard','pembayaran','rekap-pembayaran','riwayat-transaksi','uangmasuk','pengeluaran','laporan'];
   if(role==='operator')return ['dashboard','jamaah','dokumen','perlengkapan','keberangkatan'];
   return ['dashboard'];
 }
