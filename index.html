@@ -310,7 +310,22 @@ table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;border
 .dashboard-activity-item{display:flex;gap:10px;padding:9px 0;border-bottom:1px solid #edf0ef}.dashboard-activity-item:last-child{border-bottom:0}.dashboard-activity-dot{width:7px;height:7px;border-radius:50%;background:#1f705d;margin-top:5px;flex:none}.dashboard-activity-text{font-size:12px}.dashboard-activity-time{font-size:10px;color:#8a9490;margin-top:2px}
 .dashboard-wa-btn{border:0;background:#e7f5ec;color:#1b6a47;border-radius:7px;padding:5px 8px;font-size:11px;cursor:pointer}.dashboard-wa-btn:hover{background:#d9efe2}
 @media(max-width:800px){.dashboard-extra-grid{grid-template-columns:1fr}}
-</style></head>
+</style><style id="jamaah-wide-layout-fix">
+/* Beri ruang lebih lebar untuk tabel Data Jamaah yang memiliki banyak kolom. */
+#jamaah{width:100%;max-width:none!important;min-width:0}
+#jamaah .panel{width:100%;max-width:none;min-width:0;overflow-x:auto}
+#jamaah .panel-head{min-width:0;flex-wrap:wrap}
+#jamaah .jamaah-group-tools{flex-wrap:wrap}
+#jamaah table{width:100%;min-width:1450px;table-layout:auto}
+#jamaah table th,#jamaah table td{white-space:normal}
+#jamaah table th:nth-child(3),#jamaah table td:nth-child(3){min-width:115px}
+#jamaah table th:nth-child(6),#jamaah table td:nth-child(6){min-width:110px}
+#jamaah table th:nth-child(7),#jamaah table td:nth-child(7){min-width:125px}
+#jamaah table th:nth-child(8),#jamaah table td:nth-child(8){min-width:135px}
+#jamaah table th:nth-child(16),#jamaah table td:nth-child(16){min-width:88px}
+@media(min-width:1200px){.main section#jamaah{max-width:none!important}}
+</style>
+</head>
 <body>
 <button type="button" class="mobile-menu-btn" id="mobileMenuBtn" onclick="toggleMobileNav()" aria-label="Buka menu" title="Buka menu"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"></path></svg></button>
 <div class="mobile-nav-backdrop" id="mobileNavBackdrop" onclick="toggleMobileNav(false)" style="display:none"></div>
@@ -1068,7 +1083,7 @@ function syncManyToSpreadsheet(sheet,rows){if(Array.isArray(rows))rows.forEach(r
 let data=[], payments=[], documents=[], equipment=[], departures=[], expenses=[], currentUser=null, currentAccess=null;
 let editingGroupMemberIds=[];
 const EXPENSE_STORAGE_KEY='raihan_alya_daily_expenses_v1';
-const APP_VERSION='2026-10-09-jamaah-show-nik';
+const APP_VERSION='2026-10-09-jamaah-wide-layout';
 
 const rupiah=n=>new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(Number(n)||0);
 const isGroupJamaah=x=>!!(x&&(x.kategori==='grup'||String(x.nama_rombongan||'').trim()));
