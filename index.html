@@ -2886,7 +2886,8 @@ function renderDash(){
     const d=departureFor(j);
     const date=d?.start_date || j.berangkat || '';
     const byMonth=!month||monthKey(date)===month;
-    const byDep=!depId||j.departure_id===depId;
+    const jamaahDepId=String(departureFor(j)?.id||j.departure_id||'');
+    const byDep=!depId||jamaahDepId===String(depId);
     return byMonth&&byDep;
   });
 
@@ -2910,7 +2911,7 @@ function renderDash(){
     const selected=!depId||d.id===depId;
     return inMonth&&selected;
   }).map(d=>{
-    const rows=filtered.filter(j=>j.departure_id===d.id);
+    const rows=filtered.filter(j=>String(departureFor(j)?.id||j.departure_id||'')===String(d.id));
     const paid=rows.reduce((a,j)=>a+paidFor(j.id),0);
     const value=rows.reduce((a,j)=>a+totalBillFor(j),0);
     const remain=rows.reduce((a,j)=>a+remainFor(j),0);
