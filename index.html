@@ -4100,7 +4100,10 @@ function exportJamaahCSV(){
     const own=(payments||[]).filter(p=>String(p.jamaah_id)===String(j.id));
     const groupMembers=isGroupJamaah(j)?groupMembersFor(j):[];
     const shared=isGroupJamaah(j)?(payments||[]).filter(p=>isRombonganPayment(p)&&groupMembers.some(m=>String(m.id)===String(p.jamaah_id))):[];
-    const list=[...own.filter(p=>!isRombonganPayment(p)).map(p=>({...p,_ratio:1})),...shared.map(p=>({...p,_ratio:(groupMembers.reduce((a,m)=>a+moneyValue(m.harga),0)>0?moneyValue(j.harga)/groupMembers.reduce((a,m)=>a+moneyValue(m.harga),0):1/Math.max(1,groupMembers.length)}))];
+    const list=own.filter(p=>!isRombonganPayment(p)).map(p=>({...p,_ratio:1}));
+    const groupPriceTotal=groupMembers.reduce((sum,m)=>sum+moneyValue(m.harga),0);
+    const groupRatio=groupPriceTotal>0?moneyValue(j.harga)/groupPriceTotal:1/Math.max(1,groupMembers.length);
+    shared.forEach(p=>list.push({...p,_ratio:groupRatio}));
     let dp=0,pelunasan=0,lainnya=0,total=0;
     list.forEach(p=>{
       const amount=moneyValue(p.amount)*p._ratio;total+=amount;
