@@ -298,6 +298,8 @@ table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;border
 .upgrade-billing-panel h3{color:#1d5547}
 .upgrade-billing-panel .jamaah-individual-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
 @media(max-width:600px){.upgrade-billing-panel .jamaah-individual-form{grid-template-columns:1fr}}
+
+.dashboard-empty-state,.dashboard-table-empty{display:block;width:100%;padding:24px 12px;text-align:center;color:#66736f;font-size:13px;line-height:1.6}.dashboard-table-empty{display:table-cell;background:#f8faf9;border-radius:8px}.dashboard-chart-panel{min-width:0;overflow:hidden}.dashboard-monthly-chart{min-width:0;box-sizing:border-box}.dashboard-month-bar-wrap{min-height:3px}
 </style><style id="room-bulk-delete-style">
 .room-bulk-actions{display:flex;align-items:center;justify-content:flex-end;gap:10px;flex-wrap:wrap}
 .room-select-all-label{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:#52645d;white-space:nowrap;cursor:pointer}
@@ -2861,14 +2863,20 @@ function renderDashboardCharts(filtered){
   const packageRows=Object.entries(packageMap).sort((a,b)=>b[1]-a[1]);
   const maxPackage=Math.max(1,...packageRows.map(x=>x[1]));
   const packageEl=document.getElementById('dashPackageChart');
-  if(packageEl)packageEl.innerHTML=packageRows.length?packageRows.map(([name,count])=>`<div class="dashboard-bar-row"><span class="dashboard-bar-label" title="${esc(name)}">${esc(name)}</span><div class="dashboard-bar-track"><div class="dashboard-bar-fill" style="width:${Math.round(count/maxPackage*100)}%"></div></div><span class="dashboard-bar-value">${count}</span></div>`).join(''):'<div class="muted">Belum ada data paket.</div>';
+  if(packageEl){
+    packageEl.style.minHeight='200px';
+    packageEl.innerHTML=packageRows.length?packageRows.map(([name,count])=>`<div class="dashboard-bar-row"><span class="dashboard-bar-label" title="${esc(name)}">${esc(name)}</span><div class="dashboard-bar-track"><div class="dashboard-bar-fill" style="width:${Math.round(count/maxPackage*100)}%"></div></div><span class="dashboard-bar-value">${count}</span></div>`).join(''):'<div class="dashboard-empty-state">Belum ada data jamaah atau paket untuk filter yang dipilih.</div>';
+  }
 
   const now=new Date(), months=[];
   for(let n=5;n>=0;n--){const d=new Date(now.getFullYear(),now.getMonth()-n,1);months.push({key:`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`,label:d.toLocaleDateString('id-ID',{month:'short'}),value:0})}
   payments.forEach(p=>{const key=String(p.payment_date||'').slice(0,7);const m=months.find(x=>x.key===key);if(m)m.value+=Number(p.amount||0)});
   const maxMonth=Math.max(1,...months.map(x=>x.value));
   const monthEl=document.getElementById('dashMonthlyChart');
-  if(monthEl)monthEl.innerHTML=months.map(m=>`<div class="dashboard-month-item"><span class="dashboard-month-value">${m.value?rupiah(m.value):'Rp 0'}</span><div class="dashboard-month-bar-wrap"><div class="dashboard-month-bar" style="height:${Math.max(2,Math.round(m.value/maxMonth*100))}%"></div></div><span class="dashboard-month-label">${m.label}</span></div>`).join('');
+  if(monthEl){
+    monthEl.style.minHeight='230px';
+    monthEl.innerHTML=months.map(m=>`<div class="dashboard-month-item"><span class="dashboard-month-value">${m.value?rupiah(m.value):'Rp 0'}</span><div class="dashboard-month-bar-wrap"><div class="dashboard-month-bar" style="height:${Math.max(3,Math.round(m.value/maxMonth*100))}%;min-height:3px"></div></div><span class="dashboard-month-label">${m.label}</span></div>`).join('');
+  }
 }
 function renderDash(){
   fillDashFilters();
@@ -2909,7 +2917,7 @@ function renderDash(){
     const lunasCount=rows.filter(isPaid).length;
     return `<tr><td>${esc(d.name)}</td><td>${d.start_date||'-'}${d.end_date?' s/d '+d.end_date:''}</td><td>${rows.length}</td><td>${lunasCount}</td><td>${rupiah(value)}</td><td>${rupiah(paid)}</td><td>${rupiah(remain)}</td></tr>`;
   }).join('');
-  depBody.innerHTML=depRows||'<tr><td colspan="7">Belum ada jadwal pada filter ini.</td></tr>';
+  depBody.innerHTML=depRows||'<tr><td colspan="7" class="dashboard-table-empty">Belum ada jadwal keberangkatan untuk filter ini. Periksa filter bulan/jadwal atau buat jadwal melalui menu Keberangkatan.</td></tr>';
 
 
 }
