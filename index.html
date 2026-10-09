@@ -4091,8 +4091,11 @@ function initAllTablePagination(){
 }
 
 function exportJamaahCSV(){
-  const rows=(data||[]).slice();
-  if(!rows.length){notice('Belum ada data jamaah untuk diekspor.','error');return}
+  const selector=document.getElementById('exportJamaahDeparture');
+  const selectedDeparture=String(selector?.value||'');
+  if(!selectedDeparture){notice('Pilih jadwal keberangkatan terlebih dahulu agar file tidak tercampur.','error');selector?.focus();return}
+  const rows=(data||[]).filter(j=>String(departureFor(j)?.id||j.departure_id||'')===selectedDeparture);
+  if(!rows.length){notice('Belum ada data jamaah pada jadwal yang dipilih.','error');return}
   const roomRows=loadRoomListStore();
   const moneyValue=v=>Math.max(0,Number(v)||0);
   const escCsv=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
@@ -4147,7 +4150,9 @@ function exportJamaahCSV(){
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
   a.href=url;
-  a.download='data-jamaah-roomlist-pembayaran-raihan-alya-'+new Date().toISOString().slice(0,10)+'.csv';
+  const selectedName=(departures||[]).find(d=>String(d.id)===selectedDeparture)?.name||'jadwal';
+  const safeName=String(selectedName).normalize('NFKD').replace(/[\\u0300-\\u036f]/g,'').replace(/[^a-zA-Z0-9_-]+/g,'-').replace(/^-+|-+$/g,'').toLowerCase()||'jadwal';
+  a.download='data-jamaah-'+safeName+'-roomlist-pembayaran-'+new Date().toISOString().slice(0,10)+'.csv';
   document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
   notice(rowsOut.length+' data jamaah berhasil diekspor beserta kamar dan rincian pembayaran.');
 }
@@ -4157,11 +4162,28 @@ function initJamaahExportButton(){
   const table=body.closest('table');
   const head=table?.previousElementSibling?.querySelector('.panel-head')||document.querySelector('#jamaah .panel-head');
   if(!head)return;
+  const controls=document.createElement('div');
+  controls.id='exportJamaahControls';
+  controls.style.cssText='display:flex;gap:8px;align-items:center;flex-wrap:wrap';
+  const select=document.createElement('select');
+  select.id='exportJamaahDeparture';
+  select.setAttribute('aria-label','Pilih jadwal keberangkatan untuk export');
+  select.style.cssText='max-width:260px;min-width:190px;padding:9px 10px;border:1px solid #d6dfdb;border-radius:8px;background:#fff;font-size:12px';
+  select.innerHTML='<option value="">Pilih jadwal keberangkatan...</option>';
   const btn=document.createElement('button');
-  btn.id='exportJamaahBtn';btn.type='button';btn.className='btn secondary';btn.textContent='Export Data Jamaah';
-  btn.title='Unduh seluruh data jamaah yang sedang dimuat di dashboard';
+  btn.id='exportJamaahBtn';btn.type='button';btn.className='btn secondary';btn.textContent='Export Jadwal Terpilih';
+  btn.title='Unduh data jamaah hanya untuk jadwal keberangkatan yang dipilih';
   btn.onclick=exportJamaahCSV;
-  head.appendChild(btn);
+  controls.append(select,btn);head.appendChild(controls);
+  const populate=()=>{
+    const current=select.value;
+    const list=(departures||[]).slice().sort((a,b)=>String(a.start_date||'').localeCompare(String(b.start_date||'')));
+    select.innerHTML='<option value="">Pilih jadwal keberangkatan...</option>'+list.map(d=>'<option value="'+esc(d.id)+'">'+esc(d.name||'Jadwal tanpa nama')+(d.start_date?' · '+esc(d.start_date):'')+'</option>').join('');
+    if(list.some(d=>String(d.id)===String(current)))select.value=current;
+  };
+  populate();
+  select.addEventListener('focus',populate);
+  select.addEventListener('mousedown',populate);
 }
 
 resetExpenseForm();
