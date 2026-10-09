@@ -500,6 +500,14 @@ table{max-width:100%}
 .payment-view-panel{min-width:0}
 @media(max-width:650px){.payment-subnav{display:grid;grid-template-columns:1fr;gap:5px}.payment-subnav-btn{width:100%;min-width:0;justify-content:flex-start;padding:12px}.payment-view-panel{padding:12px}}
 </style>
+<style>
+.payment-history-filters{display:grid;grid-template-columns:minmax(220px,2fr) repeat(4,minmax(125px,1fr));gap:10px;align-items:end;margin:0 0 14px}
+.payment-history-filters>input{width:100%;min-width:0;max-width:none;margin:0}
+.payment-history-filters label{display:flex;flex-direction:column;gap:5px;min-width:0;font-size:11px;color:#65716c;font-weight:700}
+.payment-history-filters select,.payment-history-filters input[type=date]{width:100%;min-width:0;max-width:100%;height:38px;padding:8px;border:1px solid #d8e2dd;border-radius:7px;background:#fff;color:#283b34;font-size:12px}
+@media(max-width:1000px){.payment-history-filters{grid-template-columns:repeat(2,minmax(0,1fr))}.payment-history-filters>input{grid-column:1/-1}}
+@media(max-width:520px){.payment-history-filters{grid-template-columns:minmax(0,1fr)}.payment-history-filters>input{grid-column:1}.payment-history-filters .btn{width:100%}}
+</style>
 </head>
 <body>
 <button type="button" class="mobile-menu-btn" id="mobileMenuBtn" onclick="toggleMobileNav()" aria-label="Buka menu" title="Buka menu"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"></path></svg></button>
@@ -780,9 +788,13 @@ table{max-width:100%}
 
   <div class="panel payment-view-panel hidden" data-payment-panel="history">
     <div class="panel-head"><div><h2>Riwayat Transaksi</h2><span style="font-size:12px;color:#687078">Setiap baris = 1 transaksi pembayaran. Gunakan <b>Edit</b> untuk mengubah tanpa input ulang.</span></div><div class="bulk-tools"><button class="btn danger small-btn" type="button" onclick="deleteSelectedPayments()">🗑️ Hapus Terpilih</button></div></div>
-    <div style="margin-bottom:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-      <input id="paymentHistorySearch" class="search" style="max-width:420px;margin:0" placeholder="Cari nama, invoice, nominal, metode, bank, keterangan..." oninput="renderPaymentHistory()">
-      <button class="btn secondary small-btn" type="button" onclick="clearPaymentHistorySearch()">Reset</button>
+    <div class="payment-history-filters">
+      <input id="paymentHistorySearch" class="search" placeholder="Cari nama jamaah, invoice, nominal, keterangan..." oninput="renderPaymentHistory()">
+      <label>Dari tanggal<input id="paymentHistoryStart" type="date" onchange="renderPaymentHistory()"></label>
+      <label>Sampai tanggal<input id="paymentHistoryEnd" type="date" onchange="renderPaymentHistory()"></label>
+      <label>Metode<select id="paymentHistoryMethod" onchange="togglePaymentHistoryBank();renderPaymentHistory()"><option value="">Semua metode</option><option value="Cash">Cash</option><option value="Transfer">Transfer</option></select></label>
+      <label id="paymentHistoryBankFilterWrap">Bank<select id="paymentHistoryBank" onchange="renderPaymentHistory()"><option value="">Semua bank</option><option value="Bank Muamalat">Bank Muamalat</option><option value="BSI">BSI</option></select></label>
+      <button class="btn secondary small-btn" type="button" onclick="clearPaymentHistorySearch()">Reset Filter</button>
     </div>
     <div class="payment-history-wrap">
       <table class="payment-history-table"><thead><tr><th style="width:38px;text-align:center"><input class="bulk-select-all" id="paymentSelectAll" type="checkbox" onchange="toggleAllPayments(this.checked)" title="Pilih semua"></th><th>No. Invoice</th><th>Tanggal</th><th>Jamaah</th><th>Nominal</th><th>Diskon</th><th>Metode</th><th>Bank</th><th>Keterangan</th><th>Aksi</th></tr></thead>
@@ -1412,7 +1424,7 @@ async function loadData(){
   // Data utama wajib dimuat terlebih dahulu agar form pembayaran tetap bisa
   // menampilkan daftar jamaah walaupun salah satu modul tambahan bermasalah.
   const j=await sb.from('jamaah').select('*').order('created_at',{ascending:false});
-  const p=await sb.from('payments').select('*').order('payment_date',{ascending:false});
+  const p=await sb.from('payments').select('*').order('created_at',{ascending:false});
   if(j.error){notice('Gagal membaca tabel jamaah: '+j.error.message,'error');return false}
   if(p.error){notice('Gagal membaca tabel pembayaran: '+p.error.message,'error');return false}
 
@@ -2368,7 +2380,24 @@ function renderPaymentHistory(){
   const body=document.getElementById('historyBody');
   if(!body)return;
   const q=String(document.getElementById('paymentHistorySearch')?.value||'').trim().toLowerCase();
-  const filtered=payments.filter(p=>{
+  const start=String(document.getElementById('paymentHistoryStart')?.value||'');
+  const end=String(document.getElementById('paymentHistoryEnd')?.value||'');
+  const method=String(document.getElementById('paymentHistoryMethod')?.value||'');
+  const bank=String(document.getElementById('paymentHistoryBank')?.value||'');
+  const newestFirst=payments.slice().sort((a,b)=>{
+    const ca=Date.parse(a.created_at||'')||0, cb=Date.parse(b.created_at||'')||0;
+    if(ca!==cb)return cb-ca;
+    const da=String(a.payment_date||''), db=String(b.payment_date||'');
+    if(da!==db)return db.localeCompare(da);
+    return String(b.id||'').localeCompare(String(a.id||''));
+  });
+  const filtered=newestFirst.filter(p=>{
+    const date=String(p.payment_date||'');
+    if(start&&date<start)return false;
+    if(end&&date>end)return false;
+    if(method&&String(p.method||'')!==method)return false;
+    if(bank&&String(p.bank||'')!==bank)return false;
+    if(method==='Cash'&&bank)return false;
     if(!q)return true;
     const j=data.find(x=>x.id===p.jamaah_id);
     const group=isGroupJamaah(j);
@@ -2398,9 +2427,19 @@ function renderPaymentHistory(){
     </tr>`;
   }).join('')||'<tr><td colspan="10">Tidak ada transaksi yang sesuai pencarian.</td></tr>';
 }
+function togglePaymentHistoryBank(){
+  const method=document.getElementById('paymentHistoryMethod')?.value||'';
+  const wrap=document.getElementById('paymentHistoryBankFilterWrap');
+  const bank=document.getElementById('paymentHistoryBank');
+  if(wrap)wrap.style.display=method==='Cash'?'none':'';
+  if(method==='Cash'&&bank)bank.value='';
+}
 function clearPaymentHistorySearch(){
-  const el=document.getElementById('paymentHistorySearch');
-  if(el)el.value='';
+  ['paymentHistorySearch','paymentHistoryStart','paymentHistoryEnd','paymentHistoryMethod','paymentHistoryBank'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el)el.value='';
+  });
+  togglePaymentHistoryBank();
   renderPaymentHistory();
 }
 
