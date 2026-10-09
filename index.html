@@ -1102,7 +1102,7 @@ function syncManyToSpreadsheet(sheet,rows){if(Array.isArray(rows))rows.forEach(r
 let data=[], payments=[], documents=[], equipment=[], departures=[], expenses=[], currentUser=null, currentAccess=null;
 let editingGroupMemberIds=[];
 const EXPENSE_STORAGE_KEY='raihan_alya_daily_expenses_v1';
-const APP_VERSION='2026-10-09-roomlist-print-layout';
+const APP_VERSION='2026-10-09-roomlist-print-layout-v2';
 
 const rupiah=n=>new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(Number(n)||0);
 const isGroupJamaah=x=>!!(x&&(x.kategori==='grup'||String(x.nama_rombongan||'').trim()));
@@ -1751,6 +1751,7 @@ function printRoomList(){
   const female=people.filter(x=>String(x.person.jenis_kelamin||'').toLowerCase().startsWith('p')).length;
   const countType=t=>rooms.filter(r=>String(r.type||'').toLowerCase()===t.toLowerCase()).length;
   const typeTotals=['Double','Triple','Quad'].map(t=>({name:t,count:countType(t)}));
+  let roomPrintRowNo=0;
   const rows=rooms.map(room=>{
     const members=(room.member_ids||[]).map(id=>(data||[]).find(j=>String(j.id)===String(id))).filter(Boolean);
     if(!members.length)return '<tr class="empty-room"><td>-</td><td colspan="3">Slot '+esc(String(room.slot_no||''))+' — Belum ada jamaah</td><td>'+esc(room.room_number||'Belum ditentukan')+' / '+esc(room.type||'')+'</td></tr>';
@@ -1759,7 +1760,7 @@ function printRoomList(){
       const gender=String(person.jenis_kelamin||'').toLowerCase().startsWith('l')?'L':String(person.jenis_kelamin||'').toLowerCase().startsWith('p')?'P':'-';
       const note=esc(room.notes||room.keterangan||'');
       const roomLabel=room.room_number?'KAMAR '+esc(room.room_number):esc(String(room.type||'DOUBLE').toUpperCase());
-      return '<tr><td class="no">'+(index+1)+'</td><td>'+name+'</td><td class="gender">'+gender+'</td>'+(index===0?'<td class="note" rowspan="'+members.length+'">'+(note||'&nbsp;')+'</td><td class="room" rowspan="'+members.length+'">'+roomLabel+'</td>':'')+'</tr>';
+      return '<tr><td class="no">'+(++roomPrintRowNo)+'</td><td>'+name+'</td><td class="gender">'+gender+'</td>'+(index===0?'<td class="note" rowspan="'+members.length+'">'+(note||'&nbsp;')+'</td><td class="room" rowspan="'+members.length+'">'+roomLabel+'</td>':'')+'</tr>';
     }).join('');
   }).join('');
   const w=window.open('','_blank');if(!w){notice('Izinkan pop-up browser untuk mencetak Room List.','error');return}
