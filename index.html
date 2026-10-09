@@ -951,7 +951,7 @@ table{max-width:100%}
   <div class="panel">
     <div class="panel-head"><h2>Tambah Pengeluaran</h2><button class="btn secondary small-btn" type="button" onclick="resetExpenseForm()">Reset</button></div>
     <form id="expenseForm" class="form" onsubmit="return handleExpenseSubmit(event)">
-      <div><label>Tanggal</label><input id="expenseDate" type="date" required></div>
+      <div><label>Tanggal</label><input id="expenseDate" type="date" required></div><div><label>Jadwal Keberangkatan</label><select id="expenseDeparture"><option value="">Umum / Tidak terkait jadwal</option></select></div>
       <div><label>Kategori</label><select id="expenseCategory" required><option value="">-- Pilih Kategori --</option><option>Operasional Kantor</option><option>Transportasi</option><option>Konsumsi</option><option>Perlengkapan</option><option>Promosi</option><option>Administrasi</option><option>Gaji / Honor</option><option>Hotel</option><option>Lainnya</option></select></div>
       <div><label>Mata Uang</label><select id="expenseCurrency" required onchange="toggleExpenseCurrency()"><option value="IDR">IDR — Rupiah</option><option value="USD">USD — Dollar AS</option><option value="SAR">SAR — Riyal Saudi</option></select></div>
       <div><label>Nominal</label><input id="expenseAmount" type="number" min="0.01" step="0.01" required placeholder="Contoh: 50000" oninput="updateExpenseCurrencyTotal()"></div>
@@ -2149,7 +2149,7 @@ function renderExpenses(){
   }
   syncBulkState('expense');
 }
-function resetExpenseForm(){const f=document.getElementById('expenseForm');if(f)f.reset();const d=document.getElementById('expenseDate');if(d)d.value=expenseToday();if(f)f.dataset.editId='';toggleExpenseBank();toggleExpenseCurrency()}
+function resetExpenseForm(){const f=document.getElementById('expenseForm');if(f)f.reset();const d=document.getElementById('expenseDate');if(d)d.value=expenseToday();const dep=document.getElementById('expenseDeparture');if(dep)dep.value='';if(f)f.dataset.editId='';toggleExpenseBank();toggleExpenseCurrency();fillExpenseDepartureOptions()}
 function resetExpenseFilter(){['expenseStart','expenseEnd'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=''});const c=document.getElementById('expenseFilterCategory');if(c)c.value='';renderExpenses()}
 function setExpensePeriod(type){const s=document.getElementById('expenseStart'),e=document.getElementById('expenseEnd');if(!s||!e)return;const now=new Date(),end=new Date(now),start=new Date(now);if(type==='week')start.setDate(start.getDate()-6);else if(type==='month')start.setDate(1);else if(type==='30days')start.setDate(start.getDate()-29);s.value=localISODate(start);e.value=localISODate(end);renderExpenses()}
 async function handleExpenseSubmit(e){
@@ -2175,7 +2175,9 @@ function toggleExpenseBank(){
   if(bank)bank.required=transfer;
   if(!transfer&&bank)bank.value='';
 }
+function fillExpenseDepartureOptions(){const el=document.getElementById('expenseDeparture');if(!el)return;const old=el.value;el.innerHTML='<option value="">Umum / Tidak terkait jadwal</option>'+(departures||[]).map(d=>'<option value="'+esc(d.id)+'">'+esc(d.name)+' — '+esc(d.start_date||'-')+'</option>').join('');el.value=(departures||[]).some(d=>String(d.id)===String(old))?old:''}
 async function saveExpenseFromForm(){
+  fillExpenseDepartureOptions();
   const date=document.getElementById('expenseDate').value;
   const category=document.getElementById('expenseCategory').value;
   const currency=document.getElementById('expenseCurrency')?.value||'IDR';
@@ -2186,6 +2188,7 @@ async function saveExpenseFromForm(){
   const bank=document.getElementById('expenseBank')?.value||'';
   const description=document.getElementById('expenseDescription').value.trim();
   const note=document.getElementById('expenseNote').value.trim();
+  const departure_id=document.getElementById('expenseDeparture')?.value||null;
   const receiptInput=document.getElementById('expenseReceipt');
   const file=receiptInput?.files?.[0];
   if(!date||!category||amount<=0||!method||!description||(currency!=='IDR'&&rate<=0)||(method==='Transfer'&&!bank)){
@@ -2206,7 +2209,7 @@ async function saveExpenseFromForm(){
       receipt_name=file.name;
     }catch(err){notice('Upload bukti transaksi gagal: '+(err?.message||err),'error');return}
   }
-  const row={id:editing||('exp-'+Date.now()+'-'+Math.random().toString(36).slice(2,8)),date,category,currency,amount,rate,amount_idr,method,bank:method==='Transfer'?bank:'',description,note,receipt_path,receipt_name,created_at:existing?.created_at||new Date().toISOString()};
+  const row={departure_id,id:editing||('exp-'+Date.now()+'-'+Math.random().toString(36).slice(2,8)),date,category,currency,amount,rate,amount_idr,method,bank:method==='Transfer'?bank:'',description,note,receipt_path,receipt_name,created_at:existing?.created_at||new Date().toISOString()};
   if(editing){const i=expenses.findIndex(x=>x.id===editing);if(i>=0)expenses[i]=row}else expenses.push(row);
   if(!saveLocalExpenses())return;
   await syncToSpreadsheet('pengeluaran',row);
@@ -2218,7 +2221,7 @@ resetExpenseForm();renderExpenses();
   addActivityLog((editing?'Memperbarui':'Mencatat')+' pengeluaran '+formatExpenseOriginal(row)+' ('+expenseMoney(amount_idr)+').');
   notice(editing?'Pengeluaran berhasil diperbarui.':'Pengeluaran berhasil disimpan.');
 }
-function editExpense(id){const x=expenses.find(v=>v.id===id);if(!x)return;const f=document.getElementById('expenseForm');f.dataset.editId=id;document.getElementById('expenseDate').value=x.date||expenseToday();document.getElementById('expenseCategory').value=x.category||'';document.getElementById('expenseCurrency').value=x.currency||'IDR';document.getElementById('expenseAmount').value=x.amount||'';document.getElementById('expenseRate').value=x.rate||((x.currency||'IDR')==='IDR'?1:'');toggleExpenseCurrency();document.getElementById('expenseMethod').value=(x.method==='BSI'||x.method==='Bank Muamalat')?'Transfer':(x.method||'');document.getElementById('expenseBank').value=x.bank||(x.method==='BSI'?'BSI':x.method==='Bank Muamalat'?'Bank Muamalat':'');toggleExpenseBank();document.getElementById('expenseDescription').value=x.description||'';document.getElementById('expenseNote').value=x.note||'';const rf=document.getElementById('expenseReceipt');if(rf)rf.value='';document.querySelector('#expenseForm .btn[type="submit"]').textContent='Update Pengeluaran';document.getElementById('expenseDate').scrollIntoView({behavior:'smooth',block:'center'})}
+function editExpense(id){const x=expenses.find(v=>v.id===id);if(!x)return;const f=document.getElementById('expenseForm');f.dataset.editId=id;fillExpenseDepartureOptions();document.getElementById('expenseDate').value=x.date||expenseToday();document.getElementById('expenseDeparture').value=x.departure_id||'';document.getElementById('expenseCategory').value=x.category||'';document.getElementById('expenseCurrency').value=x.currency||'IDR';document.getElementById('expenseAmount').value=x.amount||'';document.getElementById('expenseRate').value=x.rate||((x.currency||'IDR')==='IDR'?1:'');toggleExpenseCurrency();document.getElementById('expenseMethod').value=(x.method==='BSI'||x.method==='Bank Muamalat')?'Transfer':(x.method||'');document.getElementById('expenseBank').value=x.bank||(x.method==='BSI'?'BSI':x.method==='Bank Muamalat'?'Bank Muamalat':'');toggleExpenseBank();document.getElementById('expenseDescription').value=x.description||'';document.getElementById('expenseNote').value=x.note||'';const rf=document.getElementById('expenseReceipt');if(rf)rf.value='';document.querySelector('#expenseForm .btn[type="submit"]').textContent='Update Pengeluaran';document.getElementById('expenseDate').scrollIntoView({behavior:'smooth',block:'center'})}
 async function openExpenseReceipt(encodedPath){
   try{
     const path=decodeURIComponent(encodedPath);
@@ -4078,7 +4081,7 @@ function renderDashboardExtras(){const el=document.getElementById('dashboardAler
 (data||[]).forEach(j=>{const remain=remainFor(j),d=departureFor(j);if(remain>0)alerts.push({type:'warning',text:j.nama+' masih memiliki sisa '+rupiah(remain),btn:'Hubungi',action:"waJamaah('"+j.id+"')"});if(d&&d.start_date){const days=Math.ceil((new Date(d.start_date)-today)/86400000);if(days>=0&&days<=7)alerts.push({type:'danger',text:j.nama+' berangkat dalam '+days+' hari',btn:'Detail',action:"show('jamaah',document.querySelectorAll('.nav button')[1])"})}});
 const incomplete=(documents||[]).filter(d=>d&&DOC_TYPES&&DOC_TYPES.some(([k])=>!d[k+'_path']));if(incomplete.length)alerts.push({type:'info',text:incomplete.length+' jamaah memiliki dokumen belum lengkap',btn:'Dokumen',action:"show('dokumen',document.querySelectorAll('.nav button')[6])"});
 el.innerHTML=alerts.slice(0,10).map(a=>'<div class="dashboard-alert-item '+a.type+'"><div><strong>'+esc(a.text)+'</strong></div><button class="btn secondary small-btn" type="button" onclick="'+a.action+'">'+a.btn+'</button></div>').join('')||'<div class="muted">Tidak ada perhatian khusus.</div>';
-const month=document.getElementById('dashMonth')?.value||'';const filteredPayments=(payments||[]).filter(p=>!month||monthKey(p.payment_date||p.tanggal)===month);const income=filteredPayments.reduce((a,p)=>a+Number(p.amount||p.nominal||0),0);const expense=(expenses||[]).filter(x=>!month||monthKey(x.date||x.tanggal)===month).reduce((a,x)=>a+expenseAmountIdr(x),0);document.getElementById('dashIncomeExtra').textContent=rupiah(income);document.getElementById('dashExpenseExtra').textContent=rupiah(expense);document.getElementById('dashNetExtra').textContent=rupiah(income-expense);renderDepartureChecklist();renderActivityLog()}
+const depId=document.getElementById('dashDeparture')?.value||'';const scheduleIds=new Set((data||[]).filter(j=>!depId||String(j.departure_id||'')===String(depId)).map(j=>String(j.id)));const income=(payments||[]).filter(p=>scheduleIds.has(String(p.jamaah_id||''))).reduce((a,p)=>a+Number(p.amount||p.nominal||0),0);const expense=(expenses||[]).filter(x=>depId?String(x.departure_id||'')===String(depId):!x.departure_id).reduce((a,x)=>a+expenseAmountIdr(x),0);document.getElementById('dashIncomeExtra').textContent=rupiah(income);document.getElementById('dashExpenseExtra').textContent=rupiah(expense);document.getElementById('dashNetExtra').textContent=rupiah(income-expense);renderDepartureChecklist();renderActivityLog()}
 
 </script>
 </body>
