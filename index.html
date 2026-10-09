@@ -986,10 +986,18 @@ table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;border
     <div><label>Status</label><select id="accessActive"><option value="true">Aktif</option><option value="false">Nonaktif</option></select></div>
     <div class="full"><div class="notice ok" style="margin:0"><strong>Alur akun:</strong> buat email + password di <b>Supabase Authentication → Users</b>. Setelah itu masukkan <b>User ID/UID</b> akun tersebut di sini untuk mengatur role dan modul.</div></div>
     <div class="full"><label>Hak Akses Modul</label><div class="permission-grid" id="permissionGrid">
-      <label><input type="checkbox" value="dashboard"> Dashboard</label><label><input type="checkbox" value="jamaah"> Data Jamaah</label>
-      <label><input type="checkbox" value="pembayaran"> Pembayaran</label><label><input type="checkbox" value="uangmasuk"> Uang Masuk</label>
-      <label><input type="checkbox" value="pengeluaran"> Pengeluaran</label><label><input type="checkbox" value="dokumen"> Dokumen</label><label><input type="checkbox" value="perlengkapan"> Perlengkapan</label>
-      <label><input type="checkbox" value="keberangkatan"> Keberangkatan</label><label><input type="checkbox" value="laporan"> Laporan</label>
+      <label><input type="checkbox" value="dashboard"> Dashboard</label>
+      <label><input type="checkbox" value="jamaah"> Data Jamaah</label>
+      <label><input type="checkbox" value="complimentary"> Complimentary</label>
+      <label><input type="checkbox" value="paket"> Kelola Paket</label>
+      <label><input type="checkbox" value="pembayaran"> Pembayaran</label>
+      <label><input type="checkbox" value="uangmasuk"> Uang Masuk</label>
+      <label><input type="checkbox" value="pengeluaran"> Pengeluaran</label>
+      <label><input type="checkbox" value="dokumen"> Dokumen</label>
+      <label><input type="checkbox" value="perlengkapan"> Perlengkapan</label>
+      <label><input type="checkbox" value="roomlist"> Room List</label>
+      <label><input type="checkbox" value="keberangkatan"> Keberangkatan</label>
+      <label><input type="checkbox" value="laporan"> Laporan</label>
     </div></div>
     <div class="actions full"><button type="button" class="btn secondary" onclick="closeAccessForm()">Batal</button><button class="btn">Simpan Akses</button></div>
   </form>
