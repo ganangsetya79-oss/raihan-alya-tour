@@ -2616,7 +2616,7 @@ function addJamaahMember(data={}){
 function fillGroupBulkPackage(selected=''){
   const sel=document.getElementById('groupBulkPackage');if(!sel)return;
   const current=selected||sel.value||'';
-  sel.innerHTML='<option value="">-- Pilih paket untuk semua --option>'.replace('--option>','--option>')+packageOptions(current);
+  sel.innerHTML='<option value="">-- Pilih paket untuk semua --</option>'+packageOptions(current);
   sel.value=current;
 }
 function applyGroupBulkPackage(){
