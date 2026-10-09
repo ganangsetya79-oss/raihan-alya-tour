@@ -1102,7 +1102,7 @@ function syncManyToSpreadsheet(sheet,rows){if(Array.isArray(rows))rows.forEach(r
 let data=[], payments=[], documents=[], equipment=[], departures=[], expenses=[], currentUser=null, currentAccess=null;
 let editingGroupMemberIds=[];
 const EXPENSE_STORAGE_KEY='raihan_alya_daily_expenses_v1';
-const APP_VERSION='2026-10-09-roomlist-popup-fix';
+const APP_VERSION='2026-10-09-roomlist-inline-preview';
 
 const rupiah=n=>new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(Number(n)||0);
 const isGroupJamaah=x=>!!(x&&(x.kategori==='grup'||String(x.nama_rombongan||'').trim()));
@@ -1732,30 +1732,27 @@ function printRoomList(){
   if(!departure_id){notice('Pilih jadwal keberangkatan terlebih dahulu.','error');return}
   const rooms=loadRoomListStore().filter(r=>String(r.departure_id)===String(departure_id));
   if(!rooms.length){notice('Belum ada slot kamar untuk jadwal ini. Buat slot kamar dan tempatkan jamaah terlebih dahulu.','error');return}
-  // Buka tab saat klik langsung agar tidak diblokir browser setelah dialog prompt.
-  const w=window.open('about:blank','_blank');
-  if(!w){notice('Pop-up diblokir browser. Izinkan pop-up untuk dashboard ini lalu coba Cetak Room List lagi.','error');return}
   const dep=departures.find(d=>String(d.id)===String(departure_id));
   const people=rooms.flatMap(room=>(room.member_ids||[]).map(id=>({room,person:(data||[]).find(j=>String(j.id)===String(id))}))).filter(x=>x.person);
   const male=people.filter(x=>String(x.person.jenis_kelamin||'').toLowerCase().startsWith('l')).length;
   const female=people.filter(x=>String(x.person.jenis_kelamin||'').toLowerCase().startsWith('p')).length;
-  let meta={};try{meta=JSON.parse(localStorage.getItem('raihan_room_list_print_meta_v1')||'{}')||{}}catch(e){}
-  meta=meta[departure_id]||{};
-  const hotel=prompt('Judul hotel / room list:',meta.hotel||rooms[0].hotel||'');if(hotel===null){w.close();return}
-  const bus=prompt('Keterangan bis / rombongan:',meta.bus||'BIS 1');if(bus===null){w.close();return}
-  const checkin=prompt('Tanggal check-in:',meta.checkin||dep?.start_date||'');if(checkin===null){w.close();return}
-  const checkout=prompt('Tanggal check-out:',meta.checkout||dep?.end_date||'');if(checkout===null){w.close();return}
   let store={};try{store=JSON.parse(localStorage.getItem('raihan_room_list_print_meta_v1')||'{}')||{}}catch(e){}
+  const meta=store[departure_id]||{};
+  const hotel=prompt('Judul hotel / room list:',meta.hotel||rooms[0].hotel||'');if(hotel===null)return;
+  const bus=prompt('Keterangan bis / rombongan:',meta.bus||'BIS 1');if(bus===null)return;
+  const checkin=prompt('Tanggal check-in:',meta.checkin||dep?.start_date||'');if(checkin===null)return;
+  const checkout=prompt('Tanggal check-out:',meta.checkout||dep?.end_date||'');if(checkout===null)return;
   store[departure_id]={hotel,bus,checkin,checkout};try{localStorage.setItem('raihan_room_list_print_meta_v1',JSON.stringify(store))}catch(e){}
   let n=0;
   const body=rooms.map(room=>{
     const members=(room.member_ids||[]).map(id=>(data||[]).find(j=>String(j.id)===String(id))).filter(Boolean);
-    if(!members.length)return '<tr><td>-</td><td colspan="3">Slot '+esc(room.slot_no||'')+' — Belum ada jamaah</td><td>'+esc(room.room_number||'Belum ditentukan')+'</td></tr>';
+    if(!members.length)return '<tr><td>-</td><td colspan="3">Slot '+esc(room.slot_no||'')+' — Belum ada jamaah</td><td>'+esc(room.room_number||'Belum ditentukan')+' / '+esc(room.type||'')+'</td></tr>';
     return members.map((p,i)=>'<tr><td>'+(++n)+'</td><td>'+esc(p.nama||'-')+'</td><td>'+((String(p.jenis_kelamin||'').toLowerCase().startsWith('l'))?'L':(String(p.jenis_kelamin||'').toLowerCase().startsWith('p'))?'P':'-')+'</td>'+(i===0?'<td rowspan="'+members.length+'">'+esc(room.notes||room.keterangan||'')+'</td><td rowspan="'+members.length+'">'+esc(room.room_number||room.type||'Belum ditentukan')+'</td>':'')+'</tr>').join('');
   }).join('');
-  w.document.open();
-  w.document.write('<!doctype html><html><head><meta charset="utf-8"><title>Room List</title><style>@page{size:A4 portrait;margin:10mm}body{font:10px Arial;color:#111}header{text-align:center}.brand{font-size:22px;font-weight:bold}.small{font-size:9px}.summary{display:flex;justify-content:space-between;margin:12px 0}.dates{display:flex;justify-content:space-between;font-weight:bold;margin:10px 0}.bus{text-align:center;font-size:22px;font-weight:bold;margin:10px}table{width:100%;border-collapse:collapse;table-layout:fixed}th,td{border:1px solid #222;padding:4px}th{text-align:center}th:nth-child(1){width:7%}th:nth-child(2){width:44%}th:nth-child(3){width:9%}th:nth-child(4){width:24%}th:nth-child(5){width:16%}td:nth-child(3),td:nth-child(4),td:nth-child(5){text-align:center}</style></head><body><header><div class="brand">PT. RAIHAN ALYA TOUR</div><div class="small">Izin PPIU: 182/2020, Izin PIHK: 435/2021</div><div class="small">Jl. Seth Adji No. 7 Palangkaraya – Kalteng · 0536 4287982 · www.raihanalyatour.com</div><h3>ROOMLIST '+esc(hotel)+'</h3></header><div class="summary"><div>DOUBLE: '+rooms.filter(r=>String(r.type).toLowerCase()==='double').length+'<br>TRIPLE: '+rooms.filter(r=>String(r.type).toLowerCase()==='triple').length+'<br>QUAD: '+rooms.filter(r=>String(r.type).toLowerCase()==='quad').length+'<br><b>TOTAL KAMAR: '+rooms.length+'</b></div><div>LAKI-LAKI: '+male+'<br>PEREMPUAN: '+female+'<br><b>TOTAL: '+people.length+'</b></div></div><div class="dates"><span>CEK IN: '+esc(checkin||'-')+'</span><span>CEK OUT: '+esc(checkout||'-')+'</span></div><div class="bus">'+esc(bus||'ROOM LIST')+'</div><table><thead><tr><th>NO</th><th>NAMA</th><th>L/P</th><th>KETERANGAN</th><th>KAMAR</th></tr></thead><tbody>'+body+'</tbody></table><script>window.onload=function(){window.print()}<\/script></body></html>');
-  w.document.close();
+  const html='<!doctype html><html lang="id"><head><meta charset="utf-8"><title>Room List</title><style>@page{size:A4 portrait;margin:10mm}*{box-sizing:border-box}body{font:10px Arial;color:#111;margin:0}header{text-align:center}.brand{font-size:22px;font-weight:bold}.small{font-size:9px}.summary{display:flex;justify-content:space-between;margin:12px 0}.dates{display:flex;justify-content:space-between;font-weight:bold;margin:10px 0}.bus{text-align:center;font-size:22px;font-weight:bold;margin:10px}table{width:100%;border-collapse:collapse;table-layout:fixed}th,td{border:1px solid #222;padding:4px}th{text-align:center}th:nth-child(1){width:7%}th:nth-child(2){width:44%}th:nth-child(3){width:9%}th:nth-child(4){width:24%}th:nth-child(5){width:16%}td:nth-child(3),td:nth-child(4),td:nth-child(5){text-align:center}</style></head><body><header><div class="brand">PT. RAIHAN ALYA TOUR</div><div class="small">Izin PPIU: 182/2020, Izin PIHK: 435/2021</div><div class="small">Jl. Seth Adji No. 7 Palangkaraya – Kalteng · 0536 4287982 · www.raihanalyatour.com</div><h3>ROOMLIST '+esc(hotel)+'</h3></header><div class="summary"><div>DOUBLE: '+rooms.filter(r=>String(r.type).toLowerCase()==='double').length+'<br>TRIPLE: '+rooms.filter(r=>String(r.type).toLowerCase()==='triple').length+'<br>QUAD: '+rooms.filter(r=>String(r.type).toLowerCase()==='quad').length+'<br><b>TOTAL KAMAR: '+rooms.length+'</b></div><div>LAKI-LAKI: '+male+'<br>PEREMPUAN: '+female+'<br><b>TOTAL: '+people.length+'</b></div></div><div class="dates"><span>CEK IN: '+esc(checkin||'-')+'</span><span>CEK OUT: '+esc(checkout||'-')+'</span></div><div class="bus">'+esc(bus||'ROOM LIST')+'</div><table><thead><tr><th>NO</th><th>NAMA</th><th>L/P</th><th>KETERANGAN</th><th>KAMAR</th></tr></thead><tbody>'+body+'</tbody></table></body></html>';
+  let modal=document.getElementById('roomListPrintModal');
+  if(!modal){modal=document.createElement('div');modal.id='roomListPrintModal';modal.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(15,23,42,.72);display:flex;flex-direction:column;padding:12px;gap:8px';modal.innerHTML='<div style="display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap"><button type="button" id="roomListPrintClose" style="padding:9px 16px;border:0;border-radius:6px;cursor:pointer">Tutup</button><button type="button" id="roomListPrintGo" style="padding:9px 16px;border:0;border-radius:6px;background:#16765f;color:white;cursor:pointer;font-weight:bold">Cetak / Simpan PDF</button></div><iframe id="roomListPrintFrame" title="Pratinjau Room List" style="width:100%;flex:1;min-height:0;border:0;border-radius:6px;background:white"></iframe>';document.body.appendChild(modal);document.getElementById('roomListPrintClose').onclick=()=>modal.remove();document.getElementById('roomListPrintGo').onclick=()=>{const frame=document.getElementById('roomListPrintFrame');if(frame&&frame.contentWindow)frame.contentWindow.print()}}
+  document.getElementById('roomListPrintFrame').srcdoc=html;
 }
 function renderAll(){refreshPackageSelects();renderPackages();renderJamaah();renderComplimentary();renderPaymentSummary();renderPaymentHistory();renderUangMasuk();renderExpenses();renderDash();setPaymentEntryMode('individual');fillDocumentJamaah();renderDocuments();fillEquipmentJamaah();renderEquipment();renderDepartures();renderReport();renderRoomList();}
 
