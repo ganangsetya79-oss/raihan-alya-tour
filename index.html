@@ -3414,38 +3414,53 @@ function fillComplimentarySelects(selectedJamaah=''){const p=document.getElement
 let editingPaymentId='';
 async function editPayment(id){
   const p=payments.find(x=>String(x.id)===String(id));
-  if(!p){notice('Transaksi pembayaran tidak ditemukan.','error');return}
-  editingPaymentId=p.id;
-  const groupPayment=isRombonganPayment(p);
-  const editMode=groupPayment?'group':'individual';
-  // Bangun ulang daftar pilihan terlebih dahulu agar pilihan yang diedit tidak hilang karena render async.
-  paymentEntryMode=editMode;
-  document.getElementById('paymentTabIndividual')?.classList.toggle('active',editMode==='individual');
-  document.getElementById('paymentTabGroup')?.classList.toggle('active',editMode==='group');
-  const desc=document.getElementById('paymentEntryDesc');
-  if(desc)desc.textContent=editMode==='group'
-    ?'Pilih satu rombongan untuk mencatat pembayaran yang dibayar untuk seluruh anggota rombongan.'
-    :'Pilih satu jamaah, termasuk anggota rombongan yang membayar secara terpisah. Setiap anggota dicatat sebagai transaksi sendiri.';
-  await fillPaymentJamaah(false);
-  const sel=document.getElementById('paymentJamaah');
-  if(sel){
-    const target=(groupPayment?'group::':'')+(p.jamaah_id||'');
-    const value=[...sel.options].some(o=>o.value===target)?target:(p.jamaah_id||'');
-    setPaymentSelection(value);
-    syncPaymentJamaahName();
-    syncPaymentJamaahSearch();
+  if(!p){notice('Transaksi pembayaran tidak ditemukan. Muat ulang data lalu coba lagi.','error');return}
+  try{
+    const groupPayment=isRombonganPayment(p);
+    const owner=(data||[]).find(x=>String(x.id)===String(p.jamaah_id));
+    const editMode=groupPayment?'group':'individual';
+    paymentEntryMode=editMode;
+    document.getElementById('paymentTabIndividual')?.classList.toggle('active',editMode==='individual');
+    document.getElementById('paymentTabGroup')?.classList.toggle('active',editMode==='group');
+    const desc=document.getElementById('paymentEntryDesc');
+    if(desc)desc.textContent=editMode==='group'
+      ?'Pilih satu rombongan untuk mencatat pembayaran yang dibayar untuk seluruh anggota rombongan.'
+      :'Pilih satu jamaah, termasuk anggota rombongan yang membayar secara terpisah. Setiap anggota dicatat sebagai transaksi sendiri.';
+    await fillPaymentJamaah(false);
+    const sel=document.getElementById('paymentJamaah');
+    if(sel){
+      let target=groupPayment?'':'';
+      if(groupPayment){
+        const groupName=owner?groupNameFor(owner):'';
+        const option=[...sel.options].find(o=>o.value.startsWith('group::')&&normalizeGroupName(o.textContent.replace(/^👥\\s*/,''))===normalizeGroupName(groupName));
+        target=option?.value||'';
+      }else{
+        target=String(p.jamaah_id||'');
+      }
+      setPaymentSelection(target);
+      const search=document.getElementById('paymentJamaahSearch');
+      const checked=document.querySelector('#paymentJamaahChecklist input[name="paymentJamaahChoice"]:checked');
+      if(search)search.value=checked?.dataset.searchLabel||checked?.dataset.label||'';
+      filterPaymentJamaahOptions();
+      if(!target)notice('Nama jamaah/rombongan untuk transaksi ini tidak ditemukan. Periksa data jamaah dan rombongan.','error');
+    }
+    document.getElementById('paymentAmount').value=p.amount??'';
+    document.getElementById('paymentDiscount').value=p.discount??0;
+    document.getElementById('paymentDate').value=p.payment_date||'';
+    document.getElementById('paymentMethod').value=p.method||'';
+    document.getElementById('paymentBank').value=p.bank||'';
+    document.getElementById('paymentNote').value=p.note||'';
+    togglePaymentBank();
+    editingPaymentId=p.id;
+    document.getElementById('paymentSubmitBtn').textContent='Update Pembayaran';
+    document.getElementById('paymentCancelBtn').classList.add('show');
+    document.getElementById('paymentEditingNote').classList.add('show');
+    document.querySelector('#pembayaran .panel')?.scrollIntoView({behavior:'smooth',block:'start'});
+  }catch(err){
+    editingPaymentId='';
+    console.error('Gagal membuka edit pembayaran:',err);
+    notice('Form edit pembayaran gagal dibuka: '+(err?.message||'Kesalahan tidak diketahui'),'error');
   }
-  document.getElementById('paymentAmount').value=p.amount??'';
-  document.getElementById('paymentDiscount').value=p.discount??0;
-  document.getElementById('paymentDate').value=p.payment_date||'';
-  document.getElementById('paymentMethod').value=p.method||'';
-  document.getElementById('paymentBank').value=p.bank||'';
-  document.getElementById('paymentNote').value=p.note||'';
-  togglePaymentBank();
-  document.getElementById('paymentSubmitBtn').textContent='Update Pembayaran';
-  document.getElementById('paymentCancelBtn').classList.add('show');
-  document.getElementById('paymentEditingNote').classList.add('show');
-  document.querySelector('#pembayaran .panel')?.scrollIntoView({behavior:'smooth',block:'start'});
 }
 function cancelPaymentEdit(){
   editingPaymentId='';
