@@ -28,6 +28,7 @@ create policy "Authenticated users can delete shared expenses" on public.expense
 grant select, insert, update, delete on public.expenses to authenticated;
 
 -- Keep the extra jamaah form fields available to all accounts.
+alter table public.jamaah add column if not exists keterangan_rombongan text not null default '';
 alter table public.jamaah add column if not exists family_group text;
 alter table public.jamaah add column if not exists family_relation text;
 alter table public.jamaah add column if not exists mahram_name text;
