@@ -1517,7 +1517,27 @@ async function loadData(){
   documents=[];
   equipment=[];
   departures=[];
-  expenses=loadLocalExpenses();
+  const ex=await sb.from('expenses').select('*').order('date',{ascending:false});
+  if(ex.error){
+    expenses=loadLocalExpenses();
+    if(!window.__expenseSchemaNoticeShown){
+      window.__expenseSchemaNoticeShown=true;
+      console.warn('Tabel expenses belum tersedia/akses ditolak:',ex.error.message);
+      notice('Data pengeluaran belum tersambung ke semua akun. Jalankan migration 20261010_shared_expenses.sql di Supabase SQL Editor.','error');
+    }
+  }else{
+    const remoteExpenses=ex.data||[];
+    const localExpenses=loadLocalExpenses();
+    const remoteIds=new Set(remoteExpenses.map(x=>String(x.id)));
+    const legacy=localExpenses.filter(x=>!remoteIds.has(String(x.id)));
+    if(legacy.length){
+      const imported=await sb.from('expenses').upsert(legacy,{onConflict:'id'});
+      if(imported.error)console.warn('Impor pengeluaran lokal lama gagal:',imported.error.message);
+      else remoteExpenses.push(...legacy);
+    }
+    expenses=remoteExpenses;
+    try{localStorage.setItem(EXPENSE_STORAGE_KEY,JSON.stringify(expenses));}catch(e){}
+  }
 
   // Modul tambahan tidak boleh mengosongkan data jamaah/pembayaran.
   const d=await sb.from('documents').select('*');
@@ -2226,8 +2246,14 @@ async function saveExpenseFromForm(){
     }catch(err){notice('Upload bukti transaksi gagal: '+(err?.message||err),'error');return}
   }
   const row={departure_id,id:editing||('exp-'+Date.now()+'-'+Math.random().toString(36).slice(2,8)),date,category,currency,amount,rate,amount_idr,method,bank:method==='Transfer'?bank:'',description,note,receipt_path,receipt_name,created_at:existing?.created_at||new Date().toISOString()};
-  if(editing){const i=expenses.findIndex(x=>x.id===editing);if(i>=0)expenses[i]=row}else expenses.push(row);
-  if(!saveLocalExpenses())return;
+  const {error:saveError}=await sb.from('expenses').upsert(row,{onConflict:'id'});
+  if(saveError){
+    console.error('Simpan pengeluaran ke Supabase gagal:',saveError);
+    notice('Pengeluaran belum tersimpan ke akun bersama: '+saveError.message+'. Pastikan migration 20261010_shared_expenses.sql sudah dijalankan di Supabase.','error');
+    return;
+  }
+  if(editing){const i=expenses.findIndex(x=>String(x.id)===String(editing));if(i>=0)expenses[i]=row;else expenses.push(row)}else expenses.push(row);
+  saveLocalExpenses();
   await syncToSpreadsheet('pengeluaran',row);
   form.dataset.editId='';
   document.querySelector('#expenseForm .btn[type="submit"]').textContent='Simpan Pengeluaran';
@@ -2246,9 +2272,9 @@ async function openExpenseReceipt(encodedPath){
     window.open(data.signedUrl,'_blank','noopener');
   }catch(err){notice('Bukti transaksi tidak bisa dibuka: '+(err?.message||err),'error')}
 }
-function deleteExpense(id){const x=expenses.find(v=>v.id===id);if(!x)return;if(!confirm('Hapus pengeluaran "'+(x.description||'')+'"?'))return;expenses=expenses.filter(v=>v.id!==id);saveLocalExpenses();renderExpenses();notice('Pengeluaran berhasil dihapus.')}
+async function deleteExpense(id){const x=expenses.find(v=>String(v.id)===String(id));if(!x)return;if(!confirm('Hapus pengeluaran "'+(x.description||'')+'"?'))return;const {error}=await sb.from('expenses').delete().eq('id',id);if(error){notice('Gagal menghapus pengeluaran bersama: '+error.message,'error');return}expenses=expenses.filter(v=>String(v.id)!==String(id));saveLocalExpenses();renderExpenses();notice('Pengeluaran berhasil dihapus.')}
 function toggleAllExpenses(checked){document.querySelectorAll('.expense-check').forEach(x=>x.checked=checked);syncBulkState('expense')}
-function deleteSelectedExpenses(){const ids=[...document.querySelectorAll('.expense-check:checked')].map(x=>x.value);if(!ids.length){notice('Pilih pengeluaran yang ingin dihapus.','error');return}if(!confirm('Hapus '+ids.length+' pengeluaran terpilih?'))return;expenses=expenses.filter(x=>!ids.includes(x.id));saveLocalExpenses();renderExpenses();notice(ids.length+' pengeluaran berhasil dihapus.')}
+async function deleteSelectedExpenses(){const ids=[...document.querySelectorAll('.expense-check:checked')].map(x=>x.value);if(!ids.length){notice('Pilih pengeluaran yang ingin dihapus.','error');return}if(!confirm('Hapus '+ids.length+' pengeluaran terpilih?'))return;const {error}=await sb.from('expenses').delete().in('id',ids);if(error){notice('Gagal menghapus pengeluaran bersama: '+error.message,'error');return}expenses=expenses.filter(x=>!ids.includes(String(x.id)));saveLocalExpenses();renderExpenses();notice(ids.length+' pengeluaran berhasil dihapus.')}
 function exportExpensesCSV(){const rows=expenseRowsFiltered(),lines=[['No','Tanggal','Kategori','Mata Uang','Nominal Asli','Kurs','Nilai IDR','Uraian','Metode','Bank','Bukti','Keterangan']];rows.forEach((x,i)=>lines.push([i+1,x.date||'',x.category||'',x.currency||'IDR',Number(x.amount||0),Number(x.rate||1),expenseAmountIdr(x),x.description||'',x.method||'',x.bank||'',x.receipt_name||'',x.note||'']));const csv=lines.map(r=>r.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\\n'),blob=new Blob(["\\ufeff"+csv],{type:'text/csv;charset=utf-8;'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='rekap-pengeluaran-harian.csv';a.click();URL.revokeObjectURL(a.href)}
 function printExpenses(){
   const rows=expenseRowsFiltered(),st=document.getElementById('expenseStart')?.value||'',en=document.getElementById('expenseEnd')?.value||'';
