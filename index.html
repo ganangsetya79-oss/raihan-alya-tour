@@ -1496,6 +1496,7 @@ async function startApp(){
   const ok=await loadData();
   if(!ok)return;
   renderAll();
+  startSharedExpenseSync();
   await loadMyProfile();
 }
 
@@ -1503,6 +1504,35 @@ async function logout(){
   await sb.auth.signOut();
   location.reload();
 }
+
+async function refreshSharedExpenses({silent=false}={}){
+  if(!currentUser)return false;
+  const {data:rows,error}=await sb.from('expenses').select('*').order('date',{ascending:false});
+  if(error){
+    console.error('Gagal menyegarkan pengeluaran lintas akun:',error);
+    if(!silent)notice('Pengeluaran belum bisa disinkronkan: '+error.message,'error');
+    return false;
+  }
+  expenses=rows||[];
+  try{localStorage.setItem(EXPENSE_STORAGE_KEY,JSON.stringify(expenses));}catch(e){}
+  renderExpenses();
+  return true;
+}
+let sharedExpenseSyncTimer=null;
+function startSharedExpenseSync(){
+  if(sharedExpenseSyncTimer)clearInterval(sharedExpenseSyncTimer);
+  // Polling sebagai fallback lintas akun; tidak bergantung pada Supabase Realtime publication.
+  sharedExpenseSyncTimer=setInterval(()=>{
+    if(currentUser && document.visibilityState==='visible' && !document.getElementById('pengeluaran')?.classList.contains('hidden')){
+      refreshSharedExpenses({silent:true});
+    }
+  },20000);
+}
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='visible' && currentUser && !document.getElementById('pengeluaran')?.classList.contains('hidden')){
+    refreshSharedExpenses({silent:true});
+  }
+});
 
 async function loadData(){
   // Data utama wajib dimuat terlebih dahulu agar form pembayaran tetap bisa
@@ -1586,6 +1616,7 @@ function show(id,btn){
   if(btn)btn.classList.add('active');
   if(window.innerWidth<=768)toggleMobileNav(false);
   renderAll();
+  if(id==='pengeluaran')refreshSharedExpenses({silent:true});
 }
 function openAdminMenu(){document.getElementById('adminMenu').classList.add('show')}
 function closeAdminMenu(){document.getElementById('adminMenu').classList.remove('show')}
@@ -2252,7 +2283,12 @@ async function saveExpenseFromForm(){
     notice('Pengeluaran belum tersimpan ke akun bersama: '+saveError.message+'. Pastikan migration 20261010_shared_expenses.sql sudah dijalankan di Supabase.','error');
     return;
   }
-  if(editing){const i=expenses.findIndex(x=>String(x.id)===String(editing));if(i>=0)expenses[i]=row;else expenses.push(row)}else expenses.push(row);
+  // Muat ulang hasil database agar kedua akun melihat nilai kanonis yang sama.
+  const {data:savedRows,error:reloadError}=await sb.from('expenses').select('*').order('date',{ascending:false});
+  if(reloadError){
+    console.warn('Pengeluaran tersimpan tetapi daftar belum bisa dimuat ulang:',reloadError.message);
+    expenses=editing?expenses.map(x=>String(x.id)===String(row.id)?row:x):[row,...expenses];
+  }else expenses=savedRows||[];
   saveLocalExpenses();
   await syncToSpreadsheet('pengeluaran',row);
   form.dataset.editId='';
