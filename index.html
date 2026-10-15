@@ -676,6 +676,46 @@ table{max-width:100%}
 #roomAssignActiveResults .room-assignee-option>span{font-size:12px;font-weight:750}
 #roomAssignActiveResults .room-assignee-option>small{line-height:1.55;white-space:normal;overflow-wrap:anywhere}
 </style>
+<style>
+
+/* Payment page redesign: consistent grouping, clear full-width jamaah picker */
+#pembayaran .payment-subnav{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:6px;margin:0 0 16px;border:1px solid #dce7e2;border-radius:12px;background:#f4f8f6}
+#pembayaran .payment-subnav-btn{min-width:0;min-height:42px;padding:10px 12px;border:1px solid transparent;border-radius:8px;background:transparent;color:#3e6257;font-size:12px;font-weight:700;line-height:1.35}
+#pembayaran .payment-subnav-btn.active{background:#1f705d;color:#fff;box-shadow:0 2px 5px rgba(31,112,93,.16)}
+#pembayaran .payment-view-panel{padding:20px;border:1px solid #e0e9e5;border-radius:14px;box-shadow:0 5px 18px rgba(24,58,49,.035)}
+#pembayaran .payment-view-panel>.panel-head{margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid #e8efeb}
+#paymentForm{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px 18px}
+#paymentForm>.full{grid-column:1/-1}
+#paymentForm .payment-entry-tabs{padding:5px;border:1px solid #dfe9e4;border-radius:10px;background:#f4f8f6;gap:7px}
+#paymentForm .payment-entry-tab{border-radius:7px;border:1px solid transparent;font-size:13px}
+#paymentForm .payment-entry-tab.active{background:#1f705d;color:#fff;box-shadow:0 2px 5px rgba(31,112,93,.15)}
+#paymentForm .payment-entry-desc{padding:9px 11px;margin:0;border-left:3px solid #c28a16;border-radius:0 7px 7px 0;background:#fffaf0;color:#66756d;font-size:12px}
+#paymentForm .payment-jamaah-picker{grid-column:1/-1;padding:14px;border:1px solid #dfe8e3;border-radius:11px;background:#fbfdfc}
+#paymentForm .payment-jamaah-picker>label{font-weight:750;color:#294f43;font-size:12px}
+#paymentForm #paymentJamaahSearch{min-height:43px;border-radius:9px;border-color:#ccdcd4;background:#fff;margin-bottom:9px}
+#paymentForm #paymentJamaahChecklist{max-height:235px;padding:4px;border:1px solid #e0e8e4;border-radius:9px;background:#fff}
+#paymentForm #paymentJamaahChecklist .payment-check-item{padding:9px 10px;border-radius:6px}
+#paymentForm .payment-selected-info{margin-top:10px;padding:10px 12px;border-radius:8px;font-size:12px}
+#paymentForm .payment-search-hint{margin-top:8px}
+#paymentForm>div:not(.full):not(.payment-jamaah-picker){padding:0;min-width:0}
+#paymentForm>div:not(.full):not(.payment-jamaah-picker)>label{font-weight:700;color:#52665c}
+#paymentForm input:not([type=checkbox]),#paymentForm select,#paymentForm textarea{min-height:43px;border-radius:9px}
+#paymentForm .actions.full{display:flex;justify-content:flex-end;gap:9px;padding-top:12px;border-top:1px solid #e8efeb}
+#paymentForm #paymentSubmitBtn{min-width:180px;min-height:42px;border-radius:9px;font-weight:750}
+#paymentForm #paymentCancelBtn{min-height:42px;border-radius:9px}
+#pembayaran [data-payment-panel="summary"],#pembayaran [data-payment-panel="history"]{overflow:hidden}
+#pembayaran [data-payment-panel="summary"] table,#pembayaran [data-payment-panel="history"] table{width:100%;border-collapse:separate;border-spacing:0}
+@media(max-width:760px){
+ #pembayaran .payment-subnav{grid-template-columns:1fr;gap:5px}
+ #pembayaran .payment-view-panel{padding:13px}
+ #paymentForm{grid-template-columns:minmax(0,1fr);gap:13px}
+ #paymentForm>.full,#paymentForm .payment-jamaah-picker{grid-column:1}
+ #paymentForm .payment-entry-tabs{grid-template-columns:1fr 1fr}
+ #paymentForm .payment-entry-tab{font-size:11px;padding:8px 5px}
+ #paymentForm .actions.full{flex-wrap:wrap}
+ #paymentForm #paymentSubmitBtn{flex:1;min-width:140px}
+}
+</style>
 </head>
 <body>
 <button type="button" class="mobile-menu-btn" id="mobileMenuBtn" onclick="toggleMobileNav()" aria-label="Buka menu" title="Buka menu"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"></path></svg></button>
