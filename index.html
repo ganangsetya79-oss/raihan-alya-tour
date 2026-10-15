@@ -665,6 +665,17 @@ table{max-width:100%}
 .room-assign-modal-hint{margin:12px 0 0;padding:10px;border-radius:8px;background:#fff9e9;color:#786637;font-size:11px;line-height:1.5}
 @media(max-width:600px){.room-assign-dialog{padding:15px;border-radius:13px}.room-assign-dialog-head h2{font-size:16px}#roomAssignActiveResults{max-height:42vh}}
 </style>
+<style>
+
+/* Room List: keep group members together and make their relationship details easy to scan */
+.room-member{align-items:flex-start;gap:10px;padding:10px 2px}
+.room-member-name{display:block;min-width:0;flex:1;line-height:1.35}
+.room-member-detail{display:block!important;margin-top:4px;color:#5e7067!important;font-size:11px!important;line-height:1.5;white-space:normal;overflow-wrap:anywhere}
+.room-member-group{display:inline-block!important;margin-top:5px;padding:3px 7px;border-radius:5px;background:#e8f4ed;color:#1f6a53!important;font-size:10px!important;font-weight:800;letter-spacing:.25px}
+#roomAssignActiveResults .room-assignee-option{gap:5px}
+#roomAssignActiveResults .room-assignee-option>span{font-size:12px;font-weight:750}
+#roomAssignActiveResults .room-assignee-option>small{line-height:1.55;white-space:normal;overflow-wrap:anywhere}
+</style>
 </head>
 <body>
 <button type="button" class="mobile-menu-btn" id="mobileMenuBtn" onclick="toggleMobileNav()" aria-label="Buka menu" title="Buka menu"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"></path></svg></button>
@@ -2201,7 +2212,16 @@ function renderRoomList(){
     const pct=Math.min(100,Math.round((members.length/Math.max(1,Number(r.capacity)))*100));
     const status=members.length>=Number(r.capacity)?'Penuh':'Tersedia '+(Number(r.capacity)-members.length);
     const cls=members.length>=Number(r.capacity)?'full':'warn';
-    return '<div class="room-card" data-room-card="'+esc(r.id)+'"><label class="room-card-select"><input type="checkbox" class="room-select-checkbox" value="'+esc(r.id)+'" onchange="updateRoomSelection()"> Pilih kamar</label><div class="room-card-head"><div><div class="room-card-title">'+(r.room_number?'Kamar '+esc(r.room_number):'Slot Kamar '+String(r.slot_no||1).padStart(2,'0'))+' — '+esc(r.hotel)+'</div><div class="room-card-meta">'+esc(r.city)+' · '+esc(r.type)+' · '+members.length+'/'+esc(r.capacity)+' orang</div></div><span class="room-capacity '+cls+'">'+status+'</span></div><div class="room-progress"><span class="'+(members.length>=Number(r.capacity)?'full':'')+'" style="width:'+pct+'%"></span></div><div class="room-member-list">'+(members.length?members.map(m=>'<div class="room-member"><span class="room-member-name">'+esc(m.nama)+' <small style="display:block;color:#64716c;font-size:11px">'+esc(m.jenis_kelamin||'Jenis kelamin belum diisi')+' · '+esc(m.family_relation||'Hubungan belum diisi')+(m.family_group||m.nama_rombongan?' · Keluarga: '+esc(m.family_group||m.nama_rombongan):'')+(m.mahram_name?' · Pendamping: '+esc(m.mahram_name):'')+'</small></span><button class="room-member-remove" type="button" onclick="removeRoomMember(\''+r.id+'\',\''+m.id+'\')">Hapus</button></div>').join(''):'<div class="muted" style="font-size:11px">Belum ada jamaah.</div>')+'</div><div class="room-assign room-assign-search"><button class="btn room-assign-open" type="button" onclick="openRoomAssign(\''+r.id+'\')"><span aria-hidden="true">＋</span> Tempatkan Jamaah <span class="room-assign-open-count">'+members.length+'/'+esc(r.capacity)+'</span></button></div><div class="room-card-actions"><button class="btn secondary small-btn" type="button" onclick="editRoom(\''+r.id+'\')">Edit Kamar</button><button class="btn danger small-btn" type="button" onclick="deleteRoom(\''+r.id+'\')">Hapus</button></div></div>';
+    return '<div class="room-card" data-room-card="'+esc(r.id)+'"><label class="room-card-select"><input type="checkbox" class="room-select-checkbox" value="'+esc(r.id)+'" onchange="updateRoomSelection()"> Pilih kamar</label><div class="room-card-head"><div><div class="room-card-title">'+(r.room_number?'Kamar '+esc(r.room_number):'Slot Kamar '+String(r.slot_no||1).padStart(2,'0'))+' — '+esc(r.hotel)+'</div><div class="room-card-meta">'+esc(r.city)+' · '+esc(r.type)+' · '+members.length+'/'+esc(r.capacity)+' orang</div></div><span class="room-capacity '+cls+'">'+status+'</span></div><div class="room-progress"><span class="'+(members.length>=Number(r.capacity)?'full':'')+'" style="width:'+pct+'%"></span></div><div class="room-member-list">'+(members.length?members.slice().sort((a,b)=>{
+      const ga=String(a.family_group||a.nama_rombongan||'').trim(),gb=String(b.family_group||b.nama_rombongan||'').trim();
+      if(!!ga!==!!gb)return ga?-1:1;
+      if(ga&&gb){const byGroup=ga.localeCompare(gb,'id');if(byGroup)return byGroup;}
+      return String(a.nama||'').localeCompare(String(b.nama||''),'id');
+    }).map(m=>{
+      const group=String(m.family_group||m.nama_rombongan||'').trim();
+      const details=[m.jenis_kelamin||'Jenis kelamin belum diisi',m.family_relation?'Hubungan: '+m.family_relation:'',m.mahram_name?'Mahram: '+m.mahram_name:''].filter(Boolean);
+      return '<div class="room-member"><span class="room-member-name">'+esc(m.nama)+'<small class="room-member-detail">'+details.map(esc).join(' · ')+'</small>'+(group?'<small class="room-member-group">GRUP: '+esc(group)+'</small>':'')+'</span><button class="room-member-remove" type="button" onclick="removeRoomMember(\''+r.id+'\',\''+m.id+'\')">Hapus</button></div>';
+    }).join(''):'<div class="muted" style="font-size:11px">Belum ada jamaah.</div>')+'</div><div class="room-assign room-assign-search"><button class="btn room-assign-open" type="button" onclick="openRoomAssign(\''+r.id+'\')"><span aria-hidden="true">＋</span> Tempatkan Jamaah <span class="room-assign-open-count">'+members.length+'/'+esc(r.capacity)+'</span></button></div><div class="room-card-actions"><button class="btn secondary small-btn" type="button" onclick="editRoom(\''+r.id+'\')">Edit Kamar</button><button class="btn danger small-btn" type="button" onclick="deleteRoom(\''+r.id+'\')">Hapus</button></div></div>';
   }).join('');
   updateRoomSelection();
 }
@@ -4402,7 +4422,13 @@ function renderRoomAssignChoices(){
   rooms.forEach(r=>(r.member_ids||[]).forEach(id=>assigned.set(String(id),r)));
   const options=(data||[]).filter(j=>String(j.departure_id||'')===String(room.departure_id))
     .filter(j=>!q||[j.nama,j.jenis_kelamin,j.family_group,j.nama_rombongan,j.family_relation,j.mahram_name,j.nik,j.hp,j.keterangan,j.catatan,j.keterangan_rombongan].some(v=>String(v||'').toLocaleLowerCase('id').includes(q)))
-    .sort((a,b)=>String(a.nama||'').localeCompare(String(b.nama||''),'id'));
+    .sort((a,b)=>{
+      const groupOf=j=>String(j.family_group||j.nama_rombongan||'').trim();
+      const ga=groupOf(a),gb=groupOf(b);
+      if(!!ga!==!!gb)return ga?-1:1;
+      if(ga&&gb){const byGroup=ga.localeCompare(gb,'id');if(byGroup)return byGroup;}
+      return String(a.nama||'').localeCompare(String(b.nama||''),'id');
+    });
   box.innerHTML=options.length?options.map(j=>{
     const assignedRoom=assigned.get(String(j.id));
     const here=assignedRoom&&String(assignedRoom.id)===String(room.id);
