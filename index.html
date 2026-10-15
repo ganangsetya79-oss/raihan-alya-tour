@@ -3391,6 +3391,28 @@ async function hapus(id){
   await loadData();renderAll();notice('Data jamaah berhasil dihapus.');
 }
 
+// Retry simpan jamaah bila database belum mengenali kolom tambahan yang bersifat opsional.
+async function jamaahSchemaSafeWrite(payload, execute){
+  let current=Array.isArray(payload)?payload.map(row=>({...row})):({...payload});
+  const optionalColumns=['keterangan_rombongan','family_group','family_relation','mahram_name','upgrade_description','upgrade_amount'];
+  for(let attempt=0;attempt<=optionalColumns.length;attempt++){
+    const result=await execute(current);
+    if(!result?.error)return result;
+    const message=String(result.error.message||'');
+    const first=Array.isArray(current)?(current[0]||{}):current;
+    const column=optionalColumns.find(name=>
+      Object.prototype.hasOwnProperty.call(first,name) &&
+      message.includes(name) &&
+      /column.*does not exist|schema cache|could not find/i.test(message)
+    );
+    if(!column||attempt===optionalColumns.length)return result;
+    if(Array.isArray(current))current=current.map(row=>{const copy={...row};delete copy[column];return copy});
+    else delete current[column];
+    console.warn('Kolom jamaah belum tersedia, mencoba tanpa kolom opsional:',column);
+  }
+  return {error:{message:'Penyimpanan jamaah gagal setelah percobaan ulang.'}};
+}
+
 const jamaahForm=document.getElementById('jamaahForm');
 if(jamaahForm) jamaahForm.addEventListener('submit',async e=>{
   e.preventDefault();
@@ -3409,8 +3431,8 @@ if(jamaahForm) jamaahForm.addEventListener('submit',async e=>{
       }).filter(x=>x.nama);
       if(!rows.length){notice('Isi minimal satu nama jamaah pada Multi Input.','error');return}
       if(!departure_id){notice('Pilih jadwal keberangkatan terlebih dahulu.','error');return}
-      const q=await sb.from('jamaah').insert(rows);
-      if(q.error){notice('Gagal menyimpan Multi Input: '+q.error.message,'error');return}
+      const q=await jamaahSchemaSafeWrite(rows,payload=>sb.from('jamaah').insert(payload));
+      if(q.error){console.error('Multi Input jamaah gagal:',q.error);notice('Gagal menyimpan Multi Input: '+(q.error.message||'Kesalahan Supabase')+(q.error.details?' — '+q.error.details:''),'error');return}
       jamaahSheetRows=rows;
       if(typeof syncManyToSpreadsheet==='function')syncManyToSpreadsheet('jamaah',rows);
       await loadData();jamaahCurrentPage=1;renderAll();closeForm();
@@ -3477,28 +3499,21 @@ if(jamaahForm) jamaahForm.addEventListener('submit',async e=>{
     // Update hanya anggota lama yang masih ada.
     for(const row of existingRows){
       const {id:rowId,...payload}=row;
-      let q=await sb.from('jamaah').update(payload).eq('id',rowId);
-      if(q.error && /keterangan_rombongan|column.*does not exist|schema cache/i.test(q.error.message||'')){
-        const {keterangan_rombongan,...fallback}=payload;
-        q=await sb.from('jamaah').update(fallback).eq('id',rowId);
-      }
+      let q=await jamaahSchemaSafeWrite(payload,safePayload=>sb.from('jamaah').update(safePayload).eq('id',rowId));
       results.push(q);
     }
 
     // Insert hanya anggota baru yang benar-benar diisi.
     if(newRows.length){
-      let q=await sb.from('jamaah').insert(newRows.map(({id,...row})=>row));
-      if(q.error && /keterangan_rombongan|column.*does not exist|schema cache/i.test(q.error.message||'')){
-        q=await sb.from('jamaah').insert(newRows.map(({id,keterangan_rombongan,...row})=>row));
-      }
+      let q=await jamaahSchemaSafeWrite(newRows.map(({id,...row})=>row),safeRows=>sb.from('jamaah').insert(safeRows));
       results.push(q);
     }
     result=results.find(x=>x?.error)||{error:null};
   }else{
     const payload={nama:document.getElementById('nama').value.trim(),jenis_kelamin:document.getElementById('jenis_kelamin').value,hp:document.getElementById('hp').value.trim(),nik:document.getElementById('nik').value.trim(),alamat:document.getElementById('alamat').value.trim(),family_group:document.getElementById('family_group')?.value.trim()||'',family_relation:document.getElementById('family_relation')?.value||'',mahram_name:document.getElementById('mahram_name')?.value.trim()||'',group_id:null,paket:document.getElementById('jPaketSelect').value||'Other / Belum Diketahui',harga:Number(document.getElementById('harga').value)||0,upgrade_description:document.getElementById('upgradeDescription')?.value.trim()||'',upgrade_amount:Math.max(0,Number(document.getElementById('upgradeAmount')?.value)||0),berangkat:null,keterangan:document.getElementById('keterangan').value.trim(),catatan:document.getElementById('catatan').value.trim(),departure_id:document.getElementById('jDepartureSelect').value||null};
     jamaahSheetRows=[{...payload,id:id||undefined}];
-    if(id)result=await sb.from('jamaah').update(payload).eq('id',id);else result=await sb.from('jamaah').insert(payload);
-    if(result.error){console.error('Simpan jamaah gagal:',JSON.stringify(result.error,null,2));notice('Gagal menyimpan jamaah: '+(result.error.message||'Kesalahan Supabase')+(result.error.details?' — '+result.error.details:'')+' Pastikan kolom keterangan tersedia di tabel jamaah.','error');return}
+    if(id)result=await jamaahSchemaSafeWrite(payload,safePayload=>sb.from('jamaah').update(safePayload).eq('id',id));else result=await jamaahSchemaSafeWrite(payload,safePayload=>sb.from('jamaah').insert(safePayload));
+    if(result.error){console.error('Simpan jamaah gagal:',JSON.stringify(result.error,null,2));notice('Gagal menyimpan jamaah: '+(result.error.message||'Kesalahan Supabase')+(result.error.details?' — '+result.error.details:'')+' Periksa struktur tabel jamaah dan izin akses Supabase.','error');return}
   }
   if(result.error){console.error('Simpan jamaah gagal:',JSON.stringify(result.error,null,2));notice('Gagal menyimpan jamaah: '+(result.error.message||'Kesalahan Supabase')+(result.error.details?' — '+result.error.details:''),'error');return}
   await syncManyToSpreadsheet('jamaah',jamaahSheetRows);
