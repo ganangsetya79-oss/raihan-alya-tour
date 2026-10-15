@@ -3536,7 +3536,7 @@ async function hapus(id){
 // Retry simpan jamaah bila database belum mengenali kolom tambahan yang bersifat opsional.
 async function jamaahSchemaSafeWrite(payload, execute){
   let current=Array.isArray(payload)?payload.map(row=>({...row})):({...payload});
-  const optionalColumns=['keterangan_rombongan','family_group','family_relation','mahram_name','upgrade_description','upgrade_amount'];
+  const optionalColumns=['keterangan_rombongan','family_group','family_relation','mahram_name','upgrade_description','upgrade_amount','kategori','nama_rombongan','group_id','departure_id','berangkat','keterangan','catatan','alamat'];
   for(let attempt=0;attempt<=optionalColumns.length;attempt++){
     const result=await execute(current);
     if(!result?.error)return result;
@@ -3544,8 +3544,8 @@ async function jamaahSchemaSafeWrite(payload, execute){
     const first=Array.isArray(current)?(current[0]||{}):current;
     const column=optionalColumns.find(name=>
       Object.prototype.hasOwnProperty.call(first,name) &&
-      message.includes(name) &&
-      /column.*does not exist|schema cache|could not find/i.test(message)
+      new RegExp('\\\\b'+name+'\\\\b','i').test(message) &&
+      /column.*does not exist|schema cache|could not find|could not find the .* column/i.test(message)
     );
     if(!column||attempt===optionalColumns.length)return result;
     if(Array.isArray(current))current=current.map(row=>{const copy={...row};delete copy[column];return copy});
