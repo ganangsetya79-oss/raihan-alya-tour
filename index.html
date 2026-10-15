@@ -907,7 +907,7 @@ table{max-width:100%}
   <div class="top">
   <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><h1 style="margin:0">Data Jamaah</h1><span id="jamaahDataCount" class="jamaah-data-count">0 data</span></div>
   <div class="jamaah-list-filters">
-    <input id="search" class="search" placeholder="Cari nama / NIK / HP / paket / rombongan / catatan..." oninput="jamaahCurrentPage=1;renderJamaah()">
+    <input id="search" class="search" placeholder="Cari nama / NIK / HP / paket / group / catatan..." oninput="jamaahCurrentPage=1;renderJamaah()">
     <select id="jamaahDepartureFilter" class="jamaah-departure-filter" onchange="jamaahCurrentPage=1;renderJamaah()"><option value="">Semua Jadwal</option></select>
     <select id="jamaahStatusFilter" class="jamaah-departure-filter" onchange="jamaahCurrentPage=1;renderJamaah()" aria-label="Filter status pembayaran">
       <option value="">Semua Status Pembayaran</option>
@@ -920,11 +920,11 @@ table{max-width:100%}
 </div>
   <div class="panel">
     <div class="panel-head">
-      <div><h2>Daftar Jamaah</h2><div class="muted" style="margin-top:4px">Kelola jamaah individu maupun grup/rombongan.</div></div>
-      <div class="jamaah-group-tools"><button class="btn secondary small-btn" type="button" onclick="assignSelectedGroup()">Buat/Atur Rombongan</button><button class="btn danger small-btn" type="button" onclick="hapusTerpilihJamaah()">🗑️ Hapus Terpilih</button><button class="btn" onclick="openForm()">+ Tambah Jamaah</button></div>
+      <div><h2>Daftar Jamaah</h2><div class="muted" style="margin-top:4px">Kelola jamaah individu maupun group.</div></div>
+      <div class="jamaah-group-tools"><button class="btn secondary small-btn" type="button" onclick="assignSelectedGroup()">Buat/Atur Group</button><button class="btn danger small-btn" type="button" onclick="hapusTerpilihJamaah()">🗑️ Hapus Terpilih</button><button class="btn" onclick="openForm()">+ Tambah Jamaah</button></div>
     </div>
-    <div class="muted" style="margin-bottom:10px;font-size:11px">Centang beberapa jamaah untuk memasukkannya ke satu grup/rombongan.</div>
-    <table><thead><tr><th style="width:38px;text-align:center">No.</th><th style="width:38px;text-align:center"><input class="jamaah-select-all" id="jamaahSelectAll" type="checkbox" onchange="toggleAllJamaah(this.checked)" title="Pilih semua"></th><th>Nama</th><th>Kategori</th><th>Rombongan</th><th>Jenis Kelamin</th><th>NIK</th><th>No. HP</th><th>Paket</th><th>Harga</th><th>Diskon</th><th>Dibayar</th><th>Sisa</th><th>Status</th><th>Keterangan</th><th>Catatan</th><th>Aksi</th></tr></thead><tbody id="jamaahBody"></tbody></table>
+    <div class="muted" style="margin-bottom:10px;font-size:11px">Centang beberapa jamaah untuk memasukkannya ke satu group.</div>
+    <table><thead><tr><th style="width:38px;text-align:center">No.</th><th style="width:38px;text-align:center"><input class="jamaah-select-all" id="jamaahSelectAll" type="checkbox" onchange="toggleAllJamaah(this.checked)" title="Pilih semua"></th><th>Nama</th><th>Kategori</th><th>Group</th><th>Jenis Kelamin</th><th>NIK</th><th>No. HP</th><th>Paket</th><th>Harga</th><th>Diskon</th><th>Dibayar</th><th>Sisa</th><th>Status</th><th>Keterangan</th><th>Catatan</th><th>Aksi</th></tr></thead><tbody id="jamaahBody"></tbody></table>
     <div class="jamaah-pagination" id="jamaahPagination">
       <div class="jamaah-page-size"><span>Tampilkan</span><select id="jamaahPageSize" onchange="changeJamaahPageSize(this.value)"><option value="25" selected>25</option><option value="50">50</option><option value="100">100</option><option value="all">Semua</option></select><span>data</span></div>
       <div class="jamaah-page-info" id="jamaahPageInfo">0 data</div>
@@ -949,17 +949,17 @@ table{max-width:100%}
       <div class="full">
         <div class="payment-entry-tabs">
           <button type="button" id="paymentTabIndividual" class="payment-entry-tab active" onclick="setPaymentEntryMode('individual')">👤 Pembayaran Individu</button>
-          <button type="button" id="paymentTabGroup" class="payment-entry-tab" onclick="setPaymentEntryMode('group')">👥 Pembayaran Rombongan</button>
+          <button type="button" id="paymentTabGroup" class="payment-entry-tab" onclick="setPaymentEntryMode('group')">👥 Pembayaran Group</button>
         </div>
-        <div id="paymentEntryDesc" class="payment-entry-desc">Pilih satu jamaah untuk mencatat pembayaran pribadi. Anggota rombongan juga dipilih satu per satu di sini.</div>
+        <div id="paymentEntryDesc" class="payment-entry-desc">Pilih satu jamaah untuk mencatat pembayaran pribadi. Anggota group juga dipilih satu per satu di sini.</div>
       </div>
       <div class="payment-jamaah-picker">
-  <label>Pilih Jamaah / Rombongan</label>
-  <input id="paymentJamaahSearch" type="text" placeholder="Cari nama jamaah atau rombongan..." autocomplete="off" oninput="filterPaymentJamaahOptions()">
+  <label>Pilih Jamaah / Group</label>
+  <input id="paymentJamaahSearch" type="text" placeholder="Cari nama jamaah atau group..." autocomplete="off" oninput="filterPaymentJamaahOptions()">
   <div id="paymentJamaahChecklist" class="payment-jamaah-checklist"></div>
   <select id="paymentJamaah" style="display:none" aria-hidden="true"><option value=""></option></select>
   <div class="payment-selected-info" id="paymentSelectedInfo">Belum ada jamaah yang dipilih.</div>
-  <div class="payment-search-hint"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"></circle><path d="m16 16 4 4"></path></svg><span>Centang satu jamaah untuk pembayaran pribadi, atau centang Rombongan untuk pembayaran seluruh rombongan.</span></div>
+  <div class="payment-search-hint"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"></circle><path d="m16 16 4 4"></path></svg><span>Centang satu jamaah untuk pembayaran pribadi, atau centang Group untuk pembayaran seluruh group.</span></div>
 </div>
       <div><label>Nominal Pembayaran</label><input id="paymentAmount" type="number" min="1" required placeholder="Contoh: 5000000"></div>
       <div><label>Diskon / Potongan Tagihan</label><input id="paymentDiscount" type="number" min="0" value="0" placeholder="Contoh: 500000"></div>
@@ -998,7 +998,7 @@ table{max-width:100%}
       <label>Sampai tanggal<input id="paymentHistoryEnd" type="date" onchange="renderPaymentHistory()"></label>
       <label>Metode<select id="paymentHistoryMethod" onchange="togglePaymentHistoryBank();renderPaymentHistory()"><option value="">Semua metode</option><option value="Cash">Cash</option><option value="Transfer">Transfer</option></select></label>
       <label id="paymentHistoryBankFilterWrap">Bank<select id="paymentHistoryBank" onchange="renderPaymentHistory()"><option value="">Semua bank</option><option value="Bank Muamalat">Bank Muamalat</option><option value="BSI">BSI</option></select></label>
-      <label>Jenis Transaksi<select id="paymentHistoryType" onchange="renderPaymentHistory()"><option value="">Semua jenis</option><option value="individu">Pembayaran Individu</option><option value="anggota">Anggota Rombongan</option><option value="rombongan">Pembayaran Rombongan</option></select></label>
+      <label>Jenis Transaksi<select id="paymentHistoryType" onchange="renderPaymentHistory()"><option value="">Semua jenis</option><option value="individu">Pembayaran Individu</option><option value="anggota">Anggota Group</option><option value="rombongan">Pembayaran Group</option></select></label>
       <button class="btn secondary small-btn" type="button" onclick="clearPaymentHistorySearch()">Reset Filter</button>
     </div>
     <div class="payment-history-wrap">
@@ -1244,7 +1244,7 @@ table{max-width:100%}
       <div><label>PNR</label><input id="depPnr" placeholder="Contoh: ABC123"></div>
       <div><label>Hotel Makkah</label><input id="depMakkah" placeholder="Nama hotel"></div>
       <div><label>Hotel Madinah</label><input id="depMadinah" placeholder="Nama hotel"></div>
-      <div class="full"><label>Catatan</label><input id="depNote" placeholder="Keterangan penerbangan / rombongan"></div>
+      <div class="full"><label>Catatan</label><input id="depNote" placeholder="Keterangan penerbangan / group"></div>
       <div class="actions full"><button type="button" class="btn secondary hidden" id="depCancelEdit" onclick="cancelDepartureEdit()">Batal Edit</button><button type="submit" class="btn" id="depSubmitBtn">Simpan Grup</button></div>
     </form>
   </div>
@@ -1324,12 +1324,12 @@ table{max-width:100%}
     <div class="full"><label>Kategori Jamaah</label><div class="jamaah-entry-tabs">
       <button type="button" id="tabIndividu" class="jamaah-entry-tab active" onclick="setJamaahEntryMode('individu')">Input Individual</button>
       <button type="button" id="tabMultiIndividu" class="jamaah-entry-tab" onclick="setJamaahEntryMode('individu-multi')">Multi Input Individual</button>
-      <button type="button" id="tabGrup" class="jamaah-entry-tab" onclick="setJamaahEntryMode('grup')">Input Rombongan / Keluarga</button>
+      <button type="button" id="tabGrup" class="jamaah-entry-tab" onclick="setJamaahEntryMode('grup')">Input Group / Keluarga</button>
     </div></div>
     <div id="individualForm" class="full"><div class="jamaah-individual-form">
       <div><label>Nama Lengkap</label><input id="nama" required></div><div><label>Jenis Kelamin</label><select id="jenis_kelamin"><option value="">-- Pilih --</option><option value="Laki-laki">Laki-laki</option><option value="Perempuan">Perempuan</option></select></div>
       <div><label>No. HP</label><input id="hp" required></div><div><label>NIK</label><input id="nik"></div><div><label>Alamat</label><input id="alamat"></div>
-      <div><label>Nama Keluarga / Rombongan</label><input id="family_group" placeholder="Contoh: Keluarga Ahmad"></div>
+      <div><label>Nama Keluarga / Group</label><input id="family_group" placeholder="Contoh: Keluarga Ahmad"></div>
       <div><label>Hubungan dalam Keluarga</label><select id="family_relation"><option value="">-- Pilih hubungan --</option><option>Suami</option><option>Istri</option><option>Ayah</option><option>Ibu</option><option>Anak</option><option>Kakak</option><option>Adik</option><option>Saudara</option><option>Orang tua</option><option>Wali</option><option>Lainnya</option></select></div>
       <div class="full"><label>Nama Mahram / Pendamping (sesuai keterangan jamaah)</label><input id="mahram_name" placeholder="Nama orang yang menjadi acuan pendamping/mahram"></div>
       <div><label>Paket</label><select id="jPaketSelect" onchange="syncPackagePrice('jPaketSelect','harga')"></select></div>
@@ -1348,13 +1348,13 @@ table{max-width:100%}
         <div><label>Paket</label><select id="multiPaketSelect" onchange="syncPackagePrice('multiPaketSelect','multiHarga')"></select></div>
         <div><label>Harga Paket / Orang</label><input id="multiHarga" type="number" min="0" readonly></div>
       </div>
-      <div class="muted" style="margin:4px 0 12px">Untuk booking banyak seat tanpa membuat rombongan. Isi nama yang sudah tersedia; baris yang kosong tidak akan disimpan.</div>
+      <div class="muted" style="margin:4px 0 12px">Untuk booking banyak seat tanpa membuat group. Isi nama yang sudah tersedia; baris yang kosong tidak akan disimpan.</div>
       <div id="multiIndividualCards"></div>
     </div>
     <div id="groupForm" class="jamaah-group-form hidden">
-      <div class="jamaah-group-head"><div><label>Nama Rombongan / Keluarga</label><input id="nama_rombongan" placeholder="Contoh: Keluarga Ahmad"></div><div><label>Keterangan Rombongan</label><input id="keterangan_rombongan" placeholder="Opsional"></div></div>
-      <div style="margin:0 0 12px"><label>Jadwal Keberangkatan</label><select id="groupDepartureSelect"><option value="">-- Belum ditentukan --</option></select><div class="muted" style="margin-top:4px">Semua anggota rombongan otomatis dimasukkan ke jadwal ini.</div></div>
-      <div class="jamaah-members-head"><div><h3 style="margin:0">Anggota Jamaah</h3><div class="muted">Edit semua anggota rombongan sekaligus di bagian ini. Perubahan disimpan bersama melalui tombol Simpan Jamaah.</div></div><button type="button" class="btn" onclick="addJamaahMember()">+ Tambah Anggota</button></div>
+      <div class="jamaah-group-head"><div><label>Nama Group / Keluarga</label><input id="nama_rombongan" placeholder="Contoh: Keluarga Ahmad"></div><div><label>Keterangan Group</label><input id="keterangan_rombongan" placeholder="Opsional"></div></div>
+      <div style="margin:0 0 12px"><label>Jadwal Keberangkatan</label><select id="groupDepartureSelect"><option value="">-- Belum ditentukan --</option></select><div class="muted" style="margin-top:4px">Semua anggota group otomatis dimasukkan ke jadwal ini.</div></div>
+      <div class="jamaah-members-head"><div><h3 style="margin:0">Anggota Jamaah</h3><div class="muted">Edit semua anggota group sekaligus di bagian ini. Perubahan disimpan bersama melalui tombol Simpan Jamaah.</div></div><button type="button" class="btn" onclick="addJamaahMember()">+ Tambah Anggota</button></div>
       <div class="jamaah-bulk-package" style="display:flex;gap:8px;align-items:end;flex-wrap:wrap;margin:0 0 12px;padding:10px;border:1px solid #dce8e3;border-radius:8px;background:#f7faf8">
         <div style="flex:1;min-width:190px"><label for="groupBulkPackage">Ubah paket seluruh anggota</label><select id="groupBulkPackage"><option value="">-- Pilih paket untuk semua --</option></select></div>
         <button type="button" class="btn secondary" onclick="applyGroupBulkPackage()">Terapkan ke Semua</button>
@@ -1520,7 +1520,7 @@ const groupMembersFor=x=>{
   });
 };
 const groupTotalFor=x=>groupMembersFor(x).reduce((a,j)=>a+Number(j.harga||0)+Math.max(0,Number(j.upgrade_amount||0)),0);
-const isRombonganPayment=p=>String(p?.note||'').trim().toLowerCase().includes('pembayaran rombongan');
+const isRombonganPayment=p=>String(p?.note||'').trim().toLowerCase().includes('pembayaran group');
 const groupMembersForPayment=x=>groupMembersFor(x);
 const groupPaymentsFor=x=>{
   const ids=new Set(groupMembersForPayment(x).map(j=>j.id));
@@ -1532,7 +1532,7 @@ const groupDiscountFor=x=>groupPaymentsFor(x).reduce((a,p)=>a+Number(p.discount|
 // Pembayaran:
 // - Pembayaran pribadi anggota dihitung penuh untuk anggota tersebut.
 // - Pembayaran rombongan dibagi ke SEMUA anggota yang tercatat pada Data Jamaah
-//   dengan nama rombongan yang sama.
+//   dengan nama group yang sama.
 // - Jika harga paket tersedia, pembagian mengikuti harga paket.
 // - Jika harga paket Rp0/belum diketahui, pembagian rata berdasarkan jumlah anggota.
 // Contoh: Rp60 jt / 6 anggota = Rp10 jt per anggota.
@@ -2032,7 +2032,7 @@ function exportUangMasukCSV(){
   const lines=[['No','Tanggal','Invoice','Jamaah','Nominal','Metode','Bank','Keterangan']];
   rows.forEach((p,i)=>{
     const j=(data||[]).find(x=>x.id===p.jamaah_id);
-    const label=isGroupJamaah(j)?('Rombongan: '+groupNameFor(j)+' ('+groupMembersFor(j).length+' anggota)'):(j?.nama||'');
+    const label=isGroupJamaah(j)?('Group: '+groupNameFor(j)+' ('+groupMembersFor(j).length+' anggota)'):(j?.nama||'');
     lines.push([i+1,p.payment_date||'',p.invoice_no||'',label,money(p.amount),p.method||'',p.bank||'',p.note||'']);
   });
   const csv=lines.map(r=>r.map(v=>`"${String(v??'').replace(/"/g,'""')}"`).join(',')).join('\n');
@@ -2694,7 +2694,7 @@ function renderJamaah(){
     const paid=paidFor(x.id), discount=discountFor(x.id), remain=remainFor(x);
     const isGroup=x.kategori==='grup';
     const rowNo=start+idx+1;
-    return `<tr><td class="jamaah-no" style="text-align:center;font-weight:600;color:#687078">${rowNo}</td><td style="text-align:center"><input class="jamaah-check" type="checkbox" value="${esc(x.id)}" ${jamaahSelectedIds.has(String(x.id))?'checked':''} onchange="syncJamaahSelectState()" aria-label="Pilih ${esc(x.nama)}"></td><td>${esc(x.nama)}</td><td>${isGroup?'<span class="jamaah-group-badge">Grup / Rombongan</span>':'<span class="jamaah-individual-badge">Individu</span>'}</td><td>${esc(x.nama_rombongan||'-')}</td><td>${esc(x.jenis_kelamin||'-')}</td><td>${esc(x.nik||'-')}</td><td>${esc(x.hp||'')}</td><td>${esc(x.paket||'Other / Belum Diketahui')}</td><td>${rupiah(totalBillFor(x))}${upgradeAmountFor(x)>0?'<div class="muted" style="font-size:10px">Termasuk upgrade '+rupiah(upgradeAmountFor(x))+'</div>':''}</td><td>${rupiah(discount)}</td><td>${rupiah(paid)}</td><td>${rupiah(remain)}</td><td>${status(x)}</td><td><span class="jamaah-note-cell" title="${esc((x.keterangan||x.keterangan_rombongan||''))}">${esc(x.keterangan||x.keterangan_rombongan||'-')}</span></td><td><span class="jamaah-note-cell" title="${esc(x.catatan||'')}">${esc(x.catatan||'-')}</span></td><td><button class="btn secondary small-btn" onclick="edit('${x.id}')">${isGroup?'Edit Rombongan':'Edit'}</button> <button class="btn small-btn" onclick="printInvoice('${x.id}')">🧾 Invoice</button> <button class="btn small-btn" onclick="waJamaah('${x.id}')">💬 Hubungi</button> <button class="btn danger small-btn" onclick="hapus('${x.id}')">Hapus</button></td></tr>`;
+    return `<tr><td class="jamaah-no" style="text-align:center;font-weight:600;color:#687078">${rowNo}</td><td style="text-align:center"><input class="jamaah-check" type="checkbox" value="${esc(x.id)}" ${jamaahSelectedIds.has(String(x.id))?'checked':''} onchange="syncJamaahSelectState()" aria-label="Pilih ${esc(x.nama)}"></td><td>${esc(x.nama)}</td><td>${isGroup?'<span class="jamaah-group-badge">Group</span>':'<span class="jamaah-individual-badge">Individu</span>'}</td><td>${esc(x.nama_rombongan||'-')}</td><td>${esc(x.jenis_kelamin||'-')}</td><td>${esc(x.nik||'-')}</td><td>${esc(x.hp||'')}</td><td>${esc(x.paket||'Other / Belum Diketahui')}</td><td>${rupiah(totalBillFor(x))}${upgradeAmountFor(x)>0?'<div class="muted" style="font-size:10px">Termasuk upgrade '+rupiah(upgradeAmountFor(x))+'</div>':''}</td><td>${rupiah(discount)}</td><td>${rupiah(paid)}</td><td>${rupiah(remain)}</td><td>${status(x)}</td><td><span class="jamaah-note-cell" title="${esc((x.keterangan||x.keterangan_rombongan||''))}">${esc(x.keterangan||x.keterangan_rombongan||'-')}</span></td><td><span class="jamaah-note-cell" title="${esc(x.catatan||'')}">${esc(x.catatan||'-')}</span></td><td><button class="btn secondary small-btn" onclick="edit('${x.id}')">${isGroup?'Edit Group':'Edit'}</button> <button class="btn small-btn" onclick="printInvoice('${x.id}')">🧾 Invoice</button> <button class="btn small-btn" onclick="waJamaah('${x.id}')">💬 Hubungi</button> <button class="btn danger small-btn" onclick="hapus('${x.id}')">Hapus</button></td></tr>`;
   }).join('')||'<tr><td colspan="16">Belum ada data.</td></tr>';
   renderJamaahPagination(total,start,Math.min(start+visibleRows.length,total));
   syncJamaahSelectState();
@@ -2758,20 +2758,20 @@ function renderPaymentHistory(){
     const members=group?groupMembersFor(j):[];
     const names=group?members.map(m=>m.nama).join(' '):(j?.nama||'');
     const groupName=group?groupNameFor(j):'';
-    const hay=[p.invoice_no,p.payment_date,p.amount,p.discount,p.method,p.bank,p.note,names,groupName,j?.paket,rombonganPayment?'pembayaran rombongan':(group?'anggota rombongan':'individu')].join(' ').toLowerCase();
+    const hay=[p.invoice_no,p.payment_date,p.amount,p.discount,p.method,p.bank,p.note,names,groupName,j?.paket,rombonganPayment?'pembayaran group':(group?'anggota group':'individu')].join(' ').toLowerCase();
     return hay.includes(q);
   });
   body.innerHTML=filtered.map(p=>{
     const j=data.find(x=>x.id===p.jamaah_id);
     const group=isGroupJamaah(j), groupName=group?groupNameFor(j):'';
     const rombonganPayment=group&&isRombonganPayment(p);
-    const jamaahLabel=group?(rombonganPayment?'👥 '+groupName+' — Pembayaran Rombongan':'👤 '+(j?.nama||'Jamaah')+' — Anggota Rombongan'):(j?.nama||'Jamaah tidak ditemukan');
+    const jamaahLabel=group?(rombonganPayment?'👥 '+groupName+' — Pembayaran Group':'👤 '+(j?.nama||'Jamaah')+' — Anggota Group'):(j?.nama||'Jamaah tidak ditemukan');
     const bank=p.method==='Transfer'?(p.bank||'-'):'-';
     return `<tr>
       <td style="text-align:center"><input class="bulk-check payment-check" type="checkbox" value="${esc(p.id)}" onchange="syncBulkState('payment')"></td>
       <td><b>${esc(p.invoice_no||'-')}</b></td>
       <td>${formatDate(p.payment_date)}</td>
-      <td><div class="payment-name">${esc(jamaahLabel)}</div><div class="payment-sub">${esc(rombonganPayment?'Dibayar untuk seluruh rombongan':(group?'Dibayar oleh anggota tersebut':'Pembayaran individu'))}</div></td>
+      <td><div class="payment-name">${esc(jamaahLabel)}</div><div class="payment-sub">${esc(rombonganPayment?'Dibayar untuk seluruh group':(group?'Dibayar oleh anggota tersebut':'Pembayaran individu'))}</div></td>
       <td class="payment-amount">${rupiah(p.amount)}</td>
       <td>${rupiah(p.discount||0)}</td>
       <td><span class="badge ${p.method==='Transfer'?'paid':'unpaid'}">${esc(p.method||'-')}</span></td>
@@ -2811,7 +2811,7 @@ function printInvoice(jamaahId, preferredInvoiceNo=''){
   if(!j){notice('Data jamaah tidak ditemukan.','error');return}
   const group=isGroupJamaah(j);
   const members=group?groupMembersFor(j):[j];
-  if(group&&!members.length){notice('Anggota rombongan tidak ditemukan.','error');return}
+  if(group&&!members.length){notice('Anggota group tidak ditemukan.','error');return}
   const totalBill=group?groupTotalFor(j):totalBillFor(j);
   const totalPaid=group?groupPaidFor(j):paidFor(j.id);
   const totalDiscount=group?groupDiscountFor(j):discountFor(j.id);
@@ -2829,8 +2829,8 @@ function printInvoice(jamaahId, preferredInvoiceNo=''){
   const logoHtml=logo?'<img class="invoice-logo" src="'+logo+'" alt="Logo PT Raihan Alya Tour">':'<div class="logo-mark">RA</div>';
   const memberRows=members.map((m,i)=>'<tr><td style="text-align:center">'+(i+1)+'</td><td>'+esc(m.nama||'-')+(m.upgrade_description?'<div class="muted">Upgrade: '+esc(m.upgrade_description)+'</div>':'')+'</td><td>'+esc(m.paket||'-')+'</td><td class="right">'+rupiah(m.harga)+'</td><td class="right">'+rupiah(m.upgrade_amount)+'</td><td class="right">'+rupiah(Number(m.harga||0)+Math.max(0,Number(m.upgrade_amount||0)))+'</td></tr>').join('');
   const body='<div class="head invoice-head">'+logoHtml+'<div><div class="company">PT RAIHAN ALYA TOUR</div><div class="sub">Palangka Raya, Kalimantan Tengah</div><div class="invoice-company-note">Umroh & Haji • Melayani dengan Sepenuh Hati</div></div></div>'+
-    '<div class="title">'+(group?'INVOICE TAGIHAN ROMBONGAN':'INVOICE TAGIHAN')+'</div>'+
-    '<div class="meta"><div><span>No. Invoice</span><br><b>'+esc(invNo)+'</b></div><div><span>Tanggal</span><br><b>'+esc(today)+'</b></div><div><span>'+(group?'Nama Rombongan':'Nama Jamaah')+'</span><br><b>'+esc(name)+'</b></div><div><span>Paket</span><br><b>'+esc(group?'Sesuai anggota':(j.paket||'-'))+'</b></div></div>'+
+    '<div class="title">'+(group?'INVOICE TAGIHAN GROUP':'INVOICE TAGIHAN')+'</div>'+
+    '<div class="meta"><div><span>No. Invoice</span><br><b>'+esc(invNo)+'</b></div><div><span>Tanggal</span><br><b>'+esc(today)+'</b></div><div><span>'+(group?'Nama Group':'Nama Jamaah')+'</span><br><b>'+esc(name)+'</b></div><div><span>Paket</span><br><b>'+esc(group?'Sesuai anggota':(j.paket||'-'))+'</b></div></div>'+
     (group?'<div class="box"><h3>Rincian Anggota ('+members.length+' orang)</h3><table><thead><tr><th>No</th><th>Nama Jamaah</th><th>Paket</th><th class="right">Harga Paket</th><th class="right">Upgrade</th><th class="right">Total</th></tr></thead><tbody>'+memberRows+'</tbody></table></div>':'')+
     '<div class="box"><h3>Ringkasan Tagihan</h3><div class="total"><div><span>Total Tagihan</span><b>'+rupiah(totalBill)+'</b></div><div><span>Diskon</span><b>'+rupiah(totalDiscount)+'</b></div><div><span>Sudah Dibayar</span><b>'+rupiah(totalPaid)+'</b></div><div class="grand"><span>SISA TAGIHAN</span><b>'+rupiah(remain)+'</b></div></div><div class="status">Status: '+(remain<=0?'LUNAS':'BELUM LUNAS')+'</div></div>'+
     '<div class="sign"><div>Admin / Petugas<div class="space"></div>(________________)</div><div>Jamaah<div class="space"></div>(________________)</div></div><div class="foot">Invoice ini merupakan dokumen tagihan PT Raihan Alya Tour.</div>';
@@ -3153,8 +3153,8 @@ function setPaymentEntryMode(mode, preserveSelection=false){
   document.getElementById('paymentTabGroup')?.classList.toggle('active',paymentEntryMode==='group');
   const desc=document.getElementById('paymentEntryDesc');
   if(desc)desc.textContent=paymentEntryMode==='group'
-    ?'Pilih satu rombongan untuk mencatat pembayaran yang dibayar untuk seluruh anggota rombongan.'
-    :'Pilih satu jamaah, termasuk anggota rombongan yang membayar secara terpisah. Setiap anggota dicatat sebagai transaksi sendiri.';
+    ?'Pilih satu group untuk mencatat pembayaran yang dibayar untuk seluruh anggota group.'
+    :'Pilih satu jamaah, termasuk anggota group yang membayar secara terpisah. Setiap anggota dicatat sebagai transaksi sendiri.';
   fillPaymentJamaah(preserveSelection);
 }
 function paymentSelectionValue(){
@@ -3190,7 +3190,7 @@ async function fillPaymentJamaah(preserveSelection=false){
       seenGroups.add(key);
       const members=groupMembersFor(x);
       const rep=members[0]||x;
-      options.push({type:'group',value:'group::'+rep.id,label:'👥 '+groupName,sub:members.length+' anggota • Dibayar untuk seluruh rombongan',search:groupName});
+      options.push({type:'group',value:'group::'+rep.id,label:'👥 '+groupName,sub:members.length+' anggota • Dibayar untuk seluruh group',search:groupName});
     });
   }else{
     const individualRows=rows.filter(x=>!isGroupJamaah(x));
@@ -3296,7 +3296,7 @@ function jamaahMemberTemplate(index,data={}){
       <div><label>Jenis Kelamin</label><select data-field="jenis_kelamin"><option value="">-- Pilih --</option><option value="Laki-laki" ${data.jenis_kelamin==='Laki-laki'?'selected':''}>Laki-laki</option><option value="Perempuan" ${data.jenis_kelamin==='Perempuan'?'selected':''}>Perempuan</select></div>
       <div><label>NIK</label><input data-field="nik" placeholder="NIK" value="${esc(data.nik||'')}"></div>
       <div><label>No. HP</label><input data-field="hp" type="tel" placeholder="08xxxxxxxxxx" value="${esc(data.hp||'')}"></div>
-      <div><label>Nama Keluarga / Rombongan</label><input data-field="family_group" placeholder="Contoh: Keluarga Ahmad" value="${esc(data.family_group||data.nama_rombongan||'')}"></div>
+      <div><label>Nama Keluarga / Group</label><input data-field="family_group" placeholder="Contoh: Keluarga Ahmad" value="${esc(data.family_group||data.nama_rombongan||'')}"></div>
       <div><label>Hubungan dalam Keluarga</label><select data-field="family_relation"><option value="">-- Pilih hubungan --</option>${['Suami','Istri','Ayah','Ibu','Anak','Kakak','Adik','Saudara','Orang tua','Wali','Lainnya'].map(v=>'<option '+((data.family_relation||'')===v?'selected':'')+'>'+v+'</option>').join('')}</select></div>
       <div><label>Nama Mahram / Pendamping</label><input data-field="mahram_name" placeholder="Nama pendamping sesuai keterangan jamaah" value="${esc(data.mahram_name||'')}"></div>
       <div><label>Paket</label><select data-field="paket" onchange="syncPackageMemberPrice(this)"><option value="" ${!data.paket?'selected':''}>Pilih</option>${packageOptions(data.paket||'')}</select></div>
@@ -3324,7 +3324,7 @@ function applyGroupBulkPackage(){
   if(!paket){notice('Pilih paket terlebih dahulu pada dropdown “Ubah paket seluruh anggota”.','error');return}
   const box=document.getElementById('jamaahMembers');
   const cards=[...(box?.querySelectorAll('.jamaah-member-card')||[])];
-  if(!cards.length){notice('Belum ada anggota rombongan. Tambahkan anggota terlebih dahulu.','error');return}
+  if(!cards.length){notice('Belum ada anggota group. Tambahkan anggota terlebih dahulu.','error');return}
   let applied=0;
   cards.forEach(card=>{
     const p=card.querySelector('select[data-field="paket"]');
@@ -3457,11 +3457,11 @@ async function hapusTerpilihJamaah(){
 async function assignSelectedGroup(){
   const ids=[...jamaahSelectedIds].filter(Boolean);
   if(ids.length<1){notice('Centang minimal 1 jamaah terlebih dahulu.','error');return}
-  const group=prompt('Masukkan nama grup / rombongan:');if(group===null)return;
-  const nama=group.trim();if(!nama){notice('Nama grup / rombongan wajib diisi.','error');return}
+  const group=prompt('Masukkan nama group:');if(group===null)return;
+  const nama=group.trim();if(!nama){notice('Nama group wajib diisi.','error');return}
   const result=await sb.from('jamaah').update({kategori:'grup',nama_rombongan:nama}).in('id',ids);
-  if(result.error){notice('Gagal mengatur rombongan: '+result.error.message,'error');return}
-  await loadData();renderAll();notice(ids.length+' jamaah berhasil dimasukkan ke rombongan '+nama+'.');
+  if(result.error){notice('Gagal mengatur group: '+result.error.message,'error');return}
+  await loadData();renderAll();notice(ids.length+' jamaah berhasil dimasukkan ke group '+nama+'.');
 }
 function fillJamaahDepartureSelects(selected=''){
   const options=(departures||[]).slice().sort((a,b)=>String(a.start_date||'').localeCompare(String(b.start_date||''))).map(d=>{
@@ -3501,7 +3501,7 @@ function openForm(id=null){
       // kosongkan dulu agar yang tampil hanya anggota yang benar-benar tersimpan.
       const box=document.getElementById('jamaahMembers');
       if(box)box.innerHTML='';
-      // Saat mengedit satu anggota rombongan, buka seluruh anggota yang sudah ada.
+      // Saat mengedit satu anggota group, buka seluruh anggota yang sudah ada.
       // Jadi admin tidak perlu mengetik ulang nama anggota lainnya.
       const members=groupMembersFor(x);
       const editGroupId=String(x.group_id||'').trim()||newGroupId();
@@ -3616,7 +3616,7 @@ if(jamaahForm) jamaahForm.addEventListener('submit',async e=>{
       };
     }).filter(x=>x.nama);
 
-    if(!groupName){notice('Nama rombongan / keluarga wajib diisi.','error');return}
+    if(!groupName){notice('Nama group / keluarga wajib diisi.','error');return}
     if(!rows.length && !id){notice('Isi minimal satu nama anggota.','error');return}
     if(id && !editingGroupMemberIds.length){
       const current=data.find(x=>String(x.id)===String(id));
@@ -3659,7 +3659,7 @@ if(jamaahForm) jamaahForm.addEventListener('submit',async e=>{
   }
   if(result.error){console.error('Simpan jamaah gagal:',JSON.stringify(result.error,null,2));notice('Gagal menyimpan jamaah: '+(result.error.message||'Kesalahan Supabase')+(result.error.details?' — '+result.error.details:''),'error');return}
   await syncManyToSpreadsheet('jamaah',jamaahSheetRows);
-  closeForm();await loadData();renderAll();notice(mode==='grup'&&!id?'Rombongan berhasil disimpan.':'Data jamaah berhasil disimpan.');
+  closeForm();await loadData();renderAll();notice(mode==='grup'&&!id?'Group berhasil disimpan.':'Data jamaah berhasil disimpan.');
 });
 
 function fillComplimentarySelects(selectedJamaah=''){const p=document.getElementById('complimentaryJamaah');if(p){const current=selectedJamaah||document.getElementById('complimentaryEditId')?.value||'';const rows=(data||[]).filter(x=>!isComplimentary(x)||String(x.id)===String(current)).slice().sort((a,b)=>String(a.nama||'').localeCompare(String(b.nama||''),'id'));p.innerHTML='<option value="">-- Pilih Jamaah dari Data Jamaah --</option>'+rows.map(x=>'<option value="'+esc(x.id)+'">'+esc(x.nama||'-')+' — '+esc(x.nik||x.hp||'')+'</option>').join('');if(current)p.value=current}}function syncComplimentaryJamaah(){const id=document.getElementById('complimentaryJamaah')?.value||'',x=(data||[]).find(v=>String(v.id)===String(id));const set=(id,val)=>{const el=document.getElementById(id);if(el)el.value=val??''};if(!x){['complimentaryNama','complimentaryJenis','complimentaryHp','complimentaryNik','complimentaryAlamat','complimentaryPaket','complimentaryHarga','complimentaryDeparture'].forEach(id=>set(id,''));return}set('complimentaryNama',x.nama);set('complimentaryJenis',x.jenis_kelamin);set('complimentaryHp',x.hp);set('complimentaryNik',x.nik);set('complimentaryAlamat',x.alamat);set('complimentaryPaket',x.paket);set('complimentaryHarga',Number(x.harga||0));const d=(departures||[]).find(y=>String(y.id)===String(x.departure_id));set('complimentaryDeparture',d?(d.name||'')+' — '+(d.start_date||'-'):(x.departure_id||'Belum ditentukan'))}function complimentaryRows(){const q=(document.getElementById('complimentarySearch')?.value||'').trim().toLowerCase(),dep=document.getElementById('complimentaryDepartureFilter')?.value||'';return(data||[]).filter(x=>isComplimentary(x)&&(!q||[x.nama,x.paket,x.keterangan,x.catatan,x.complimentary_reason].some(v=>String(v||'').toLowerCase().includes(q)))&&(!dep||String(x.departure_id||'')===String(dep)))}function renderComplimentary(){const body=document.getElementById('complimentaryBody');if(!body)return;fillComplimentarySelects();const rows=complimentaryRows(),total=rows.reduce((a,x)=>a+Number(x.harga||0),0);const count=document.getElementById('complimentaryCount');if(count)count.textContent=rows.length;const value=document.getElementById('complimentaryValue');if(value)value.textContent=rupiah(total);body.innerHTML=rows.map((x,i)=>{const d=(departures||[]).find(y=>String(y.id)===String(x.departure_id));return'<tr><td>'+(i+1)+'</td><td><b>'+esc(x.nama)+'</b><div class="muted">'+esc(x.hp||'')+'</div></td><td>'+esc(d?.name||'-')+'</td><td>'+esc(x.paket||'-')+'</td><td>'+rupiah(x.harga||0)+'</td><td>'+esc(x.complimentary_reason||x.keterangan||'-')+'</td><td><span class="badge paid">COMPLIMENTARY</span></td><td><button class="btn secondary small-btn" type="button" onclick="editComplimentary(\''+esc(x.id)+'\')">Edit</button> <button class="btn danger small-btn" type="button" onclick="deleteComplimentary(\''+esc(x.id)+'\')">Hapus</button></td></tr>'}).join('')||'<tr><td colspan="8">Belum ada data complimentary.</td></tr>'}function openComplimentaryForm(id=''){const form=document.getElementById('complimentaryForm');if(!form)return;form.reset();document.getElementById('complimentaryEditId').value=id||'';fillComplimentarySelects(id||'');const x=id?(data||[]).find(v=>String(v.id)===String(id)):null;document.getElementById('complimentaryFormTitle').textContent=x?'Edit Complimentary':'Tambah Complimentary';document.getElementById('complimentarySaveBtn').textContent=x?'Update Complimentary':'Simpan Complimentary';if(x){document.getElementById('complimentaryJamaah').value=x.id;syncComplimentaryJamaah();document.getElementById('complimentaryReason').value=x.complimentary_reason||'';document.getElementById('complimentaryKeterangan').value=x.keterangan||'';document.getElementById('complimentaryCatatan').value=x.catatan||''}document.getElementById('complimentaryModal').classList.add('show')}function closeComplimentaryForm(){document.getElementById('complimentaryModal')?.classList.remove('show')}function editComplimentary(id){openComplimentaryForm(id)}async function deleteComplimentary(id){const x=(data||[]).find(v=>String(v.id)===String(id));if(!x)return;if(!confirm('Batalkan status complimentary untuk '+(x.nama||'jamaah ini')+'? Data jamaah tidak akan dihapus.'))return;const restoreKategori=x.group_id?'grup':'individual';let result=await sb.from('jamaah').update({kategori:restoreKategori,complimentary_reason:null}).eq('id',id);if(result.error&&/complimentary_reason|column.*does not exist|schema cache/i.test(result.error.message||'')){result=await sb.from('jamaah').update({kategori:restoreKategori}).eq('id',id)}if(result.error){notice('Gagal membatalkan complimentary: '+result.error.message,'error');return}await loadData();renderAll();notice('Status complimentary berhasil dibatalkan. Data jamaah tetap ada')}document.getElementById('complimentaryForm')?.addEventListener('submit',async e=>{e.preventDefault();const id=document.getElementById('complimentaryEditId').value||document.getElementById('complimentaryJamaah').value;const x=(data||[]).find(v=>String(v.id)===String(id));const reason=document.getElementById('complimentaryReason').value;if(!id||!x){notice('Silakan pilih jamaah dari Data Jamaah.','error');return}if(!reason){notice('Alasan complimentary wajib dipilih.','error');return}const payload={kategori:'complimentary',complimentary_reason:reason,keterangan:document.getElementById('complimentaryKeterangan').value.trim(),catatan:document.getElementById('complimentaryCatatan').value.trim()};const btn=document.getElementById('complimentarySaveBtn');if(btn){btn.disabled=true;btn.textContent='Menyimpan...'}try{let result=await sb.from('jamaah').update(payload).eq('id',id);if(result.error&&/complimentary_reason|column.*does not exist|schema cache/i.test(result.error.message||'')){const fallback={kategori:'complimentary',keterangan:(reason+(payload.keterangan?' — '+payload.keterangan:'')).trim(),catatan:payload.catatan};result=await sb.from('jamaah').update(fallback).eq('id',id)}if(result.error){notice('Gagal menyimpan complimentary: '+result.error.message,'error');return}await syncToSpreadsheet('jamaah',{...x,...payload,id});closeComplimentaryForm();await loadData();renderAll();notice('Jamaah berhasil ditandai sebagai complimentary.')}finally{if(btn){btn.disabled=false;btn.textContent=id?'Update Complimentary':'Simpan Complimentary'}}})
@@ -3676,8 +3676,8 @@ async function editPayment(id){
     document.getElementById('paymentTabGroup')?.classList.toggle('active',editMode==='group');
     const desc=document.getElementById('paymentEntryDesc');
     if(desc)desc.textContent=editMode==='group'
-      ?'Pilih satu rombongan untuk mencatat pembayaran yang dibayar untuk seluruh anggota rombongan.'
-      :'Pilih satu jamaah, termasuk anggota rombongan yang membayar secara terpisah. Setiap anggota dicatat sebagai transaksi sendiri.';
+      ?'Pilih satu group untuk mencatat pembayaran yang dibayar untuk seluruh anggota group.'
+      :'Pilih satu jamaah, termasuk anggota group yang membayar secara terpisah. Setiap anggota dicatat sebagai transaksi sendiri.';
     await fillPaymentJamaah(false);
     const sel=document.getElementById('paymentJamaah');
     if(sel){
@@ -3694,7 +3694,7 @@ async function editPayment(id){
       const checked=document.querySelector('#paymentJamaahChecklist input[name="paymentJamaahChoice"]:checked');
       if(search)search.value=checked?.dataset.searchLabel||checked?.dataset.label||'';
       filterPaymentJamaahOptions();
-      if(!target)notice('Nama jamaah/rombongan untuk transaksi ini tidak ditemukan. Periksa data jamaah dan rombongan.','error');
+      if(!target)notice('Nama jamaah/group untuk transaksi ini tidak ditemukan. Periksa data jamaah dan rombongan.','error');
     }
     document.getElementById('paymentAmount').value=p.amount??'';
     document.getElementById('paymentDiscount').value=p.discount??0;
@@ -3739,7 +3739,7 @@ document.getElementById('paymentForm').addEventListener('submit',async e=>{
     const selectedId=isGroupPayment?selectedValue.replace(/^group::/,''):selectedValue;
     let jamaah_id=selectedId;
     const selectedJamaah=(data||[]).find(x=>x.id===selectedId);
-    if(!jamaah_id||!selectedJamaah){notice('Pilih nama jamaah atau rombongan terlebih dahulu.','error');return}
+    if(!jamaah_id||!selectedJamaah){notice('Pilih nama jamaah atau group terlebih dahulu.','error');return}
 
     const amount=Number(document.getElementById('paymentAmount').value);
     const discount=Math.max(0,Number(document.getElementById('paymentDiscount').value)||0);
@@ -3750,7 +3750,7 @@ document.getElementById('paymentForm').addEventListener('submit',async e=>{
     if(amount<=0||!payment_date||!method){notice('Lengkapi nama, nominal, tanggal, dan metode pembayaran.','error');return}
     if(discount<0){notice('Diskon tidak boleh negatif.','error');return}
     if(method==='Transfer'&&!bank){notice('Pilih bank transfer: Bank Muamalat atau BSI.','error');return}
-    const paymentNote=isGroupPayment?('Pembayaran Rombongan: '+groupNameFor(selectedJamaah)+(note?' — '+note:'')):note;
+    const paymentNote=isGroupPayment?('Pembayaran Group: '+groupNameFor(selectedJamaah)+(note?' — '+note:'')):note;
     const payload={jamaah_id,amount,discount,payment_date,method,bank:method==='Transfer'?bank:null,note:paymentNote};
 
     const wasEdit=!!editingPaymentId;
@@ -4500,7 +4500,7 @@ function filterRoomMemberChoices(roomId,query=''){
   result.classList.add('open');
   result.innerHTML=options.length?options.map(j=>{
     const already=assigned.has(String(j.id));
-    const meta=[j.jenis_kelamin||'Jenis kelamin belum diisi',j.family_group||j.nama_rombongan?'Keluarga: '+(j.family_group||j.nama_rombongan):'',j.family_relation?'Hubungan: '+j.family_relation:'',j.mahram_name?'Pendamping/mahram: '+j.mahram_name:'',j.keterangan?'Keterangan: '+j.keterangan:'',j.catatan?'Catatan: '+j.catatan:'',j.keterangan_rombongan?'Catatan rombongan: '+j.keterangan_rombongan:'',already?'Sudah ditempatkan di kamar lain':'Belum ditempatkan'].filter(Boolean).join(' · ');
+    const meta=[j.jenis_kelamin||'Jenis kelamin belum diisi',j.family_group||j.nama_rombongan?'Keluarga: '+(j.family_group||j.nama_rombongan):'',j.family_relation?'Hubungan: '+j.family_relation:'',j.mahram_name?'Pendamping/mahram: '+j.mahram_name:'',j.keterangan?'Keterangan: '+j.keterangan:'',j.catatan?'Catatan: '+j.catatan:'',j.keterangan_rombongan?'Catatan group: '+j.keterangan_rombongan:'',already?'Sudah ditempatkan di kamar lain':'Belum ditempatkan'].filter(Boolean).join(' · ');
     return '<button type="button" class="room-assignee-option" onclick="moveRoomMember(\''+roomId+'\',\''+String(j.id).replace(/'/g,'\\\\\\\'')+'\')"><span>'+esc(j.nama||'-')+'</span><small>'+esc(meta)+'</small></button>';
   }).join(''):'<div class="room-assignee-empty">'+(q?'Tidak ada jamaah yang cocok dengan pencarian.':'Tidak ada jamaah pada jadwal ini.')+'</div>';
 }
