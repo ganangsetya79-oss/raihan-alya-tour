@@ -4420,7 +4420,9 @@ function renderRoomAssignChoices(){
   const rooms=loadRoomListStore().filter(r=>String(r.departure_id)===String(room.departure_id));
   const assigned=new Map();
   rooms.forEach(r=>(r.member_ids||[]).forEach(id=>assigned.set(String(id),r)));
+  // Hanya tampilkan jamaah yang belum ditempatkan di kamar mana pun pada jadwal ini.
   const options=(data||[]).filter(j=>String(j.departure_id||'')===String(room.departure_id))
+    .filter(j=>!assigned.has(String(j.id)))
     .filter(j=>!q||[j.nama,j.jenis_kelamin,j.family_group,j.nama_rombongan,j.family_relation,j.mahram_name,j.nik,j.hp,j.keterangan,j.catatan,j.keterangan_rombongan].some(v=>String(v||'').toLocaleLowerCase('id').includes(q)))
     .sort((a,b)=>{
       const groupOf=j=>String(j.family_group||j.nama_rombongan||'').trim();
