@@ -645,6 +645,26 @@ table{max-width:100%}
 #roomlist .room-card-actions{border-top:1px solid #edf1ef;padding-top:10px}
 @media(max-width:700px){#roomlist .roomlist-primary-filter{grid-template-columns:1fr;gap:9px}#roomlist .room-primary-help{font-size:11px}#roomlist .roomlist-advanced-filter summary{flex-wrap:wrap}#roomlist .room-stat{padding:7px 9px}}
 </style>
+<style>
+
+/* Room assignment modal: select destination room first, then assign jamaah */
+#roomlist .room-assign-open{width:100%;display:flex;align-items:center;justify-content:center;gap:8px;min-height:40px;border:1px dashed #b9d4c9;background:#f5faf7;color:#1e6654;border-radius:9px;font-size:12px;font-weight:700}
+#roomlist .room-assign-open:hover{background:#eaf5ef;border-color:#78ad99}
+#roomlist .room-assign-open-count{margin-left:auto;padding:3px 7px;border-radius:6px;background:#e2f0e8;color:#285e4d;font-size:10px}
+.room-assign-modal{display:none;position:fixed;inset:0;z-index:100000;background:rgba(17,35,29,.52);align-items:center;justify-content:center;padding:16px}
+.room-assign-dialog{width:min(620px,100%);max-height:min(82vh,760px);overflow:auto;background:#fff;border:1px solid #dfe9e4;border-radius:16px;padding:20px;box-shadow:0 22px 70px rgba(0,0,0,.2)}
+.room-assign-dialog-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:16px}
+.room-assign-dialog-head h2{margin:0;font-size:18px;color:#204b3e}
+.room-assign-dialog-head p{margin:6px 0 0;font-size:12px;line-height:1.5;color:#687970}
+.room-assign-dialog>label{display:block;margin-bottom:6px;font-size:12px;font-weight:700;color:#52665c}
+#roomAssignSearchActive{width:100%;min-height:42px;border:1px solid #cfded7;border-radius:9px;padding:10px 12px;font-size:13px;margin-bottom:10px}
+#roomAssignActiveResults{position:static;display:block;max-height:48vh;box-shadow:none;margin:0}
+#roomAssignActiveResults .room-assignee-option{padding:11px 12px}
+#roomAssignActiveResults .room-assignee-option:disabled{opacity:.7;cursor:default;background:#f7faf8}
+#roomAssignActiveResults .room-assignee-option.is-current{background:#edf7f1}
+.room-assign-modal-hint{margin:12px 0 0;padding:10px;border-radius:8px;background:#fff9e9;color:#786637;font-size:11px;line-height:1.5}
+@media(max-width:600px){.room-assign-dialog{padding:15px;border-radius:13px}.room-assign-dialog-head h2{font-size:16px}#roomAssignActiveResults{max-height:42vh}}
+</style>
 </head>
 <body>
 <button type="button" class="mobile-menu-btn" id="mobileMenuBtn" onclick="toggleMobileNav()" aria-label="Buka menu" title="Buka menu"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"></path></svg></button>
@@ -2181,7 +2201,7 @@ function renderRoomList(){
     const pct=Math.min(100,Math.round((members.length/Math.max(1,Number(r.capacity)))*100));
     const status=members.length>=Number(r.capacity)?'Penuh':'Tersedia '+(Number(r.capacity)-members.length);
     const cls=members.length>=Number(r.capacity)?'full':'warn';
-    return '<div class="room-card" data-room-card="'+esc(r.id)+'"><label class="room-card-select"><input type="checkbox" class="room-select-checkbox" value="'+esc(r.id)+'" onchange="updateRoomSelection()"> Pilih kamar</label><div class="room-card-head"><div><div class="room-card-title">'+(r.room_number?'Kamar '+esc(r.room_number):'Slot Kamar '+String(r.slot_no||1).padStart(2,'0'))+' — '+esc(r.hotel)+'</div><div class="room-card-meta">'+esc(r.city)+' · '+esc(r.type)+' · '+members.length+'/'+esc(r.capacity)+' orang</div></div><span class="room-capacity '+cls+'">'+status+'</span></div><div class="room-progress"><span class="'+(members.length>=Number(r.capacity)?'full':'')+'" style="width:'+pct+'%"></span></div><div class="room-member-list">'+(members.length?members.map(m=>'<div class="room-member"><span class="room-member-name">'+esc(m.nama)+' <small style="display:block;color:#64716c;font-size:11px">'+esc(m.jenis_kelamin||'Jenis kelamin belum diisi')+' · '+esc(m.family_relation||'Hubungan belum diisi')+(m.family_group||m.nama_rombongan?' · Keluarga: '+esc(m.family_group||m.nama_rombongan):'')+(m.mahram_name?' · Pendamping: '+esc(m.mahram_name):'')+'</small></span><button class="room-member-remove" type="button" onclick="removeRoomMember(\''+r.id+'\',\''+m.id+'\')">Hapus</button></div>').join(''):'<div class="muted" style="font-size:11px">Belum ada jamaah.</div>')+'</div><div class="room-assign room-assign-search"><div class="room-assignee-picker"><input type="search" id="roomAssignSearch_'+esc(r.id)+'" placeholder="+ Cari nama jamaah untuk kamar ini..." aria-label="Cari jamaah untuk kamar" autocomplete="off" onfocus="filterRoomMemberChoices(\''+r.id+'\',this.value)" oninput="filterRoomMemberChoices(\''+r.id+'\',this.value)"><div class="room-assignee-results" id="roomAssignResults_'+esc(r.id)+'"></div></div></div><div class="room-card-actions"><button class="btn secondary small-btn" type="button" onclick="editRoom(\''+r.id+'\')">Edit Kamar</button><button class="btn danger small-btn" type="button" onclick="deleteRoom(\''+r.id+'\')">Hapus</button></div></div>';
+    return '<div class="room-card" data-room-card="'+esc(r.id)+'"><label class="room-card-select"><input type="checkbox" class="room-select-checkbox" value="'+esc(r.id)+'" onchange="updateRoomSelection()"> Pilih kamar</label><div class="room-card-head"><div><div class="room-card-title">'+(r.room_number?'Kamar '+esc(r.room_number):'Slot Kamar '+String(r.slot_no||1).padStart(2,'0'))+' — '+esc(r.hotel)+'</div><div class="room-card-meta">'+esc(r.city)+' · '+esc(r.type)+' · '+members.length+'/'+esc(r.capacity)+' orang</div></div><span class="room-capacity '+cls+'">'+status+'</span></div><div class="room-progress"><span class="'+(members.length>=Number(r.capacity)?'full':'')+'" style="width:'+pct+'%"></span></div><div class="room-member-list">'+(members.length?members.map(m=>'<div class="room-member"><span class="room-member-name">'+esc(m.nama)+' <small style="display:block;color:#64716c;font-size:11px">'+esc(m.jenis_kelamin||'Jenis kelamin belum diisi')+' · '+esc(m.family_relation||'Hubungan belum diisi')+(m.family_group||m.nama_rombongan?' · Keluarga: '+esc(m.family_group||m.nama_rombongan):'')+(m.mahram_name?' · Pendamping: '+esc(m.mahram_name):'')+'</small></span><button class="room-member-remove" type="button" onclick="removeRoomMember(\''+r.id+'\',\''+m.id+'\')">Hapus</button></div>').join(''):'<div class="muted" style="font-size:11px">Belum ada jamaah.</div>')+'</div><div class="room-assign room-assign-search"><button class="btn room-assign-open" type="button" onclick="openRoomAssign(\''+r.id+'\')"><span aria-hidden="true">＋</span> Tempatkan Jamaah <span class="room-assign-open-count">'+members.length+'/'+esc(r.capacity)+'</span></button></div><div class="room-card-actions"><button class="btn secondary small-btn" type="button" onclick="editRoom(\''+r.id+'\')">Edit Kamar</button><button class="btn danger small-btn" type="button" onclick="deleteRoom(\''+r.id+'\')">Hapus</button></div></div>';
   }).join('');
   updateRoomSelection();
 }
@@ -4351,6 +4371,53 @@ el.innerHTML=alerts.slice(0,10).map(a=>'<div class="dashboard-alert-item '+a.typ
 // Ringkasan Keuangan Umum sudah dihapus; jangan akses elemen dashIncomeExtra yang tidak lagi ada.
 const financeBody=document.getElementById('dashFinanceScheduleBody');if(financeBody){/* Tampilkan hanya jadwal yang dibuat admin pada menu Jadwal Keberangkatan. */const rows=(departures||[]).map(d=>{const members=(data||[]).filter(j=>String(departureFor(j)?.id||j.departure_id||'')===String(d.id));const ids=new Set(members.map(j=>String(j.id)));const inc=(payments||[]).filter(p=>ids.has(String(p.jamaah_id||''))).reduce((a,p)=>a+Number(p.amount||p.nominal||0),0);return {d,inc}});financeBody.innerHTML=rows.map(({d,inc})=>'<tr><td>'+esc(d.name||'-')+'</td><td>'+esc(d.start_date||'-')+'</td><td>'+rupiah(inc)+'</td></tr>').join('')||'<tr><td colspan="3">Belum ada jadwal yang dibuat. Tambahkan jadwal melalui menu Jadwal Keberangkatan.</td></tr>'}
 renderDepartureChecklist();renderActivityLog()}
+
+function openRoomAssign(roomId){
+  const room=loadRoomListStore().find(r=>String(r.id)===String(roomId));
+  if(!room)return;
+  let modal=document.getElementById('roomAssignModal');
+  if(!modal){
+    modal=document.createElement('div');modal.id='roomAssignModal';modal.className='room-assign-modal';
+    modal.innerHTML='<div class="room-assign-dialog" role="dialog" aria-modal="true" aria-labelledby="roomAssignTitle"><div class="room-assign-dialog-head"><div><h2 id="roomAssignTitle">Tempatkan Jamaah</h2><p id="roomAssignSubtitle"></p></div><button type="button" class="btn secondary small-btn" onclick="closeRoomAssign()">Tutup</button></div><label for="roomAssignSearchActive">Cari nama jamaah</label><input type="search" id="roomAssignSearchActive" placeholder="Ketik nama jamaah..." autocomplete="off"><div id="roomAssignActiveResults" class="room-assignee-results open"></div><p class="room-assign-modal-hint">Pilih nama untuk menempatkannya. Jamaah harus berasal dari jadwal yang sama dan kapasitas kamar tidak boleh terlampaui.</p></div>';
+    document.body.appendChild(modal);
+    modal.addEventListener('click',e=>{if(e.target===modal)closeRoomAssign()});
+    document.getElementById('roomAssignSearchActive').addEventListener('input',()=>renderRoomAssignChoices());
+  }
+  modal.dataset.roomId=String(room.id);
+  const dep=departures.find(d=>String(d.id)===String(room.departure_id));
+  document.getElementById('roomAssignSubtitle').textContent=(room.room_number?'Kamar '+room.room_number:'Slot Kamar '+String(room.slot_no||1))+' · '+room.hotel+' · '+room.city+' · '+(room.member_ids||[]).length+'/'+room.capacity+' orang'+(dep?' · '+dep.name:'');
+  document.getElementById('roomAssignSearchActive').value='';
+  modal.style.display='flex';
+  renderRoomAssignChoices();
+  setTimeout(()=>document.getElementById('roomAssignSearchActive')?.focus(),0);
+}
+function closeRoomAssign(){const modal=document.getElementById('roomAssignModal');if(modal)modal.style.display='none'}
+function renderRoomAssignChoices(){
+  const modal=document.getElementById('roomAssignModal');if(!modal||modal.style.display==='none')return;
+  const roomId=modal.dataset.roomId,room=loadRoomListStore().find(r=>String(r.id)===String(roomId));
+  const box=document.getElementById('roomAssignActiveResults');if(!room||!box)return;
+  const q=String(document.getElementById('roomAssignSearchActive')?.value||'').trim().toLocaleLowerCase('id');
+  const rooms=loadRoomListStore().filter(r=>String(r.departure_id)===String(room.departure_id));
+  const assigned=new Map();
+  rooms.forEach(r=>(r.member_ids||[]).forEach(id=>assigned.set(String(id),r)));
+  const options=(data||[]).filter(j=>String(j.departure_id||'')===String(room.departure_id))
+    .filter(j=>!q||[j.nama,j.jenis_kelamin,j.family_group,j.nama_rombongan,j.family_relation,j.mahram_name,j.nik,j.hp,j.keterangan,j.catatan,j.keterangan_rombongan].some(v=>String(v||'').toLocaleLowerCase('id').includes(q)))
+    .sort((a,b)=>String(a.nama||'').localeCompare(String(b.nama||''),'id'));
+  box.innerHTML=options.length?options.map(j=>{
+    const assignedRoom=assigned.get(String(j.id));
+    const here=assignedRoom&&String(assignedRoom.id)===String(room.id);
+    const full=(room.member_ids||[]).length>=Number(room.capacity)&&!here;
+    const meta=[j.jenis_kelamin||'Jenis kelamin belum diisi',j.family_group||j.nama_rombongan?'Keluarga: '+(j.family_group||j.nama_rombongan):'',j.family_relation?'Hubungan: '+j.family_relation:'',j.mahram_name?'Pendamping/mahram: '+j.mahram_name:'',assignedRoom?(here?'Sudah di kamar ini':'Saat ini: '+(assignedRoom.room_number?'Kamar '+assignedRoom.room_number:'Slot '+(assignedRoom.slot_no||''))+' · '+assignedRoom.hotel):'Belum ditempatkan'].filter(Boolean).join(' · ');
+    const disabled=here||full;
+    return '<button type="button" class="room-assignee-option '+(here?'is-current':'')+'" '+(disabled?'disabled':'')+' onclick="assignRoomFromModal(\''+String(room.id).replace(/'/g,"\\'")+'\',\''+String(j.id).replace(/'/g,"\\'")+'\')"><span>'+esc(j.nama||'-')+(here?' ✓':'')+'</span><small>'+esc(meta)+(full?' · KAMAR PENUH':'')+'</small></button>';
+  }).join(''):'<div class="room-assignee-empty">'+(q?'Tidak ada jamaah yang cocok dengan pencarian.':'Belum ada jamaah pada jadwal ini.')+'</div>';
+}
+function assignRoomFromModal(roomId,jamaahId){
+  moveRoomMember(roomId,jamaahId);
+  const room=loadRoomListStore().find(r=>String(r.id)===String(roomId));
+  if(!room)return closeRoomAssign();
+  openRoomAssign(roomId);
+}
 
 function filterRoomMemberChoices(roomId,query=''){
   const room=loadRoomListStore().find(r=>String(r.id)===String(roomId));
