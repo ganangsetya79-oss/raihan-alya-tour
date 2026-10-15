@@ -1686,7 +1686,7 @@ async function loadData(){
     if(!window.__expenseSchemaNoticeShown){
       window.__expenseSchemaNoticeShown=true;
       console.warn('Tabel expenses belum tersedia/akses ditolak:',ex.error.message);
-      notice('Data pengeluaran belum tersambung ke semua akun. Jalankan migration 20261010_shared_expenses.sql di Supabase SQL Editor.','error');
+      notice('Data pengeluaran belum bisa disinkronkan. Yang terlihat saat ini hanya salinan lokal perangkat ini; periksa koneksi Supabase dan izin tabel expenses.','error');
     }
   }else{
     const remoteExpenses=ex.data||[];
