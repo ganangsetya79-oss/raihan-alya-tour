@@ -1600,13 +1600,13 @@ async function loadAccessProfile(){
     return false;
   }
   currentAccess=row||{role:'admin',active:true,permissions:['dashboard','jamaah','pembayaran','uangmasuk','pengeluaran','dokumen','perlengkapan','keberangkatan','laporan']};
-  if(currentAccess.role==='admin')currentAccess.permissions=['dashboard','jamaah','pembayaran','uangmasuk','dokumen','perlengkapan','keberangkatan','laporan'];
+  if(currentAccess.role==='admin' && !(Array.isArray(currentAccess.permissions)&&currentAccess.permissions.includes(ACCESS_SPECIAL.configured)))currentAccess.permissions=['dashboard','jamaah','pembayaran','uangmasuk','dokumen','perlengkapan','keberangkatan','laporan'];
   if(!Array.isArray(currentAccess.permissions))currentAccess.permissions=defaultPermissions(currentAccess.role);
   return true;
 }
 function canAccess(module){return currentAccess?.role==='admin'||(currentAccess?.permissions||[]).includes(module)}
-function canEditData(){return currentAccess?.role==='admin'||!(currentAccess?.permissions||[]).includes(ACCESS_SPECIAL.readOnly)}
-function canDeleteData(){return currentAccess?.role==='admin'||(currentAccess?.permissions||[]).includes(ACCESS_SPECIAL.canDelete)}
+function canEditData(){const p=currentAccess?.permissions||[];if(p.includes(ACCESS_SPECIAL.configured))return !p.includes(ACCESS_SPECIAL.readOnly);return currentAccess?.role==='admin'||!p.includes(ACCESS_SPECIAL.readOnly)}
+function canDeleteData(){const p=currentAccess?.permissions||[];if(p.includes(ACCESS_SPECIAL.configured))return p.includes(ACCESS_SPECIAL.canDelete);return currentAccess?.role==='admin'||p.includes(ACCESS_SPECIAL.canDelete)}
 function enforceDataPermissions(){
   const readOnly=!canEditData(), noDelete=!canDeleteData();
   document.querySelectorAll('#mainApp button, #mainApp input[type="submit"]').forEach(el=>{
@@ -1784,7 +1784,7 @@ function openAdminMenu(){document.getElementById('adminMenu').classList.add('sho
 function closeAdminMenu(){document.getElementById('adminMenu').classList.remove('show')}
 const ACCESS_MODULES=['dashboard','jamaah','complimentary','paket','pembayaran','uangmasuk','pengeluaran','dokumen','perlengkapan','roomlist','keberangkatan','laporan'];
 const ACCESS_LABELS={dashboard:'Dashboard',jamaah:'Data Jamaah',complimentary:'Complimentary',paket:'Kelola Paket',pembayaran:'Pembayaran',uangmasuk:'Uang Masuk',pengeluaran:'Pengeluaran',dokumen:'Dokumen',perlengkapan:'Perlengkapan',keberangkatan:'Keberangkatan',laporan:'Laporan',roomlist:'Room List'};
-const ACCESS_SPECIAL={readOnly:'__read_only',canDelete:'__can_delete'};
+const ACCESS_SPECIAL={readOnly:'__read_only',canDelete:'__can_delete',configured:'__data_permissions_configured'};
 async function loadMyProfile(){
   if(!currentUser)return;
   const {data:profile}=await sb.from('user_profiles').select('*').eq('user_id',currentUser.id).maybeSingle();
@@ -1917,7 +1917,7 @@ async function renderAccessUsers(){
   if(!filtered.length){body.innerHTML='<tr><td colspan="5"><div class="muted" style="padding:18px;text-align:center">Tidak ada pengguna yang cocok dengan filter.</div></td></tr>';return}
   body.innerHTML=filtered.map(u=>{
     const perms=Array.isArray(u.permissions)?u.permissions:defaultPermissions(u.role);
-    const mods=perms.filter(x=>!String(x).startsWith('__')).map(x=>'<span class="access-module">'+esc(ACCESS_LABELS[x]||x)+'</span>').join('')+(perms.includes(ACCESS_SPECIAL.readOnly)?'<span class="access-module">Hanya lihat</span>':'<span class="access-module">Bisa edit</span>')+(perms.includes(ACCESS_SPECIAL.canDelete)?'<span class="access-module">Bisa hapus</span>':'<span class="access-module">Tidak bisa hapus</span>');
+    const configured=perms.includes(ACCESS_SPECIAL.configured); const mods=perms.filter(x=>!String(x).startsWith('__')).map(x=>'<span class="access-module">'+esc(ACCESS_LABELS[x]||x)+'</span>').join('')+((configured?perms.includes(ACCESS_SPECIAL.readOnly):u.role==='viewer')?'<span class="access-module">Hanya lihat</span>':'<span class="access-module">Bisa edit</span>')+((configured?perms.includes(ACCESS_SPECIAL.canDelete):u.role!=='viewer')?'<span class="access-module">Bisa hapus</span>':'<span class="access-module">Tidak bisa hapus</span>');
     const active=u.active!==false;
     const roleLabel={admin:'Administrator',finance:'Keuangan',operator:'Operator',viewer:'Viewer'}[u.role]||u.role||'Viewer';
     return `<tr><td><div class="access-user-email">${esc(u.email||'-')}</div><div class="access-user-id">${esc(u.user_id||'')}</div></td><td><span class="badge paid">${esc(roleLabel)}</span></td><td><div class="access-modules">${mods||'<span class="muted">Tidak ada</span>'}</div></td><td><span class="access-status ${active?'access-active':'access-inactive'}">${active?'Aktif':'Nonaktif'}</span></td><td><div class="access-actions"><button class="btn secondary small-btn" onclick="editAccessUser('${esc(u.id)}')">Edit</button><button class="btn danger small-btn" onclick="toggleAccessUser('${esc(u.id)}',${active})">${active?'Nonaktifkan':'Aktifkan'}</button></div></td></tr>`;
@@ -1971,6 +1971,7 @@ document.addEventListener('DOMContentLoaded',()=>{
     const role=document.getElementById('accessRole').value;
     const active=document.getElementById('accessActive').value==='true';
     const permissions=[...document.querySelectorAll('#permissionGrid input:checked')].map(x=>x.value);
+    permissions.push(ACCESS_SPECIAL.configured);
     if(document.getElementById('accessReadOnly').checked)permissions.push(ACCESS_SPECIAL.readOnly);
     if(document.getElementById('accessCanDelete').checked)permissions.push(ACCESS_SPECIAL.canDelete);
     if(!userId){notice('User ID Supabase Auth wajib diisi.','error');return}
