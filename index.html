@@ -1131,8 +1131,9 @@ table{max-width:100%}
         <div id="docJamaahResults" style="display:none;position:absolute;z-index:30;left:0;right:0;top:36px;background:#fff;border:1px solid #d8dde0;border-radius:7px;box-shadow:0 5px 14px rgba(0,0,0,.10);max-height:220px;overflow-y:auto"></div>
       </div>
       <select id="docJamaah" style="display:none;width:100%;padding:10px;border:1px solid #d8dde0;border-radius:7px;margin-top:5px" onchange="loadDocumentForm()"></select>
-      <div id="docJamaahSelected" style="font-size:11px;color:#687078;margin-top:4px">Belum ada jamaah dipilih.</div>
+      <div id="docJamaahSelected" style="font-size:11px;color:#687078;margin-top:4px">Belum ada jamaah dipilih. Ketik nama lalu KLIK salah satu hasil pencarian untuk membuka form upload.</div>
     </div>
+    <div id="docSelectionHint" style="padding:12px;border:1px dashed #cbd5d1;border-radius:8px;background:#f8faf9;font-size:12px;color:#53615c;margin-bottom:12px">⬆️ <b>Mulai lengkapi dokumen:</b> cari nama jamaah pada kolom di atas, lalu klik nama yang muncul. Form KTP, KK, paspor, BPJS, vaksin, visa, dan tiket akan ditampilkan setelah jamaah dipilih.</div>
     <div id="docFormArea" class="hidden">
       <div id="docGrid" class="doc-grid"></div>
       <div style="margin-top:18px">
@@ -3948,8 +3949,10 @@ function renderDocGrid(){
 function loadDocumentForm(){
   const id=document.getElementById('docJamaah').value;
   const area=document.getElementById('docFormArea');
-  if(!id){area.classList.add('hidden');return}
+  const hint=document.getElementById('docSelectionHint');
+  if(!id){area.classList.add('hidden');if(hint)hint.style.display='block';return}
   area.classList.remove('hidden');
+  if(hint)hint.style.display='none';
   renderDocGrid();
   updateDocSummary();
 }
