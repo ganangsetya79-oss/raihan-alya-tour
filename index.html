@@ -1133,6 +1133,14 @@ table{max-width:100%}
   </div>
   <div class="panel">
     <div class="panel-head"><div><h2>Rekap Kelengkapan Dokumen</h2></div><div class="bulk-tools"><button class="btn danger small-btn" type="button" onclick="deleteSelectedDocuments()">🗑️ Hapus Dokumen Terpilih</button></div></div>
+    <div class="form" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin:12px 0 16px">
+      <div><label for="docRecapSearch">Cari Jamaah</label><input id="docRecapSearch" type="search" placeholder="Nama atau nomor HP..." oninput="renderDocuments()"></div>
+      <div><label for="docRecapPackage">Paket</label><select id="docRecapPackage" onchange="renderDocuments()"><option value="">Semua Paket</option></select></div>
+      <div><label for="docRecapDeparture">Jadwal Keberangkatan</label><select id="docRecapDeparture" onchange="renderDocuments()"><option value="">Semua Jadwal</option></select></div>
+      <div><label for="docRecapStatus">Status Dokumen</label><select id="docRecapStatus" onchange="renderDocuments()"><option value="">Semua Status</option><option value="complete">Lengkap</option><option value="incomplete">Belum Lengkap</option></select></div>
+      <div style="display:flex;align-items:end"><button class="btn secondary" type="button" onclick="resetDocumentRecapFilters()">Reset Filter</button></div>
+    </div>
+    <div id="docRecapCount" class="muted" style="font-size:12px;margin-bottom:10px"></div>
     <div class="table-wrap"><table><thead><tr><th style="width:38px;text-align:center"><input class="bulk-select-all" id="docSelectAll" type="checkbox" onchange="toggleAllDocuments(this.checked)" title="Pilih semua"></th><th>Info Jamaah</th><th>Paket</th><th>Jadwal Keberangkatan</th><th>Lengkap</th><th>Status</th></tr></thead><tbody id="docBody"></tbody></table></div>
   </div>
 </section>
@@ -4093,15 +4101,35 @@ function renderEquipment(){
     return `<tr><td style="text-align:center"><input class="bulk-check equipment-check" type="checkbox" value="${esc(j.id)}" onchange="syncBulkState('equipment')"></td><td>${i+1}</td><td><b>${esc(j.nama)}</b></td><td>${esc(dep?.name||j.berangkat||'-')}</td><td>${eqCell(x.mukena_ihram ?? x.ihram ?? x.mukena)}</td><td>${eqCell(x.batik)}</td><td>${eqCell(x.koper)}</td><td>${eqCell(x.buku)}</td><td>${esc(x.taken_date||'-')}</td><td>${esc(x.note||'-')}</td></tr>`;
   }).join('')||'<tr><td colspan="10">Nama jamaah tidak ditemukan.</td></tr>';
 }
+function resetDocumentRecapFilters(){
+  ['docRecapSearch','docRecapPackage','docRecapDeparture','docRecapStatus'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  renderDocuments();
+}
 function renderDocuments(){
   const body=document.getElementById('docBody');
   if(!body)return;
-  body.innerHTML=data.map(j=>{
-    const d=getDoc(j.id)||{};
-    const n=DOC_TYPES.filter(([k])=>d[k+'_path']).length;
-    const dep=departureFor(j);
-    return `<tr><td style="text-align:center"><input class="bulk-check doc-check" type="checkbox" value="${esc(j.id)}" onchange="syncBulkState('doc')"></td><td><b>${esc(j.nama||'-')}</b><div class="muted" style="font-size:11px;margin-top:3px">No. HP: ${esc(j.hp||j.telepon||j.no_hp||'-')}</div></td><td>${esc(j.paket||'-')}</td><td>${esc(dep?.name||j.berangkat||'-')}</td><td>${n}/8</td><td>${n===8?'<span class="badge paid">Lengkap</span>':'<span class="badge unpaid">Belum Lengkap</span>'}</td></tr>`;
-  }).join('')||'<tr><td colspan="6">Belum ada data jamaah.</td></tr>';
+  const search=String(document.getElementById('docRecapSearch')?.value||'').trim().toLocaleLowerCase('id-ID');
+  const packageSelect=document.getElementById('docRecapPackage'), departureSelect=document.getElementById('docRecapDeparture');
+  const oldPackage=packageSelect?.value||'', oldDeparture=departureSelect?.value||'';
+  if(packageSelect){
+    const packages=[...new Set(data.map(j=>String(j.paket||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'id'));
+    packageSelect.innerHTML='<option value="">Semua Paket</option>'+packages.map(p=>'<option value="'+esc(p)+'">'+esc(p)+'</option>').join('');
+    if(packages.includes(oldPackage))packageSelect.value=oldPackage;
+  }
+  if(departureSelect){
+    const deps=[...new Map(data.map(j=>{const dep=departureFor(j);return dep?[dep.id,dep.name]:null;}).filter(Boolean)).entries()];
+    departureSelect.innerHTML='<option value="">Semua Jadwal</option>'+deps.map(([id,name])=>'<option value="'+esc(id)+'">'+esc(name)+'</option>').join('');
+    if(deps.some(([id])=>id===oldDeparture))departureSelect.value=oldDeparture;
+  }
+  const selectedPackage=packageSelect?.value||'', selectedDeparture=departureSelect?.value||'', selectedStatus=document.getElementById('docRecapStatus')?.value||'';
+  const rows=data.map(j=>{const doc=getDoc(j.id)||{},n=DOC_TYPES.filter(([k])=>doc[k+'_path']).length,dep=departureFor(j),phone=j.hp||j.telepon||j.no_hp||'';return {j,n,dep,phone};}).filter(({j,n,dep,phone})=>{
+    const statusMatch=!selectedStatus||(selectedStatus==='complete'?n===8:n<8);
+    return (!search||[j.nama,phone,j.paket,dep?.name,j.berangkat].some(v=>String(v||'').toLocaleLowerCase('id-ID').includes(search)))&&(!selectedPackage||j.paket===selectedPackage)&&(!selectedDeparture||dep?.id===selectedDeparture)&&statusMatch;
+  });
+  const count=document.getElementById('docRecapCount');
+  if(count)count.textContent='Menampilkan '+rows.length+' dari '+data.length+' jamaah';
+  body.innerHTML=rows.map(({j,n,dep,phone})=>`<tr><td style="text-align:center"><input class="bulk-check doc-check" type="checkbox" value="${esc(j.id)}" onchange="syncBulkState('doc')"></td><td><b>${esc(j.nama||'-')}</b><div class="muted" style="font-size:11px;margin-top:3px">No. HP: ${esc(phone||'-')}</div></td><td>${esc(j.paket||'-')}</td><td>${esc(dep?.name||j.berangkat||'-')}</td><td>${n}/8</td><td>${n===8?'<span class="badge paid">Lengkap</span>':'<span class="badge unpaid">Belum Lengkap</span>'}</td></tr>`).join('')||'<tr><td colspan="6">Tidak ada jamaah yang sesuai dengan filter.</td></tr>';
+  const selectAll=document.getElementById('docSelectAll');if(selectAll)selectAll.checked=false;
 }
 
 
