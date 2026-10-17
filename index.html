@@ -1374,6 +1374,7 @@ table{max-width:100%}
     <div><label>Role</label><select id="accessRole" onchange="syncAccessPermissions()"><option value="admin">Administrator</option><option value="finance">Keuangan</option><option value="operator">Operator</option><option value="viewer">Viewer</option></select></div>
     <div><label>Status</label><select id="accessActive"><option value="true">Aktif</option><option value="false">Nonaktif</option></select></div>
     <div class="full"><div class="notice ok" style="margin:0"><strong>Alur akun:</strong> buat email + password di <b>Supabase Authentication → Users</b>. Setelah itu masukkan <b>User ID/UID</b> akun tersebut di sini untuk mengatur role dan modul.</div></div>
+    <div class="full"><label>Hak Kelola Data</label><div class="permission-grid" id="dataPermissionGrid"><label><input type="checkbox" id="accessReadOnly"> Hanya lihat data (tidak bisa menambah atau mengedit)</label><label><input type="checkbox" id="accessCanDelete"> Boleh menghapus data</label></div><div class="muted" style="font-size:11px;margin-top:5px">Jika “Hanya lihat” aktif, akun tidak dapat menambah atau mengedit data. Hak hapus bisa dimatikan terpisah.</div></div>
     <div class="full"><label>Hak Akses Modul</label><div class="permission-grid" id="permissionGrid">
       <label><input type="checkbox" value="dashboard"> Dashboard</label>
       <label><input type="checkbox" value="jamaah"> Data Jamaah</label>
@@ -1604,6 +1605,32 @@ async function loadAccessProfile(){
   return true;
 }
 function canAccess(module){return currentAccess?.role==='admin'||(currentAccess?.permissions||[]).includes(module)}
+function canEditData(){return currentAccess?.role==='admin'||!(currentAccess?.permissions||[]).includes(ACCESS_SPECIAL.readOnly)}
+function canDeleteData(){return currentAccess?.role==='admin'||(currentAccess?.permissions||[]).includes(ACCESS_SPECIAL.canDelete)}
+function enforceDataPermissions(){
+  const readOnly=!canEditData(), noDelete=!canDeleteData();
+  document.querySelectorAll('#mainApp button, #mainApp input[type="submit"]').forEach(el=>{
+    const action=(el.getAttribute('onclick')||'')+' '+(el.textContent||'')+' '+(el.getAttribute('aria-label')||'');
+    const destructive=/\b(hapus|delete|remove|buang)\b/i.test(action)||/delete|remove/i.test(el.getAttribute('onclick')||'');
+    const mutating=/\b(tambah|simpan|edit|ubah|update|buat|input|assign|pindah|nonaktifkan|aktifkan)\b/i.test(action)||/(open.*form|edit|save|delete|remove|add.*(jamaah|payment|expense|package|room)|toggleAccessUser|moveRoomMember|submit)/i.test(el.getAttribute('onclick')||'');
+    if((noDelete&&destructive)||(readOnly&&mutating)){el.style.display='none';el.dataset.permissionHidden='true'}
+  });
+}
+document.addEventListener('click',e=>{
+  const el=e.target?.closest?.('button, input[type="submit"]');
+  if(!el||!document.getElementById('mainApp')?.contains(el))return;
+  const action=(el.getAttribute('onclick')||'')+' '+(el.textContent||'');
+  const destructive=/\b(hapus|delete|remove|buang)\b/i.test(action)||/delete|remove/i.test(el.getAttribute('onclick')||'');
+  const mutating=/\b(tambah|simpan|edit|ubah|update|buat|input|assign|pindah|nonaktifkan|aktifkan)\b/i.test(action)||/(open.*form|edit|save|delete|remove|add.*(jamaah|payment|expense|package|room)|toggleAccessUser|moveRoomMember|submit)/i.test(el.getAttribute('onclick')||'');
+  if((destructive&&!canDeleteData())||(mutating&&!canEditData())){e.preventDefault();e.stopImmediatePropagation();notice(!canEditData()?'Akun ini hanya memiliki akses lihat data.':'Akun ini tidak memiliki izin menghapus data.','error')}
+},true);
+document.addEventListener('submit',e=>{
+  const form=e.target;
+  if(!form||form.id==='accessForm'||form.id==='profileForm'||form.id==='passwordForm')return;
+  if(document.getElementById('mainApp')?.contains(form)&&!canEditData()){
+    e.preventDefault();e.stopImmediatePropagation();notice('Akun ini hanya memiliki akses lihat data.','error');
+  }
+},true);
 function applyAccessNavigation(){
   const map=['dashboard','jamaah','complimentary','paket','pembayaran','uangmasuk','pengeluaran','dokumen','perlengkapan','roomlist','keberangkatan','laporan'];
   document.querySelectorAll('.nav button').forEach((btn,i)=>{if(map[i])btn.style.display=canAccess(map[i])?'flex':'none'});
@@ -1626,9 +1653,11 @@ async function startApp(){
   document.getElementById('onlineLogin').style.display='none';
   document.getElementById('mainApp').style.display='flex';
   applyAccessNavigation();
+  enforceDataPermissions();
   const ok=await loadData();
   if(!ok)return;
   renderAll();
+  enforceDataPermissions();
   startSharedExpenseSync();
   await loadMyProfile();
 }
@@ -1755,6 +1784,7 @@ function openAdminMenu(){document.getElementById('adminMenu').classList.add('sho
 function closeAdminMenu(){document.getElementById('adminMenu').classList.remove('show')}
 const ACCESS_MODULES=['dashboard','jamaah','complimentary','paket','pembayaran','uangmasuk','pengeluaran','dokumen','perlengkapan','roomlist','keberangkatan','laporan'];
 const ACCESS_LABELS={dashboard:'Dashboard',jamaah:'Data Jamaah',complimentary:'Complimentary',paket:'Kelola Paket',pembayaran:'Pembayaran',uangmasuk:'Uang Masuk',pengeluaran:'Pengeluaran',dokumen:'Dokumen',perlengkapan:'Perlengkapan',keberangkatan:'Keberangkatan',laporan:'Laporan',roomlist:'Room List'};
+const ACCESS_SPECIAL={readOnly:'__read_only',canDelete:'__can_delete'};
 async function loadMyProfile(){
   if(!currentUser)return;
   const {data:profile}=await sb.from('user_profiles').select('*').eq('user_id',currentUser.id).maybeSingle();
@@ -1887,7 +1917,7 @@ async function renderAccessUsers(){
   if(!filtered.length){body.innerHTML='<tr><td colspan="5"><div class="muted" style="padding:18px;text-align:center">Tidak ada pengguna yang cocok dengan filter.</div></td></tr>';return}
   body.innerHTML=filtered.map(u=>{
     const perms=Array.isArray(u.permissions)?u.permissions:defaultPermissions(u.role);
-    const mods=perms.map(x=>'<span class="access-module">'+esc(ACCESS_LABELS[x]||x)+'</span>').join('');
+    const mods=perms.filter(x=>!String(x).startsWith('__')).map(x=>'<span class="access-module">'+esc(ACCESS_LABELS[x]||x)+'</span>').join('')+(perms.includes(ACCESS_SPECIAL.readOnly)?'<span class="access-module">Hanya lihat</span>':'<span class="access-module">Bisa edit</span>')+(perms.includes(ACCESS_SPECIAL.canDelete)?'<span class="access-module">Bisa hapus</span>':'<span class="access-module">Tidak bisa hapus</span>');
     const active=u.active!==false;
     const roleLabel={admin:'Administrator',finance:'Keuangan',operator:'Operator',viewer:'Viewer'}[u.role]||u.role||'Viewer';
     return `<tr><td><div class="access-user-email">${esc(u.email||'-')}</div><div class="access-user-id">${esc(u.user_id||'')}</div></td><td><span class="badge paid">${esc(roleLabel)}</span></td><td><div class="access-modules">${mods||'<span class="muted">Tidak ada</span>'}</div></td><td><span class="access-status ${active?'access-active':'access-inactive'}">${active?'Aktif':'Nonaktif'}</span></td><td><div class="access-actions"><button class="btn secondary small-btn" onclick="editAccessUser('${esc(u.id)}')">Edit</button><button class="btn danger small-btn" onclick="toggleAccessUser('${esc(u.id)}',${active})">${active?'Nonaktifkan':'Aktifkan'}</button></div></td></tr>`;
@@ -1897,6 +1927,10 @@ function syncAccessPermissions(){
   const role=document.getElementById('accessRole')?.value||'operator';
   const perms=defaultPermissions(role);
   document.querySelectorAll('#permissionGrid input').forEach(x=>x.checked=perms.includes(x.value));
+  const readOnly=document.getElementById('accessReadOnly');
+  const canDelete=document.getElementById('accessCanDelete');
+  if(readOnly)readOnly.checked=role==='viewer';
+  if(canDelete)canDelete.checked=role!=='viewer';
 }
 function openAccessForm(user=null){
   document.getElementById('accessModal').classList.add('show');
@@ -1908,6 +1942,8 @@ function openAccessForm(user=null){
   document.getElementById('accessActive').value=String(user?.active!==false);
   const perms=Array.isArray(user?.permissions)?user.permissions:defaultPermissions(user?.role||'operator');
   document.querySelectorAll('#permissionGrid input').forEach(x=>x.checked=perms.includes(x.value));
+  document.getElementById('accessReadOnly').checked=perms.includes(ACCESS_SPECIAL.readOnly)||(user?.role==='viewer'&&!perms.includes(ACCESS_SPECIAL.canDelete));
+  document.getElementById('accessCanDelete').checked=perms.includes(ACCESS_SPECIAL.canDelete)||(!perms.includes(ACCESS_SPECIAL.readOnly)&&user?.role!=='viewer'&&!perms.includes(ACCESS_SPECIAL.canDelete));
 }
 function closeAccessForm(){document.getElementById('accessModal').classList.remove('show')}
 async function editAccessUser(id){
@@ -1935,6 +1971,8 @@ document.addEventListener('DOMContentLoaded',()=>{
     const role=document.getElementById('accessRole').value;
     const active=document.getElementById('accessActive').value==='true';
     const permissions=[...document.querySelectorAll('#permissionGrid input:checked')].map(x=>x.value);
+    if(document.getElementById('accessReadOnly').checked)permissions.push(ACCESS_SPECIAL.readOnly);
+    if(document.getElementById('accessCanDelete').checked)permissions.push(ACCESS_SPECIAL.canDelete);
     if(!userId){notice('User ID Supabase Auth wajib diisi.','error');return}
     const uuidOk=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(userId);
     if(!uuidOk){notice('User ID harus berupa UUID yang valid dari Supabase Authentication.','error');return}
