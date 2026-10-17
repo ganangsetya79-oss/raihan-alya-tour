@@ -1114,6 +1114,16 @@ table{max-width:100%}
   <div class="panel">
     <div class="panel-head"><h2>Upload Kelengkapan Dokumen</h2></div>
     <div id="docNotice"></div>
+    <div class="panel" style="background:#f0f7ff;border:1px solid #cfe2f7;margin-bottom:16px;padding:14px">
+      <div style="display:flex;align-items:flex-start;gap:10px">
+        <div style="font-size:24px;line-height:1">🖨️</div>
+        <div style="flex:1;min-width:0">
+          <b style="display:block;margin-bottom:5px">Scan dari Epson L360 (Windows 11)</b>
+          <div style="font-size:12px;color:#526170;line-height:1.6">1. Buka aplikasi <b>Epson Scan</b> di komputer dan scan dokumen sebagai PDF atau JPG. 2. Simpan hasil scan di komputer. 3. Pilih jamaah dan jenis dokumen di bawah, lalu pilih file hasil scan dan tekan <b>Upload</b>.</div>
+          <div style="font-size:11px;color:#687078;margin-top:7px">Catatan: dashboard web belum bisa memerintahkan scanner USB secara langsung. Tombol Upload akan mengirim file hasil scan ke penyimpanan dokumen jamaah.</div>
+        </div>
+      </div>
+    </div>
     <div style="margin-bottom:15px">
       <label style="font-size:12px;color:#687078">Pilih Jamaah</label>
       <div style="position:relative;margin-top:5px">
@@ -3925,9 +3935,9 @@ function renderDocGrid(){
     const fileName=d[key+'_name'];
     return `<div class="doc-card">
       <div class="doc-card-title">${label}</div>
-      <input type="file" id="file_${key}" accept=".pdf,.jpg,.jpeg,.png">
+      <input type="file" id="file_${key}" accept=".pdf,.jpg,.jpeg,.png" aria-label="Pilih hasil scan ${label}">
       <div class="doc-card-actions">
-        <button class="btn" type="button" onclick="uploadDocument('${key}')">📤 Upload</button>
+        <button class="btn" type="button" onclick="uploadDocument('${key}')">⬆️ Upload Hasil Scan</button>
         ${d[key+'_path']?`<button class="btn secondary" type="button" onclick="openStoredFile('${encodeURIComponent(d[key+'_path'])}')">👁 Lihat</button>`:''}
       </div>
       <div class="file-name">${fileName?`✓ ${esc(fileName)}`:'Belum ada file'}</div>
