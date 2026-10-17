@@ -719,6 +719,49 @@ table{max-width:100%}
 </style>
 
 <style id="module-permission-style">.access-permission-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.access-permission-row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px;border:1px solid var(--border,#dfe5e8);border-radius:9px;min-width:0}.access-permission-row label{display:flex;align-items:center;gap:7px;font-size:12px;min-width:0}.access-permission-row select{width:auto;max-width:145px;min-width:110px;font-size:11px;padding:6px}@media(max-width:650px){.access-permission-list{grid-template-columns:1fr}.access-permission-row select{max-width:52%}}</style>
+<style id="ios-mobile-friendly-patch">
+/* iOS/mobile usability patch: preserve desktop layout, prevent narrow-screen overflow */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%;overflow-x:hidden}
+body{min-width:0;width:100%;overflow-x:hidden}
+button,input,select,textarea{font:inherit;max-width:100%}
+input,select,textarea{min-width:0}
+img,svg,video,canvas{max-width:100%}
+.table-wrap,.table-responsive,.access-table-wrap{max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.table-wrap table,.table-responsive table{min-width:680px}
+@media(max-width:768px){
+  .side{position:fixed;left:0;top:0;bottom:0;height:100dvh;width:min(290px,86vw);max-width:86vw;z-index:1000;overflow-y:auto;transform:translateX(-105%);transition:transform .22s ease;box-shadow:0 0 0 100vmax rgba(15,23,42,0);}
+  .side.open,.side.active,.side.show{transform:translateX(0)}
+  .main{margin-left:0!important;width:100%!important;max-width:100%;padding:14px!important;min-width:0}
+  .nav-label{display:inline!important}
+  .nav button{justify-content:flex-start!important;padding:12px 14px!important;gap:10px}
+  .logo{font-size:inherit!important}.logo small{display:block!important}
+  .cards{grid-template-columns:minmax(0,1fr)!important;gap:12px}
+  .form{grid-template-columns:minmax(0,1fr)!important}
+  .form .full{grid-column:1/-1}
+  .top,.dashboard-top{display:flex!important;flex-direction:column!important;align-items:stretch!important;gap:12px;min-width:0}
+  .panel,.card,.modal-box{max-width:100%;min-width:0}
+  .panel{padding:14px!important}
+  .panel-head{gap:10px;flex-wrap:wrap;align-items:flex-start}
+  .panel-head>div,.bulk-tools{max-width:100%;flex-wrap:wrap}
+  .btn,button{min-height:40px;touch-action:manipulation}
+  input,select,textarea{font-size:16px!important;min-height:42px}
+  .doc-grid{grid-template-columns:minmax(0,1fr)!important}
+  .doc-card{min-width:0;padding:12px}
+  .doc-card-actions .btn{flex:1 1 auto}
+  .report-grid{grid-template-columns:minmax(0,1fr)!important}
+  .report-search-row{align-items:stretch!important}
+  .report-search-row>div{width:100%;min-width:0!important}
+  .roomlist-filter-grid,.room-create-grid{grid-template-columns:minmax(0,1fr)!important;display:grid!important}
+  .roomlist-filter-grid>div{min-width:0!important;width:100%}
+  .modal,.modal-overlay{padding:10px!important}
+  .modal-content,.modal-box{width:100%!important;max-width:100%!important;max-height:calc(100dvh - 20px);overflow:auto}
+  h1{font-size:clamp(21px,5vw,28px)!important;overflow-wrap:anywhere}
+  h2{font-size:18px!important}
+  .table-wrap table,.table-responsive table,.access-table-wrap table{min-width:720px}
+}
+@media(max-width:420px){.main{padding:10px!important}.panel{padding:11px!important}.panel-head{flex-direction:column}.panel-head .btn{width:100%}.doc-card-actions{display:grid;grid-template-columns:minmax(0,1fr)}.room-bulk-actions{gap:6px}}
+@media(prefers-reduced-motion:reduce){.side{transition:none!important}}
+</style>
 </head>
 <body>
 <button type="button" class="mobile-menu-btn" id="mobileMenuBtn" onclick="toggleMobileNav()" aria-label="Buka menu" title="Buka menu"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"></path></svg></button>
