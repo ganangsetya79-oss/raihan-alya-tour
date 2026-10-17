@@ -761,6 +761,15 @@ img,svg,video,canvas{max-width:100%}
 }
 @media(max-width:420px){.main{padding:10px!important}.panel{padding:11px!important}.panel-head{flex-direction:column}.panel-head .btn{width:100%}.doc-card-actions{display:grid;grid-template-columns:minmax(0,1fr)}.room-bulk-actions{gap:6px}}
 @media(prefers-reduced-motion:reduce){.side{transition:none!important}}
+/* Fix iOS mobile navigation layering: backdrop must sit behind the sidebar */
+@media(max-width:768px){
+  .mobile-nav-backdrop{z-index:1190!important}
+  .side,.app .side,.app.sidebar-collapsed .side{z-index:1200!important;pointer-events:auto!important}
+  .app.mobile-nav-open .side{transform:translateX(0)!important;visibility:visible!important}
+  .mobile-menu-btn{z-index:1210!important;pointer-events:auto!important}
+  .app.mobile-nav-open .mobile-nav-backdrop{display:block!important}
+  .side .nav,.side .nav button,.side .sidebar-toggle{pointer-events:auto!important;position:relative}
+}
 </style>
 </head>
 <body>
