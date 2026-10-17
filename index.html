@@ -716,6 +716,8 @@ table{max-width:100%}
  #paymentForm #paymentSubmitBtn{flex:1;min-width:140px}
 }
 </style>
+
+<style id="module-permission-style">.access-permission-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.access-permission-row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px;border:1px solid var(--border,#dfe5e8);border-radius:9px;min-width:0}.access-permission-row label{display:flex;align-items:center;gap:7px;font-size:12px;min-width:0}.access-permission-row select{width:auto;max-width:145px;min-width:110px;font-size:11px;padding:6px}@media(max-width:650px){.access-permission-list{grid-template-columns:1fr}.access-permission-row select{max-width:52%}}</style>
 </head>
 <body>
 <button type="button" class="mobile-menu-btn" id="mobileMenuBtn" onclick="toggleMobileNav()" aria-label="Buka menu" title="Buka menu"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"></path></svg></button>
@@ -1375,19 +1377,19 @@ table{max-width:100%}
     <div><label>Status</label><select id="accessActive"><option value="true">Aktif</option><option value="false">Nonaktif</option></select></div>
     <div class="full"><div class="notice ok" style="margin:0"><strong>Alur akun:</strong> buat email + password di <b>Supabase Authentication → Users</b>. Setelah itu masukkan <b>User ID/UID</b> akun tersebut di sini untuk mengatur role dan modul.</div></div>
     <div class="full"><label>Hak Kelola Data</label><div class="permission-grid" id="dataPermissionGrid"><label><input type="checkbox" id="accessReadOnly"> Hanya lihat data (tidak bisa menambah atau mengedit)</label><label><input type="checkbox" id="accessCanDelete"> Boleh menghapus data</label></div><div class="muted" style="font-size:11px;margin-top:5px">Jika “Hanya lihat” aktif, akun tidak dapat menambah atau mengedit data. Hak hapus bisa dimatikan terpisah.</div></div>
-    <div class="full"><label>Hak Akses Modul</label><div class="permission-grid" id="permissionGrid">
-      <label><input type="checkbox" value="dashboard"> Dashboard</label>
-      <label><input type="checkbox" value="jamaah"> Data Jamaah</label>
-      <label><input type="checkbox" value="complimentary"> Complimentary</label>
-      <label><input type="checkbox" value="paket"> Kelola Paket</label>
-      <label><input type="checkbox" value="pembayaran"> Pembayaran</label>
-      <label><input type="checkbox" value="uangmasuk"> Uang Masuk</label>
-      <label><input type="checkbox" value="pengeluaran"> Pengeluaran</label>
-      <label><input type="checkbox" value="dokumen"> Dokumen</label>
-      <label><input type="checkbox" value="perlengkapan"> Perlengkapan</label>
-      <label><input type="checkbox" value="roomlist"> Room List</label>
-      <label><input type="checkbox" value="keberangkatan"> Keberangkatan</label>
-      <label><input type="checkbox" value="laporan"> Laporan</label>
+    <div class="full"><label>Hak Akses Modul dan Data</label><div class="muted" style="font-size:11px;margin:4px 0 8px">Pilih modul yang boleh dibuka, lalu tentukan apakah pengguna hanya melihat, boleh mengedit, atau boleh mengedit dan menghapus data pada modul tersebut.</div><div class="access-permission-list" id="permissionGrid">
+      <div class="access-permission-row"><label><input type="checkbox" value="dashboard"> Dashboard</label><select data-module="dashboard" aria-label="Izin Dashboard"><option value="view">Hanya lihat</option><option value="edit">Lihat dan edit</option><option value="delete">Edit dan hapus</option></select></div>
+      <div class="access-permission-row"><label><input type="checkbox" value="jamaah"> Data Jamaah</label><select data-module="jamaah" aria-label="Izin Data Jamaah"><option value="view">Hanya lihat</option><option value="edit">Lihat dan edit</option><option value="delete">Edit dan hapus</option></select></div>
+      <div class="access-permission-row"><label><input type="checkbox" value="complimentary"> Complimentary</label><select data-module="complimentary" aria-label="Izin Complimentary"><option value="view">Hanya lihat</option><option value="edit">Lihat dan edit</option><option value="delete">Edit dan hapus</option></select></div>
+      <div class="access-permission-row"><label><input type="checkbox" value="paket"> Kelola Paket</label><select data-module="paket" aria-label="Izin Kelola Paket"><option value="view">Hanya lihat</option><option value="edit">Lihat dan edit</option><option value="delete">Edit dan hapus</option></select></div>
+      <div class="access-permission-row"><label><input type="checkbox" value="pembayaran"> Pembayaran</label><select data-module="pembayaran" aria-label="Izin Pembayaran"><option value="view">Hanya lihat</option><option value="edit">Lihat dan edit</option><option value="delete">Edit dan hapus</option></select></div>
+      <div class="access-permission-row"><label><input type="checkbox" value="uangmasuk"> Uang Masuk</label><select data-module="uangmasuk" aria-label="Izin Uang Masuk"><option value="view">Hanya lihat</option><option value="edit">Lihat dan edit</option><option value="delete">Edit dan hapus</option></select></div>
+      <div class="access-permission-row"><label><input type="checkbox" value="pengeluaran"> Pengeluaran</label><select data-module="pengeluaran" aria-label="Izin Pengeluaran"><option value="view">Hanya lihat</option><option value="edit">Lihat dan edit</option><option value="delete">Edit dan hapus</option></select></div>
+      <div class="access-permission-row"><label><input type="checkbox" value="dokumen"> Dokumen</label><select data-module="dokumen" aria-label="Izin Dokumen"><option value="view">Hanya lihat</option><option value="edit">Lihat dan edit</option><option value="delete">Edit dan hapus</option></select></div>
+      <div class="access-permission-row"><label><input type="checkbox" value="perlengkapan"> Perlengkapan</label><select data-module="perlengkapan" aria-label="Izin Perlengkapan"><option value="view">Hanya lihat</option><option value="edit">Lihat dan edit</option><option value="delete">Edit dan hapus</option></select></div>
+      <div class="access-permission-row"><label><input type="checkbox" value="roomlist"> Room List</label><select data-module="roomlist" aria-label="Izin Room List"><option value="view">Hanya lihat</option><option value="edit">Lihat dan edit</option><option value="delete">Edit dan hapus</option></select></div>
+      <div class="access-permission-row"><label><input type="checkbox" value="keberangkatan"> Keberangkatan</label><select data-module="keberangkatan" aria-label="Izin Keberangkatan"><option value="view">Hanya lihat</option><option value="edit">Lihat dan edit</option><option value="delete">Edit dan hapus</option></select></div>
+      <div class="access-permission-row"><label><input type="checkbox" value="laporan"> Laporan</label><select data-module="laporan" aria-label="Izin Laporan"><option value="view">Hanya lihat</option><option value="edit">Lihat dan edit</option><option value="delete">Edit dan hapus</option></select></div>
     </div></div>
     <div class="actions full"><button type="button" class="btn secondary" onclick="closeAccessForm()">Batal</button><button class="btn">Simpan Akses</button></div>
   </form>
@@ -1604,7 +1606,10 @@ async function loadAccessProfile(){
   if(!Array.isArray(currentAccess.permissions))currentAccess.permissions=defaultPermissions(currentAccess.role);
   return true;
 }
-function canAccess(module){return currentAccess?.role==='admin'||(currentAccess?.permissions||[]).includes(module)}
+function modulePermission(module){const p=currentAccess?.permissions||[];if(p.includes(module+':delete'))return 'delete';if(p.includes(module+':edit'))return 'edit';if(p.includes(module+':view'))return 'view';if(p.includes(module))return 'edit';return 'none'}
+function canAccess(module){return currentAccess?.role==='admin'||modulePermission(module)!=='none'}
+function canEditModule(module){return currentAccess?.role==='admin'||modulePermission(module)==='edit'||modulePermission(module)==='delete'}
+function canDeleteModule(module){return currentAccess?.role==='admin'||modulePermission(module)==='delete'}
 function canEditData(){const p=currentAccess?.permissions||[];if(p.includes(ACCESS_SPECIAL.configured))return !p.includes(ACCESS_SPECIAL.readOnly);return currentAccess?.role==='admin'||!p.includes(ACCESS_SPECIAL.readOnly)}
 function canDeleteData(){const p=currentAccess?.permissions||[];if(p.includes(ACCESS_SPECIAL.configured))return p.includes(ACCESS_SPECIAL.canDelete);return currentAccess?.role==='admin'||p.includes(ACCESS_SPECIAL.canDelete)}
 function enforceDataPermissions(){
@@ -1926,11 +1931,8 @@ async function renderAccessUsers(){
 function syncAccessPermissions(){
   const role=document.getElementById('accessRole')?.value||'operator';
   const perms=defaultPermissions(role);
-  document.querySelectorAll('#permissionGrid input').forEach(x=>x.checked=perms.includes(x.value));
-  const readOnly=document.getElementById('accessReadOnly');
-  const canDelete=document.getElementById('accessCanDelete');
-  if(readOnly)readOnly.checked=role==='viewer';
-  if(canDelete)canDelete.checked=role!=='viewer';
+  document.querySelectorAll('#permissionGrid input[type="checkbox"]').forEach(x=>x.checked=perms.includes(x.value));
+  document.querySelectorAll('#permissionGrid select[data-module]').forEach(x=>x.value=role==='viewer'?'view':'delete');
 }
 function openAccessForm(user=null){
   document.getElementById('accessModal').classList.add('show');
@@ -1941,9 +1943,8 @@ function openAccessForm(user=null){
   document.getElementById('accessRole').value=user?.role||'operator';
   document.getElementById('accessActive').value=String(user?.active!==false);
   const perms=Array.isArray(user?.permissions)?user.permissions:defaultPermissions(user?.role||'operator');
-  document.querySelectorAll('#permissionGrid input').forEach(x=>x.checked=perms.includes(x.value));
-  document.getElementById('accessReadOnly').checked=perms.includes(ACCESS_SPECIAL.readOnly)||(user?.role==='viewer'&&!perms.includes(ACCESS_SPECIAL.canDelete));
-  document.getElementById('accessCanDelete').checked=perms.includes(ACCESS_SPECIAL.canDelete)||(!perms.includes(ACCESS_SPECIAL.readOnly)&&user?.role!=='viewer'&&!perms.includes(ACCESS_SPECIAL.canDelete));
+  document.querySelectorAll('#permissionGrid input[type="checkbox"]').forEach(x=>x.checked=perms.includes(x.value)||perms.some(p=>String(p).startsWith(x.value+':')));
+  document.querySelectorAll('#permissionGrid select[data-module]').forEach(sel=>{const mod=sel.dataset.module;sel.value=perms.includes(mod+':delete')?'delete':perms.includes(mod+':edit')?'edit':perms.includes(mod+':view')?'view':(perms.includes(mod)?'delete':'view')});
 }
 function closeAccessForm(){document.getElementById('accessModal').classList.remove('show')}
 async function editAccessUser(id){
@@ -1970,10 +1971,9 @@ document.addEventListener('DOMContentLoaded',()=>{
     const userId=document.getElementById('accessUserId').value.trim();
     const role=document.getElementById('accessRole').value;
     const active=document.getElementById('accessActive').value==='true';
-    const permissions=[...document.querySelectorAll('#permissionGrid input:checked')].map(x=>x.value);
+    const permissions=[];
+    document.querySelectorAll('#permissionGrid input[type="checkbox"]:checked').forEach(cb=>{const sel=document.querySelector('#permissionGrid select[data-module="'+cb.value+'"]');permissions.push(cb.value+':'+(sel?.value||'view'))});
     permissions.push(ACCESS_SPECIAL.configured);
-    if(document.getElementById('accessReadOnly').checked)permissions.push(ACCESS_SPECIAL.readOnly);
-    if(document.getElementById('accessCanDelete').checked)permissions.push(ACCESS_SPECIAL.canDelete);
     if(!userId){notice('User ID Supabase Auth wajib diisi.','error');return}
     const uuidOk=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(userId);
     if(!uuidOk){notice('User ID harus berupa UUID yang valid dari Supabase Authentication.','error');return}
