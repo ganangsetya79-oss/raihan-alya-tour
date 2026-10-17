@@ -181,6 +181,7 @@ table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;border
 
 
 .report-filter{background:linear-gradient(135deg,#eef7ff 0%,#fff9e8 100%);border:1px solid #dce7f3}
+.report-search-row input:focus{outline:none;border-color:#1f705d;box-shadow:0 0 0 3px rgba(31,112,93,.10)}.report-search-row .btn{white-space:nowrap}@media(max-width:600px){.report-search-row{align-items:stretch!important}.report-search-row>div{width:100%;min-width:0!important}.report-search-row .btn{width:100%}}
 .report-filter-title{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:14px}.report-icon{font-size:28px}
 .report-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.report-grid select{width:100%;padding:11px 12px;border:1px solid #ccd8e5;border-radius:10px;background:#fff;font-size:14px}.report-grid label{display:block;margin-bottom:6px;font-weight:600}
 .report-summary-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.report-summary-card{padding:14px;border-radius:12px;background:#f7fafc;border:1px solid #e5edf4}.report-summary-card .label{font-size:12px;color:#64748b}.report-summary-card .value{font-size:19px;font-weight:800;margin-top:5px}
@@ -1303,6 +1304,13 @@ table{max-width:100%}
   <div class="top"><h1>Laporan</h1><div class="muted">Rekap administrasi Raihan Alya Tour</div></div>
   <div class="report-filter panel">
     <div class="report-filter-title"><div><h2 style="margin:0">Filter Laporan</h2><div class="muted">Gunakan bulan dan jadwal keberangkatan untuk menyaring data.</div></div><span class="report-icon">📊</span></div>
+    <div class="report-search-row" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 14px">
+      <div style="position:relative;flex:1;min-width:220px">
+        <label for="reportSearch" style="display:block;font-size:12px;font-weight:700;margin-bottom:6px">Cari laporan</label>
+        <input id="reportSearch" class="search" type="search" placeholder="Cari nama, nomor HP, invoice, paket, jadwal..." oninput="renderReport()" style="width:100%;max-width:none;padding:11px 13px">
+      </div>
+      <div style="align-self:end"><button class="btn secondary" type="button" onclick="resetReportSearch()">Reset pencarian</button></div>
+    </div>
     <div class="report-grid">
       <div><label>Bulan</label><select id="reportMonth" onchange="renderReport()"></select></div>
       <div><label>Jadwal Keberangkatan</label><select id="reportDeparture" onchange="renderReport()"></select></div>
@@ -2515,21 +2523,35 @@ function fillReportFilters(){
   d.innerHTML='<option value="">Semua Jadwal</option>'+departures.slice().sort((a,b)=>(a.start_date||'').localeCompare(b.start_date||'')).map(x=>`<option value="${x.id}">${esc(x.name)} — ${esc(x.start_date||'-')}</option>`).join('');
   if(departures.some(x=>x.id===oldD))d.value=oldD;
 }
+function reportSearchValue(){return String(document.getElementById('reportSearch')?.value||'').trim().toLocaleLowerCase('id-ID');}
+function reportSearchMatch(...values){const q=reportSearchValue();return !q||values.some(v=>String(v??'').toLocaleLowerCase('id-ID').includes(q));}
+function resetReportSearch(){const el=document.getElementById('reportSearch');if(el)el.value='';renderReport();}
+function reportWhatsAppUrl(j){
+  let phone=String(j?.hp||j?.telepon||j?.no_hp||'').replace(/[^0-9]/g,'');
+  if(phone.startsWith('0'))phone='62'+phone.slice(1);else if(phone.startsWith('8'))phone='62'+phone;
+  if(!phone)return '';
+  const message='Assalamu’alaikum '+(j?.nama||'Bapak/Ibu')+', kami dari PT Raihan Alya Tour ingin menghubungi terkait administrasi perjalanan Umroh. Silakan membalas pesan ini. Terima kasih.';
+  return 'https://wa.me/'+phone+'?text='+encodeURIComponent(message);
+}
+function reportContactButton(j){
+  const url=reportWhatsAppUrl(j);
+  return url?'<button class="btn small-btn" type="button" onclick="window.open(\''+url+'\',\'_blank\',\'noopener\')" title="Hubungi via WhatsApp">WhatsApp</button>':'<span class="muted">Nomor tidak tersedia</span>';
+}
 function reportJamaahRows(){
   const month=document.getElementById('reportMonth')?.value||'', dep=document.getElementById('reportDeparture')?.value||'', pack=document.getElementById('reportPackage')?.value||'';
-  return data.filter(j=>{const dt=dashDateFor(j);return (!month||monthKey(dt)===month)&&(!dep||j.departure_id===dep)&&(!pack||j.paket===pack)});
+  return data.filter(j=>{const dt=dashDateFor(j),d=departureFor(j);return (!month||monthKey(dt)===month)&&(!dep||j.departure_id===dep)&&(!pack||j.paket===pack)&&reportSearchMatch(j.nama,j.hp,j.paket,j.berangkat,d?.name,j.id,isPaid(j)?'lunas':'belum lunas')});
 }
 function reportPaymentRows(){
   const month=document.getElementById('reportMonth')?.value||'', dep=document.getElementById('reportDeparture')?.value||'', pack=document.getElementById('reportPackage')?.value||'';
-  return payments.filter(p=>{const j=data.find(x=>x.id===p.jamaah_id);return (!month||monthKey(p.payment_date)===month)&&(!dep||j?.departure_id===dep)&&(!pack||j?.paket===pack)});
+  return payments.filter(p=>{const j=data.find(x=>x.id===p.jamaah_id);return (!month||monthKey(p.payment_date)===month)&&(!dep||j?.departure_id===dep)&&(!pack||j?.paket===pack)&&reportSearchMatch(p.invoice_no,p.payment_date,j?.nama,j?.hp,j?.paket,p.amount,p.method,p.bank,p.note)});
 }
 function reportDepartureRows(){
   const month=document.getElementById('reportMonth')?.value||'', dep=document.getElementById('reportDeparture')?.value||'';
-  return departures.filter(x=>(!month||monthKey(x.start_date)===month)&&(!dep||x.id===dep));
+  return departures.filter(x=>(!month||monthKey(x.start_date)===month)&&(!dep||x.id===dep)&&reportSearchMatch(x.name,x.start_date,x.end_date,x.airline,x.pnr,x.id));
 }
 function reportDocumentRows(){
   const month=document.getElementById('reportMonth')?.value||'', dep=document.getElementById('reportDeparture')?.value||'', pack=document.getElementById('reportPackage')?.value||'';
-  return data.filter(j=>{const dt=dashDateFor(j);return (!month||monthKey(dt)===month)&&(!dep||j.departure_id===dep)&&(!pack||j.paket===pack)});
+  return data.filter(j=>{const dt=dashDateFor(j),d=departureFor(j);return (!month||monthKey(dt)===month)&&(!dep||j.departure_id===dep)&&(!pack||j.paket===pack)&&reportSearchMatch(j.nama,j.hp,j.paket,j.berangkat,d?.name,j.id)});
 }
 function reportDocStatus(doc){
   const keys=[['ktp','KTP'],['kk','KK'],['passport','Passport'],['bpjs','BPJS'],['vaccine','Vaksin'],['visa','Visa'],['ticket','Tiket']];
@@ -2538,8 +2560,8 @@ function reportDocStatus(doc){
 function reportEquipmentRows(){
   const month=document.getElementById('reportMonth')?.value||'', dep=document.getElementById('reportDeparture')?.value||'', pack=document.getElementById('reportPackage')?.value||'';
   return data.filter(j=>{
-    const dt=dashDateFor(j), x=getEquipment(j.id)||{};
-    return (!month||monthKey(dt)===month)&&(!dep||j.departure_id===dep)&&(!pack||j.paket===pack);
+    const dt=dashDateFor(j), x=getEquipment(j.id)||{}, d=departureFor(j);
+    return (!month||monthKey(dt)===month)&&(!dep||j.departure_id===dep)&&(!pack||j.paket===pack)&&reportSearchMatch(j.nama,j.hp,j.paket,j.berangkat,d?.name,j.id);
   });
 }
 function renderReport(){
@@ -2548,8 +2570,8 @@ function renderReport(){
   const head=document.getElementById('reportHead'), body=document.getElementById('reportBody'), sum=document.getElementById('reportSummary');
   let rows=[], headers=[], html='', title='';
   if(type==='jamaah'){
-    rows=reportJamaahRows(); title='Laporan Jamaah'; headers=['No','Nama Jamaah','No. HP','Paket','Harga Paket','Keberangkatan','Terbayar','Sisa','Status'];
-    html=rows.map((j,i)=>{const paid=paidFor(j.id),s=remainFor(j),d=departureFor(j);return `<tr><td>${i+1}</td><td>${esc(j.nama)}</td><td>${esc(j.hp||'-')}</td><td>${esc(j.paket||'-')}</td><td>${rupiah(j.harga)}</td><td>${esc(d?.name||j.berangkat||'-')}</td><td>${rupiah(paid)}</td><td>${rupiah(s)}</td><td>${status(j)}</td></tr>`}).join('');
+    rows=reportJamaahRows(); title='Laporan Jamaah'; headers=['No','Nama Jamaah','No. HP','Paket','Harga Paket','Keberangkatan','Terbayar','Sisa','Status','Hubungi'];
+    html=rows.map((j,i)=>{const paid=paidFor(j.id),s=remainFor(j),d=departureFor(j);return `<tr><td>${i+1}</td><td>${esc(j.nama)}</td><td>${esc(j.hp||'-')}</td><td>${esc(j.paket||'-')}</td><td>${rupiah(j.harga)}</td><td>${esc(d?.name||j.berangkat||'-')}</td><td>${rupiah(paid)}</td><td>${rupiah(s)}</td><td>${status(j)}</td><td>${reportContactButton(j)}</td></tr>`}).join('');
     const total=rows.reduce((a,j)=>a+Number(j.harga||0),0), paid=rows.reduce((a,j)=>a+paidFor(j.id),0); sum.innerHTML=reportCards([['Jumlah Jamaah',rows.length],['Total Paket',rupiah(total)],['Terbayar',rupiah(paid)],['Sisa',rupiah(Math.max(0,total-paid))]]);
   } else if(type==='payment'){
     rows=reportPaymentRows(); title='Laporan Pembayaran'; headers=['No','Invoice','Tanggal','Jamaah','Jumlah','Diskon','Metode','Bank','Keterangan'];
