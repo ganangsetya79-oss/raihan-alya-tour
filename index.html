@@ -1133,7 +1133,7 @@ table{max-width:100%}
   </div>
   <div class="panel">
     <div class="panel-head"><div><h2>Rekap Kelengkapan Dokumen</h2></div><div class="bulk-tools"><button class="btn danger small-btn" type="button" onclick="deleteSelectedDocuments()">🗑️ Hapus Dokumen Terpilih</button></div></div>
-    <table><thead><tr><th style="width:38px;text-align:center"><input class="bulk-select-all" id="docSelectAll" type="checkbox" onchange="toggleAllDocuments(this.checked)" title="Pilih semua"></th><th>Jamaah</th><th>Lengkap</th><th>Status</th></tr></thead><tbody id="docBody"></tbody></table>
+    <div class="table-wrap"><table><thead><tr><th style="width:38px;text-align:center"><input class="bulk-select-all" id="docSelectAll" type="checkbox" onchange="toggleAllDocuments(this.checked)" title="Pilih semua"></th><th>Info Jamaah</th><th>Paket</th><th>Jadwal Keberangkatan</th><th>Lengkap</th><th>Status</th></tr></thead><tbody id="docBody"></tbody></table></div>
   </div>
 </section>
 <section id="perlengkapan" class="hidden">
@@ -4099,8 +4099,9 @@ function renderDocuments(){
   body.innerHTML=data.map(j=>{
     const d=getDoc(j.id)||{};
     const n=DOC_TYPES.filter(([k])=>d[k+'_path']).length;
-    return `<tr><td style="text-align:center"><input class="bulk-check doc-check" type="checkbox" value="${esc(j.id)}" onchange="syncBulkState('doc')"></td><td>${esc(j.nama)}</td><td>${n}/8</td><td>${n===8?'<span class="badge paid">Lengkap</span>':'<span class="badge unpaid">Belum Lengkap</span>'}</td></tr>`;
-  }).join('')||'<tr><td colspan="4">Belum ada data jamaah.</td></tr>';
+    const dep=departureFor(j);
+    return `<tr><td style="text-align:center"><input class="bulk-check doc-check" type="checkbox" value="${esc(j.id)}" onchange="syncBulkState('doc')"></td><td><b>${esc(j.nama||'-')}</b><div class="muted" style="font-size:11px;margin-top:3px">No. HP: ${esc(j.hp||j.telepon||j.no_hp||'-')}</div></td><td>${esc(j.paket||'-')}</td><td>${esc(dep?.name||j.berangkat||'-')}</td><td>${n}/8</td><td>${n===8?'<span class="badge paid">Lengkap</span>':'<span class="badge unpaid">Belum Lengkap</span>'}</td></tr>`;
+  }).join('')||'<tr><td colspan="6">Belum ada data jamaah.</td></tr>';
 }
 
 
