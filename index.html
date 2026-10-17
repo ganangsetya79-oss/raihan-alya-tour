@@ -1610,8 +1610,9 @@ function modulePermission(module){const p=currentAccess?.permissions||[];if(p.in
 function canAccess(module){return currentAccess?.role==='admin'||modulePermission(module)!=='none'}
 function canEditModule(module){return currentAccess?.role==='admin'||modulePermission(module)==='edit'||modulePermission(module)==='delete'}
 function canDeleteModule(module){return currentAccess?.role==='admin'||modulePermission(module)==='delete'}
-function canEditData(){const p=currentAccess?.permissions||[];if(p.includes(ACCESS_SPECIAL.configured))return !p.includes(ACCESS_SPECIAL.readOnly);return currentAccess?.role==='admin'||!p.includes(ACCESS_SPECIAL.readOnly)}
-function canDeleteData(){const p=currentAccess?.permissions||[];if(p.includes(ACCESS_SPECIAL.configured))return p.includes(ACCESS_SPECIAL.canDelete);return currentAccess?.role==='admin'||p.includes(ACCESS_SPECIAL.canDelete)}
+function canEditData(){return currentAccess?.role==='admin'||!(currentAccess?.permissions||[]).includes(ACCESS_SPECIAL.readOnly)}
+function canDeleteData(){return currentAccess?.role==='admin'||(currentAccess?.permissions||[]).includes(ACCESS_SPECIAL.canDelete)}
+function activePermissionModule(el){const section=el?.closest?.('section[id]');return section?.id||''}
 function enforceDataPermissions(){
   const readOnly=!canEditData(), noDelete=!canDeleteData();
   document.querySelectorAll('#mainApp button, #mainApp input[type="submit"]').forEach(el=>{
@@ -1627,14 +1628,12 @@ document.addEventListener('click',e=>{
   const action=(el.getAttribute('onclick')||'')+' '+(el.textContent||'');
   const destructive=/\b(hapus|delete|remove|buang)\b/i.test(action)||/delete|remove/i.test(el.getAttribute('onclick')||'');
   const mutating=/\b(tambah|simpan|edit|ubah|update|buat|input|assign|pindah|nonaktifkan|aktifkan)\b/i.test(action)||/(open.*form|edit|save|delete|remove|add.*(jamaah|payment|expense|package|room)|toggleAccessUser|moveRoomMember|submit)/i.test(el.getAttribute('onclick')||'');
-  if((destructive&&!canDeleteData())||(mutating&&!canEditData())){e.preventDefault();e.stopImmediatePropagation();notice(!canEditData()?'Akun ini hanya memiliki akses lihat data.':'Akun ini tidak memiliki izin menghapus data.','error')}
+  const module=activePermissionModule(el);const moduleEdit=module?canEditModule(module):canEditData();const moduleDelete=module?canDeleteModule(module):canDeleteData();if((destructive&&!moduleDelete)||(mutating&&!moduleEdit)){e.preventDefault();e.stopImmediatePropagation();notice(destructive?'Akun ini tidak memiliki izin menghapus data pada modul ini.':'Akun ini hanya memiliki akses lihat pada modul ini.','error')}
 },true);
 document.addEventListener('submit',e=>{
   const form=e.target;
   if(!form||form.id==='accessForm'||form.id==='profileForm'||form.id==='passwordForm')return;
-  if(document.getElementById('mainApp')?.contains(form)&&!canEditData()){
-    e.preventDefault();e.stopImmediatePropagation();notice('Akun ini hanya memiliki akses lihat data.','error');
-  }
+  if(document.getElementById('mainApp')?.contains(form)){const module=activePermissionModule(form);if(!(module?canEditModule(module):canEditData())){e.preventDefault();e.stopImmediatePropagation();notice('Akun ini hanya memiliki akses lihat pada modul ini.','error');}}
 },true);
 function applyAccessNavigation(){
   const map=['dashboard','jamaah','complimentary','paket','pembayaran','uangmasuk','pengeluaran','dokumen','perlengkapan','roomlist','keberangkatan','laporan'];
