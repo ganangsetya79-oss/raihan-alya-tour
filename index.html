@@ -968,6 +968,8 @@ img,svg,video,canvas{max-width:100%}
       <option value="">Semua Status Pembayaran</option>
       <option value="lunas">Sudah Lunas</option>
       <option value="belum">Belum Lunas</option>
+      <option value="no-payment">Belum Bayar Sama Sekali</option>
+      <option value="no-dp">Belum Bayar DP</option>
       <option value="complimentary">Complimentary</option>
       <option value="departure-missing">Belum Ada Keberangkatan</option>
     </select>
@@ -2759,6 +2761,10 @@ function fillJamaahDepartureFilter(){
   sel.innerHTML='<option value="">Semua Jadwal</option>'+list.map(d=>{const date=d.start_date?(d.start_date+(d.end_date?' s/d '+d.end_date:'')):'Tanggal belum diisi';return '<option value="'+esc(d.id)+'">'+esc(d.name||'Jadwal')+' — '+esc(date)+'</option>'}).join('');
   if(list.some(d=>String(d.id)===String(old)))sel.value=old;
 }
+function jamaahHasDPTransaction(jamaah){
+  const related=(payments||[]).filter(p=>String(p.jamaah_id||'')===String(jamaah?.id||''));
+  return related.some(p=>/\\bdp\\b|down payment|uang muka|tanda jadi/i.test(String(p.note||p.payment_type||p.type||p.keterangan||'')));
+}
 function jamaahFilteredRows(){
   const q=(document.getElementById('search')?.value||'').trim().toLowerCase();
   const departureFilter=document.getElementById('jamaahDepartureFilter')?.value||'';
@@ -2767,9 +2773,14 @@ function jamaahFilteredRows(){
     const hay=(x.nama+' '+(x.nik||'')+' '+(x.hp||'')+' '+(x.paket||'')+' '+(x.jenis_kelamin||'')+' '+(x.nama_rombongan||'')+' '+(x.keterangan_rombongan||'')+' '+(x.kategori||'')+' '+(x.keterangan||'')+' '+(x.catatan||'')).toLowerCase();
     const matchesSearch=hay.includes(q);
     const matchesDeparture=!departureFilter||String(x.departure_id||'')===String(departureFilter);
+    const paid=paidFor(x.id);
+    const hasPayment=paid>0;
+    const hasDP=jamaahHasDPTransaction(x);
     const matchesStatus=!statusFilter
       ||(statusFilter==='lunas'&&isPaid(x)&&!isComplimentary(x))
       ||(statusFilter==='belum'&&!isPaid(x))
+      ||(statusFilter==='no-payment'&&paid<=0&&!isComplimentary(x))
+      ||(statusFilter==='no-dp'&&!hasDP&&!isComplimentary(x)&&!isPaid(x))
       ||(statusFilter==='complimentary'&&isComplimentary(x))
       ||(statusFilter==='departure-missing'&&!String(x.departure_id||'').trim());
     return matchesSearch&&matchesDeparture&&matchesStatus;
