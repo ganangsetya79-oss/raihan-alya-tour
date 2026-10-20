@@ -302,6 +302,7 @@ table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;border
 
 .dashboard-empty-state,.dashboard-table-empty{display:block;width:100%;padding:24px 12px;text-align:center;color:#66736f;font-size:13px;line-height:1.6}.dashboard-table-empty{display:table-cell;background:#f8faf9;border-radius:8px}.dashboard-chart-panel{min-width:0;overflow:hidden}.dashboard-monthly-chart{min-width:0;box-sizing:border-box}.dashboard-month-bar-wrap{min-height:3px}
 .room-assign-search{display:block;margin:8px 0 2px}.room-assignee-picker{position:relative;width:100%;min-width:0}.room-assignee-picker>input{box-sizing:border-box;width:100%;min-width:0;padding:10px 12px;border:1px solid #cfdad5;border-radius:9px;background:#fff;font-size:12px;color:#23312b;outline:none}.room-assignee-picker>input:focus{border-color:#16836b;box-shadow:0 0 0 3px rgba(22,131,107,.1)}.room-assignee-results{display:none;position:relative;z-index:5;max-height:220px;overflow-y:auto;margin-top:5px;border:1px solid #dbe5e0;border-radius:9px;background:#fff;box-shadow:0 8px 22px rgba(20,45,35,.09)}.room-assignee-results.open{display:block}.room-assignee-option{display:flex;flex-direction:column;gap:3px;width:100%;padding:9px 11px;text-align:left;border:0;border-bottom:1px solid #edf1ef;background:#fff;color:#26342e;cursor:pointer;font-size:12px}.room-assignee-option:last-child{border-bottom:0}.room-assignee-option:hover,.room-assignee-option:focus{background:#f0f8f4;outline:none}.room-assignee-option small{color:#687870;font-size:10px;line-height:1.4}.room-assignee-empty{padding:12px;color:#687870;font-size:11px;text-align:center}.room-member-name small{white-space:normal;overflow-wrap:anywhere}
+.jamaah-extra-details{margin-top:10px;border:1px solid #dce8e3;border-radius:8px;padding:10px;background:#f9fbfa}.jamaah-extra-details summary{cursor:pointer;font-weight:600;color:#31594d}.jamaah-extra-details[open] summary{margin-bottom:10px}.jamaah-extra-details .multi-grid,.jamaah-extra-details .jamaah-member-grid{margin-top:10px}
 </style><style id="room-bulk-delete-style">
 .room-bulk-actions{display:flex;align-items:center;justify-content:flex-end;gap:10px;flex-wrap:wrap}
 .room-select-all-label{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:#52645d;white-space:nowrap;cursor:pointer}
@@ -3441,16 +3442,18 @@ function jamaahMemberTemplate(index,data={}){
     <div class="jamaah-member-grid">
       <div><label>Nama Lengkap</label><input data-field="nama" placeholder="Nama anggota" value="${esc(data.nama||'')}"></div>
       <div><label>Jenis Kelamin</label><select data-field="jenis_kelamin"><option value="">-- Pilih --</option><option value="Laki-laki" ${data.jenis_kelamin==='Laki-laki'?'selected':''}>Laki-laki</option><option value="Perempuan" ${data.jenis_kelamin==='Perempuan'?'selected':''}>Perempuan</select></div>
-      <div><label>NIK</label><input data-field="nik" placeholder="NIK" value="${esc(data.nik||'')}"></div>
       <div><label>No. HP</label><input data-field="hp" type="tel" placeholder="08xxxxxxxxxx" value="${esc(data.hp||'')}"></div>
-      <div><label>Nama Keluarga / Group</label><input data-field="family_group" placeholder="Contoh: Keluarga Ahmad" value="${esc(data.family_group||data.nama_rombongan||'')}"></div>
-      <div><label>Hubungan dalam Keluarga</label><select data-field="family_relation"><option value="">-- Pilih hubungan --</option>${['Suami','Istri','Ayah','Ibu','Anak','Kakak','Adik','Saudara','Orang tua','Wali','Lainnya'].map(v=>'<option '+((data.family_relation||'')===v?'selected':'')+'>'+v+'</option>').join('')}</select></div>
-      <div><label>Nama Mahram / Pendamping</label><input data-field="mahram_name" placeholder="Nama pendamping sesuai keterangan jamaah" value="${esc(data.mahram_name||'')}"></div>
       <div><label>Paket</label><select data-field="paket" onchange="syncPackageMemberPrice(this)"><option value="" ${!data.paket?'selected':''}>Pilih</option>${packageOptions(data.paket||'')}</select></div>
       <div><label>Harga Paket</label><input data-field="harga" type="number" min="0" placeholder="Otomatis dari paket" value="${data.harga??''}" readonly title="Harga otomatis mengikuti data paket"></div>
-      <div><label>Jenis Upgrade</label><input data-field="upgrade_description" placeholder="Contoh: Quad ke Triple" value="${esc(data.upgrade_description||'')}"></div>
-      <div><label>Nominal Upgrade (Rp)</label><input data-field="upgrade_amount" type="number" min="0" value="${Math.max(0,Number(data.upgrade_amount)||0)}" placeholder="0"></div>
-      <div class="jamaah-field-wide"><label>Catatan</label><input data-field="catatan" placeholder="Catatan anggota (opsional)" value="${esc(data.catatan||'')}"></div>
+      <details class="jamaah-extra-details jamaah-field-wide"><summary>Data tambahan anggota (opsional)</summary><div class="jamaah-member-grid">
+        <div><label>NIK</label><input data-field="nik" placeholder="NIK" value="${esc(data.nik||'')}"></div>
+        <div><label>Nama Keluarga / Group</label><input data-field="family_group" placeholder="Contoh: Keluarga Ahmad" value="${esc(data.family_group||data.nama_rombongan||'')}"></div>
+        <div><label>Hubungan dalam Keluarga</label><select data-field="family_relation"><option value="">-- Pilih hubungan --</option>${['Suami','Istri','Ayah','Ibu','Anak','Kakak','Adik','Saudara','Orang tua','Wali','Lainnya'].map(v=>'<option '+((data.family_relation||'')===v?'selected':'')+'>'+v+'</option>').join('')}</select></div>
+        <div><label>Nama Mahram / Pendamping</label><input data-field="mahram_name" placeholder="Nama pendamping sesuai keterangan jamaah" value="${esc(data.mahram_name||'')}"></div>
+        <div><label>Jenis Upgrade</label><input data-field="upgrade_description" placeholder="Contoh: Quad ke Triple" value="${esc(data.upgrade_description||'')}"></div>
+        <div><label>Nominal Upgrade (Rp)</label><input data-field="upgrade_amount" type="number" min="0" value="${Math.max(0,Number(data.upgrade_amount)||0)}" placeholder="0"></div>
+        <div class="jamaah-field-wide"><label>Catatan</label><input data-field="catatan" placeholder="Catatan anggota (opsional)" value="${esc(data.catatan||'')}"></div>
+      </div></details>
     </div>
   </div>`;
 }
@@ -3568,10 +3571,13 @@ function renderMultiIndividualCards(){
       <div class="multi-grid">
         <div><label>Nama Lengkap</label><input data-field="nama" value="${esc(v.nama||'')}" placeholder="Nama jamaah"></div>
         <div><label>Jenis Kelamin</label><select data-field="jenis_kelamin"><option value="">-- Pilih --</option><option value="Laki-laki" ${v.jenis_kelamin==='Laki-laki'?'selected':''}>Laki-laki</option><option value="Perempuan" ${v.jenis_kelamin==='Perempuan'?'selected':''}>Perempuan</option></select></div>
-        <div><label>NIK</label><input data-field="nik" value="${esc(v.nik||'')}" placeholder="NIK"></div>
         <div><label>No. HP</label><input data-field="hp" value="${esc(v.hp||'')}" placeholder="08xxxxxxxxxx"></div>
+      </div>
+      <details class="jamaah-extra-details"><summary>Data tambahan (opsional)</summary><div class="multi-grid">
+        <div><label>NIK</label><input data-field="nik" value="${esc(v.nik||'')}" placeholder="NIK"></div>
         <div><label>Keterangan</label><input data-field="keterangan" value="${esc(v.keterangan||'')}" placeholder="Keterangan"></div>
         <div><label>Catatan</label><input data-field="catatan" value="${esc(v.catatan||'')}" placeholder="Catatan"></div>
+      </div></details>
       </div>
     </div>`;
   }
