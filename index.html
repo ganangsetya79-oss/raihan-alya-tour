@@ -1410,18 +1410,23 @@ img,svg,video,canvas{max-width:100%}
       <button type="button" id="tabGrup" class="jamaah-entry-tab" onclick="setJamaahEntryMode('grup')">Input Group / Keluarga</button>
     </div></div>
     <div id="individualForm" class="full"><div class="jamaah-individual-form">
-      <div><label>Nama Lengkap</label><input id="nama" required></div><div><label>Jenis Kelamin</label><select id="jenis_kelamin"><option value="">-- Pilih --</option><option value="Laki-laki">Laki-laki</option><option value="Perempuan">Perempuan</option></select></div>
-      <div><label>No. HP</label><input id="hp" required></div><div><label>NIK</label><input id="nik"></div><div><label>Alamat</label><input id="alamat"></div>
+<div><label>Nama Lengkap</label><input id="nama" required></div>
+<div><label>Jenis Kelamin</label><select id="jenis_kelamin"><option value="">-- Pilih --</option><option value="Laki-laki">Laki-laki</option><option value="Perempuan">Perempuan</option></select></div>
+<div><label>No. HP</label><input id="hp" placeholder="Opsional"></div>
+<div><label>Paket</label><select id="jPaketSelect" onchange="syncPackagePrice('jPaketSelect','harga')"></select></div>
+<div><label>Jadwal Keberangkatan</label><select id="jDepartureSelect"><option value="">-- Belum ditentukan --</option></select></div>
+    </div><details class="jamaah-extra-details" style="margin-top:14px;border:1px solid #dce8e3;border-radius:10px;padding:12px"><summary style="cursor:pointer;font-weight:600">Informasi Tambahan (opsional)</summary><div class="jamaah-individual-form" style="margin-top:12px">
+<div><label>NIK</label><input id="nik"></div><div><label>Alamat</label><input id="alamat"></div>
       <div><label>Nama Keluarga / Group</label><input id="family_group" placeholder="Contoh: Keluarga Ahmad"></div>
       <div><label>Hubungan dalam Keluarga</label><select id="family_relation"><option value="">-- Pilih hubungan --</option><option>Suami</option><option>Istri</option><option>Ayah</option><option>Ibu</option><option>Anak</option><option>Kakak</option><option>Adik</option><option>Saudara</option><option>Orang tua</option><option>Wali</option><option>Lainnya</option></select></div>
       <div class="full"><label>Nama Mahram / Pendamping (sesuai keterangan jamaah)</label><input id="mahram_name" placeholder="Nama orang yang menjadi acuan pendamping/mahram"></div>
-      <div><label>Paket</label><select id="jPaketSelect" onchange="syncPackagePrice('jPaketSelect','harga')"></select></div>
+      
       <div><label>Harga Paket</label><input id="harga" type="number" min="0" required readonly title="Harga otomatis mengikuti data paket"></div>
       <div class="full upgrade-billing-panel"><h3 style="margin:0 0 5px;font-size:14px">Upgrade / Biaya Tambahan</h3><div class="muted" style="margin-bottom:10px">Biaya ini ditambahkan ke tagihan paket dan ikut dihitung pada status pembayaran.</div><div class="jamaah-individual-form"><div><label>Jenis Upgrade</label><input id="upgradeDescription" placeholder="Contoh: Upgrade kamar Quad ke Triple"></div><div><label>Biaya Tambahan (Rp)</label><input id="upgradeAmount" type="number" min="0" value="0" placeholder="0"></div></div></div>
-      <div><label>Jadwal Keberangkatan</label><select id="jDepartureSelect"><option value="">-- Belum ditentukan --</option></select></div>
+      
       <div><label>Keterangan</label><input id="keterangan" placeholder="Keterangan jamaah"></div>
       <div class="full"><label>Catatan</label><input id="catatan" placeholder="Catatan jamaah"></div>
-    </div></div>
+    </div></details></div>
     <div id="individualMultiForm" class="jamaah-group-form hidden">
       <div class="jamaah-group-head">
         <div><label>Jumlah Seat</label><input id="multiSeatCount" type="number" min="1" max="100" value="5" onchange="renderMultiIndividualCards()"></div>
