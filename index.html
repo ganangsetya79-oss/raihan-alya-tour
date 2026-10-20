@@ -3012,7 +3012,42 @@ function printPayment(paymentId){
   const total=group?groupTotalFor(j):Number(j.harga||0);
   const paid=Number(p.amount||0);
   const inv=invoiceNumber(p);
-  w.document.write('<!doctype html><html><head><meta charset="utf-8"><title>'+esc(inv)+'</title><style>*{box-sizing:border-box}body{font-family:Arial,sans-serif;margin:0;color:#222}.page{width:180mm;margin:auto;padding:12mm}.head{border-bottom:2px solid #173f35;padding-bottom:8px;margin-bottom:12px}.company{font-size:18px;font-weight:800;color:#173f35}.sub{font-size:11px;color:#666;margin-top:3px}.title{text-align:center;font-weight:800;font-size:16px;margin:14px 0}.meta{font-size:11px;line-height:1.7;margin-bottom:10px}table{width:100%;border-collapse:collapse;font-size:10px}th,td{border:1px solid #ccc;padding:5px}th{background:#f3f6f4;text-align:left}.right{text-align:right}.summary{margin-top:12px;border:1px solid #ddd;padding:9px;font-size:11px}.summary div{display:flex;justify-content:space-between;padding:3px 0}.grand{font-weight:800;border-top:1px solid #173f35;margin-top:4px;padding-top:5px}.sign{margin-top:30px;display:grid;grid-template-columns:1fr 1fr;text-align:center;font-size:10px}.space{height:42px}@media print{@page{size:A5;margin:0}.page{width:auto;padding:9mm}}</style></head><body><div class="page"><div class="head"><div class="company">PT RAIHAN ALYA TOUR</div><div class="sub">Palangka Raya, Kalimantan Tengah</div></div><div class="title">BUKTI PEMBAYARAN</div><div class="meta"><b>No. Nota:</b> '+esc(inv)+'<br><b>Tanggal:</b> '+esc(formatDateID(p.payment_date))+'<br><b>'+ (group?'Group':'Jamaah') +':</b> '+esc(label)+'</div>'+ (group?'<table><thead><tr><th>No</th><th>Nama Jamaah</th><th>Paket</th><th class="right">Harga</th></tr></thead><tbody>'+rows+'</tbody></table>':'') +'<div class="summary"><div><span>Total Tagihan</span><b>'+rupiah(total)+'</b></div><div><span>Pembayaran Ini</span><b>'+rupiah(paid)+'</b></div><div><span>Metode</span><b>'+esc(p.method||'-')+'</b></div><div><span>Bank</span><b>'+esc(p.bank||'-')+'</b></div><div><span>Keterangan</span><b>'+esc(p.note||'-')+'</b></div><div class="grand"><span>Terima Pembayaran</span><b>'+rupiah(paid)+'</b></div></div><div class="sign"><div>Admin / Petugas<div class="space"></div>(________________)</div><div>Jamaah<div class="space"></div>(________________)</div></div></div></body></html>');
+  w.document.write('<!doctype html><html><head><meta charset="utf-8"><title>'+esc(inv)+'</title><style>*{box-sizing:border-box}body{font-family:Arial,sans-serif;margin:0;color:#222}.page{width:180mm;margin:auto;padding:12mm}.head{border-bottom:2px solid #173f35;padding-bottom:8px;margin-bottom:12px}.company{font-size:18px;font-weight:800;color:#173f35}.sub{font-size:11px;color:#666;margin-top:3px}.title{text-align:center;font-weight:800;font-size:16px;margin:14px 0}.meta{font-size:11px;line-height:1.7;margin-bottom:10px}table{width:100%;border-collapse:collapse;font-size:10px}th,td{border:1px solid #ccc;padding:5px}th{background:#f3f6f4;text-align:left}.right{text-align:right}.summary{margin-top:12px;border:1px solid #ddd;padding:9px;font-size:11px}.summary div{display:flex;justify-content:space-between;padding:3px 0}.grand{font-weight:800;border-top:1px solid #173f35;margin-top:4px;padding-top:5px}.sign{margin-top:30px;display:grid;grid-template-columns:1fr 1fr;text-align:center;font-size:10px}.space{height:42px}@media print{@page{size:A5;margin:0}.page{width:auto;padding:9mm}}</style>
+<style id="payment-form-layout-polish">
+/* Form pembayaran: tata letak konsisten, label jelas, dan ramah layar kecil */
+#pembayaran .payment-view-panel{padding:22px}
+#pembayaran .payment-view-panel>.panel-head{padding-bottom:12px;margin-bottom:16px;border-bottom:1px solid #e8eeeb}
+#paymentForm{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start}
+#paymentForm>div{min-width:0}
+#paymentForm>div.full,#paymentForm>.full{grid-column:1/-1}
+#paymentForm label{display:block;font-size:12px;font-weight:700;color:#42564f;line-height:1.45}
+#paymentForm input:not([type=checkbox]),#paymentForm select,#paymentForm textarea{display:block;width:100%;min-width:0;max-width:100%;margin-top:6px;padding:11px 12px;border:1px solid #d5e0db;border-radius:9px;background:#fff;color:#243a33;font:inherit;font-size:13px;outline:none;transition:border-color .15s,box-shadow .15s}
+#paymentForm input:focus,#paymentForm select:focus,#paymentForm textarea:focus{border-color:#5b9b88;box-shadow:0 0 0 3px rgba(31,112,93,.09)}
+#paymentForm .payment-jamaah-picker{padding:14px;border:1px solid #dce8e3;border-radius:12px;background:#f9fbfa}
+#paymentForm .payment-jamaah-checklist{max-height:260px;border-color:#d5e0db}
+#paymentForm .payment-selected-info{margin-top:10px;padding:10px 12px}
+#paymentForm .payment-search-hint{margin-top:9px}
+#paymentForm .payment-entry-tabs{margin-bottom:12px}
+#paymentForm .payment-entry-desc{margin-bottom:0}
+#paymentForm .actions.full{display:flex;justify-content:flex-end;align-items:center;gap:9px;flex-wrap:wrap;padding-top:14px;border-top:1px solid #e8eeeb}
+#paymentForm .actions .btn{min-height:40px;padding:10px 16px}
+#paymentForm #paymentBankWrap.hidden{display:none!important}
+#paymentForm #paymentBankWrap:not(.hidden){grid-column:auto}
+@media(max-width:700px){
+ #pembayaran .payment-view-panel{padding:14px}
+ #paymentForm{grid-template-columns:minmax(0,1fr);gap:13px}
+ #paymentForm>div.full,#paymentForm>.full{grid-column:1}
+ #paymentForm .payment-jamaah-picker{padding:11px}
+ #paymentForm .actions.full{justify-content:stretch}
+ #paymentForm .actions .btn{flex:1 1 145px}
+}
+@media(max-width:380px){
+ #paymentForm .payment-entry-tabs{grid-template-columns:1fr}
+ #paymentForm .actions .btn{width:100%;flex-basis:100%}
+}
+</style>
+
+</head><body><div class="page"><div class="head"><div class="company">PT RAIHAN ALYA TOUR</div><div class="sub">Palangka Raya, Kalimantan Tengah</div></div><div class="title">BUKTI PEMBAYARAN</div><div class="meta"><b>No. Nota:</b> '+esc(inv)+'<br><b>Tanggal:</b> '+esc(formatDateID(p.payment_date))+'<br><b>'+ (group?'Group':'Jamaah') +':</b> '+esc(label)+'</div>'+ (group?'<table><thead><tr><th>No</th><th>Nama Jamaah</th><th>Paket</th><th class="right">Harga</th></tr></thead><tbody>'+rows+'</tbody></table>':'') +'<div class="summary"><div><span>Total Tagihan</span><b>'+rupiah(total)+'</b></div><div><span>Pembayaran Ini</span><b>'+rupiah(paid)+'</b></div><div><span>Metode</span><b>'+esc(p.method||'-')+'</b></div><div><span>Bank</span><b>'+esc(p.bank||'-')+'</b></div><div><span>Keterangan</span><b>'+esc(p.note||'-')+'</b></div><div class="grand"><span>Terima Pembayaran</span><b>'+rupiah(paid)+'</b></div></div><div class="sign"><div>Admin / Petugas<div class="space"></div>(________________)</div><div>Jamaah<div class="space"></div>(________________)</div></div></div></body></html>');
   w.document.close();
   w.focus();
   setTimeout(()=>w.print(),250);
