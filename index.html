@@ -3898,7 +3898,7 @@ document.getElementById('paymentForm').addEventListener('submit',async e=>{
     const wasEdit=!!editingPaymentId;
     const query=wasEdit
       ? sb.from('payments').update(payload).eq('id',editingPaymentId).select('id')
-      : sb.from('payments').insert(payload).select('id');
+      : sb.from('payments').insert(payload);
     const timeoutPromise=new Promise(resolve=>setTimeout(()=>resolve({error:{message:'Waktu penyimpanan habis (timeout). Periksa koneksi Supabase/RLS.'}}),15000));
     const result=await Promise.race([query,timeoutPromise]);
     if(result?.error){
