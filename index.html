@@ -303,6 +303,20 @@ table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;border
 .dashboard-empty-state,.dashboard-table-empty{display:block;width:100%;padding:24px 12px;text-align:center;color:#66736f;font-size:13px;line-height:1.6}.dashboard-table-empty{display:table-cell;background:#f8faf9;border-radius:8px}.dashboard-chart-panel{min-width:0;overflow:hidden}.dashboard-monthly-chart{min-width:0;box-sizing:border-box}.dashboard-month-bar-wrap{min-height:3px}
 .room-assign-search{display:block;margin:8px 0 2px}.room-assignee-picker{position:relative;width:100%;min-width:0}.room-assignee-picker>input{box-sizing:border-box;width:100%;min-width:0;padding:10px 12px;border:1px solid #cfdad5;border-radius:9px;background:#fff;font-size:12px;color:#23312b;outline:none}.room-assignee-picker>input:focus{border-color:#16836b;box-shadow:0 0 0 3px rgba(22,131,107,.1)}.room-assignee-results{display:none;position:relative;z-index:5;max-height:220px;overflow-y:auto;margin-top:5px;border:1px solid #dbe5e0;border-radius:9px;background:#fff;box-shadow:0 8px 22px rgba(20,45,35,.09)}.room-assignee-results.open{display:block}.room-assignee-option{display:flex;flex-direction:column;gap:3px;width:100%;padding:9px 11px;text-align:left;border:0;border-bottom:1px solid #edf1ef;background:#fff;color:#26342e;cursor:pointer;font-size:12px}.room-assignee-option:last-child{border-bottom:0}.room-assignee-option:hover,.room-assignee-option:focus{background:#f0f8f4;outline:none}.room-assignee-option small{color:#687870;font-size:10px;line-height:1.4}.room-assignee-empty{padding:12px;color:#687870;font-size:11px;text-align:center}.room-member-name small{white-space:normal;overflow-wrap:anywhere}
 .jamaah-extra-details{margin-top:10px;border:1px solid #dce8e3;border-radius:8px;padding:10px;background:#f9fbfa}.jamaah-extra-details summary{cursor:pointer;font-weight:600;color:#31594d}.jamaah-extra-details[open] summary{margin-bottom:10px}.jamaah-extra-details .multi-grid,.jamaah-extra-details .jamaah-member-grid{margin-top:10px}
+/* Perapian form anggota: kolom fleksibel dan tidak terjepit di layar kecil */
+.jamaah-member-card{min-width:0}
+.jamaah-member-grid{grid-template-columns:repeat(5,minmax(0,1fr))}
+.jamaah-member-grid>div,.jamaah-extra-details .jamaah-member-grid>div,.jamaah-extra-details .multi-grid>div{min-width:0}
+.jamaah-member-card input,.jamaah-member-card select{width:100%;min-width:0;max-width:100%;display:block}
+.jamaah-member-card .jamaah-extra-details{grid-column:1/-1;width:100%;min-width:0;margin-top:2px;padding:12px}
+.jamaah-member-card .jamaah-extra-details .jamaah-member-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(150px,100%),1fr));gap:10px;margin-top:12px}
+.jamaah-member-card .jamaah-extra-details label{display:block;line-height:1.4;min-height:25px}
+.jamaah-member-card .jamaah-extra-details input,.jamaah-member-card .jamaah-extra-details select{width:100%;min-width:0}
+.jamaah-member-title{flex-wrap:wrap}
+@media(max-width:900px){.jamaah-member-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:520px){.jamaah-member-grid{grid-template-columns:1fr}.jamaah-member-card .jamaah-extra-details .jamaah-member-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:360px){.jamaah-member-card .jamaah-extra-details .jamaah-member-grid{grid-template-columns:1fr}}
+
 </style><style id="room-bulk-delete-style">
 .room-bulk-actions{display:flex;align-items:center;justify-content:flex-end;gap:10px;flex-wrap:wrap}
 .room-select-all-label{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:#52645d;white-space:nowrap;cursor:pointer}
