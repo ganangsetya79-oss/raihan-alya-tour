@@ -3493,8 +3493,9 @@ function clearPaymentJamaahSearch(){
 function syncPaymentJamaahName(){setPaymentSelection(paymentSelectionValue())}
 
 function jamaahMemberTemplate(index,data={}){
+  const removeButton=index>1 ? `<button type="button" class="btn small-btn jamaah-remove" onclick="removeJamaahMember(this)">${data.id ? 'Keluarkan jadi Individu' : 'Hapus'}</button>` : '';
   return `<div class="jamaah-member-card" data-jamaah-id="${esc(data.id||'')}">
-    <div class="jamaah-member-title"><span>Anggota ${index}</span>${index>1?'<button type="button" class="btn small-btn jamaah-remove" onclick="removeJamaahMember(this)">${data.id?'Keluarkan jadi Individu':'Hapus'}</button>':''}</div>
+    <div class="jamaah-member-title"><span>Anggota ${index}</span>${removeButton}</div>
     <div class="jamaah-member-grid">
       <div><label>Nama Lengkap</label><input data-field="nama" placeholder="Nama anggota" value="${esc(data.nama||'')}"></div>
       <div><label>Jenis Kelamin</label><select data-field="jenis_kelamin"><option value="">-- Pilih --</option><option value="Laki-laki" ${data.jenis_kelamin==='Laki-laki'?'selected':''}>Laki-laki</option><option value="Perempuan" ${data.jenis_kelamin==='Perempuan'?'selected':''}>Perempuan</select></div>
