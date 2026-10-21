@@ -4768,6 +4768,35 @@ function filterRoomMemberChoices(roomId,query=''){
     return '<button type="button" class="room-assignee-option" onclick="moveRoomMember(\''+roomId+'\',\''+String(j.id).replace(/'/g,'\\\\\\\'')+'\')"><span>'+esc(j.nama||'-')+'</span><small>'+esc(meta)+'</small></button>';
   }).join(''):'<div class="room-assignee-empty">'+(q?'Tidak ada jamaah yang cocok dengan pencarian.':'Tidak ada jamaah pada jadwal ini.')+'</div>';
 }
+  
+// Muat ulang dashboard setelah 5 menit tanpa aktivitas pengguna.
+(function setupIdleAutoRefresh(){
+  const IDLE_REFRESH_MS=5*60*1000;
+  let idleRefreshTimer=null;
+  function scheduleIdleRefresh(){
+    if(idleRefreshTimer)clearTimeout(idleRefreshTimer);
+    idleRefreshTimer=setTimeout(()=>{
+      if(document.visibilityState!=='visible'){
+        scheduleIdleRefresh();
+        return;
+      }
+      const el=document.activeElement;
+      const editing=el && (el.matches('input,textarea,select,[contenteditable="true"]'));
+      if(editing){
+        scheduleIdleRefresh();
+        return;
+      }
+      window.location.reload();
+    },IDLE_REFRESH_MS);
+  }
+  ['pointerdown','pointermove','keydown','scroll','touchstart','click'].forEach(eventName=>{
+    document.addEventListener(eventName,scheduleIdleRefresh,{passive:true});
+  });
+  document.addEventListener('visibilitychange',()=>{
+    if(document.visibilityState==='visible')scheduleIdleRefresh();
+  });
+  scheduleIdleRefresh();
+})();
 </script>
 </body>
 </html>
