@@ -3494,7 +3494,7 @@ function syncPaymentJamaahName(){setPaymentSelection(paymentSelectionValue())}
 
 function jamaahMemberTemplate(index,data={}){
   return `<div class="jamaah-member-card" data-jamaah-id="${esc(data.id||'')}">
-    <div class="jamaah-member-title"><span>Anggota ${index}</span>${index>1?'<button type="button" class="btn small-btn jamaah-remove" onclick="removeJamaahMember(this)">Hapus</button>':''}</div>
+    <div class="jamaah-member-title"><span>Anggota ${index}</span>${index>1?'<button type="button" class="btn small-btn jamaah-remove" onclick="removeJamaahMember(this)">${data.id?'Keluarkan jadi Individu':'Hapus'}</button>':''}</div>
     <div class="jamaah-member-grid">
       <div><label>Nama Lengkap</label><input data-field="nama" placeholder="Nama anggota" value="${esc(data.nama||'')}"></div>
       <div><label>Jenis Kelamin</label><select data-field="jenis_kelamin"><option value="">-- Pilih --</option><option value="Laki-laki" ${data.jenis_kelamin==='Laki-laki'?'selected':''}>Laki-laki</option><option value="Perempuan" ${data.jenis_kelamin==='Perempuan'?'selected':''}>Perempuan</select></div>
@@ -3865,14 +3865,17 @@ if(jamaahForm) jamaahForm.addEventListener('submit',async e=>{
     const newRows=rows.filter(x=>!x.id);
     const currentIds=new Set(existingRows.map(x=>String(x.id)));
 
-    // Hapus anggota lama yang sengaja dikosongkan/dihapus dari form.
-    // Hanya ID anggota yang memang dibuka dalam rombongan ini yang boleh dihapus.
+    // Anggota lama yang dikeluarkan dari group tetap disimpan sebagai jamaah individu.
+    // Jangan hapus data jamaah maupun riwayat pembayarannya.
     const removedIds=editingGroupMemberIds.filter(memberId=>!currentIds.has(String(memberId)));
     const results=[];
 
-    if(removedIds.length){
-      const del=await sb.from('jamaah').delete().in('id',removedIds);
-      results.push(del);
+    for(const memberId of removedIds){
+      const existing=data.find(j=>String(j.id)===String(memberId));
+      const payload={kategori:'individu',group_id:null,nama_rombongan:null,keterangan_rombongan:null};
+      let q=await jamaahSchemaSafeWrite(payload,safePayload=>sb.from('jamaah').update(safePayload).eq('id',memberId));
+      if(!q.error&&existing)jamaahSheetRows.push({...existing,...payload});
+      results.push(q);
     }
 
     // Update hanya anggota lama yang masih ada.
