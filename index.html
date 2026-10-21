@@ -1021,6 +1021,10 @@ img,svg,video,canvas{max-width:100%}
       <option value="complimentary">Complimentary</option>
       <option value="departure-missing">Belum Ada Keberangkatan</option>
     </select>
+    <select id="jamaahSortFilter" class="jamaah-departure-filter" onchange="jamaahCurrentPage=1;renderJamaah()" aria-label="Urutkan data jamaah">
+      <option value="az">Nama A–Z</option>
+      <option value="za">Nama Z–A</option>
+    </select>
   </div>
 </div>
   <div class="panel">
@@ -2822,12 +2826,12 @@ function jamaahFilteredRows(){
   const q=(document.getElementById('search')?.value||'').trim().toLowerCase();
   const departureFilter=document.getElementById('jamaahDepartureFilter')?.value||'';
   const statusFilter=document.getElementById('jamaahStatusFilter')?.value||'';
-  return data.filter(x=>{
+  const sortFilter=document.getElementById('jamaahSortFilter')?.value||'az';
+  const rows=data.filter(x=>{
     const hay=(x.nama+' '+(x.nik||'')+' '+(x.hp||'')+' '+(x.paket||'')+' '+(x.jenis_kelamin||'')+' '+(x.nama_rombongan||'')+' '+(x.keterangan_rombongan||'')+' '+(x.kategori||'')+' '+(x.keterangan||'')+' '+(x.catatan||'')).toLowerCase();
     const matchesSearch=hay.includes(q);
     const matchesDeparture=!departureFilter||String(x.departure_id||'')===String(departureFilter);
     const paid=paidFor(x.id);
-    const hasPayment=paid>0;
     const hasDP=jamaahHasDPTransaction(x);
     const matchesStatus=!statusFilter
       ||(statusFilter==='lunas'&&isPaid(x)&&!isComplimentary(x))
@@ -2837,6 +2841,10 @@ function jamaahFilteredRows(){
       ||(statusFilter==='complimentary'&&isComplimentary(x))
       ||(statusFilter==='departure-missing'&&!String(x.departure_id||'').trim());
     return matchesSearch&&matchesDeparture&&matchesStatus;
+  });
+  return rows.sort((a,b)=>{
+    const cmp=String(a.nama||'').localeCompare(String(b.nama||''),'id',{sensitivity:'base',numeric:true});
+    return sortFilter==='za'?-cmp:cmp;
   });
 }
 function changeJamaahPageSize(value){
