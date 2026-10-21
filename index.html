@@ -1495,7 +1495,7 @@ img,svg,video,canvas{max-width:100%}
       <div class="jamaah-group-head"><div><label>Nama Group / Keluarga</label><input id="nama_rombongan" placeholder="Contoh: Keluarga Ahmad"></div><div><label>Keterangan Group</label><input id="keterangan_rombongan" placeholder="Opsional"></div></div>
       <div style="margin:0 0 12px"><label>Jadwal Keberangkatan</label><select id="groupDepartureSelect"><option value="">-- Belum ditentukan --</option></select><div class="muted" style="margin-top:4px">Semua anggota group otomatis dimasukkan ke jadwal ini.</div></div>
       <div class="jamaah-members-head"><div><h3 style="margin:0">Anggota Jamaah</h3><div class="muted">Edit semua anggota group sekaligus di bagian ini. Perubahan disimpan bersama melalui tombol Simpan Jamaah.</div></div><button type="button" class="btn" onclick="addJamaahMember()">+ Tambah Anggota</button></div>
-      <div class="jamaah-import-individual" style="margin:0 0 12px;padding:12px;border:1px solid #cfe3da;border-radius:9px;background:#f4faf7"><label for="groupImportIndividualSelect" style="display:block;font-weight:700;margin-bottom:6px">Ambil dari Jamaah Individu</label><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><select id="groupImportIndividualSelect" multiple size="4" style="flex:1;min-width:220px;padding:9px;border:1px solid #d8e2df;border-radius:7px;background:#fff"></select><button type="button" class="btn secondary" onclick="importIndividualsToGroup()">+ Masukkan ke Group</button></div><div class="muted" style="margin-top:6px">Pilih jamaah individu yang sudah terdaftar, lalu masukkan. Data lama dipakai, tidak perlu dihapus atau diketik ulang.</div></div>
+      <div class="jamaah-import-individual" style="margin:0 0 12px;padding:12px;border:1px solid #cfe3da;border-radius:9px;background:#f4faf7"><label for="groupImportIndividualSearch" style="display:block;font-weight:700;margin-bottom:6px">Tambah anggota dari Data Jamaah</label><input id="groupImportIndividualSearch" type="search" autocomplete="off" placeholder="Ketik nama jamaah individu..." oninput="renderGroupIndividualSearch()" style="width:100%;padding:10px;border:1px solid #d8e2df;border-radius:7px;background:#fff"><div id="groupImportIndividualResults" style="display:grid;gap:6px;margin-top:7px"></div><div class="muted" style="margin-top:6px">Ketik nama lalu klik hasilnya. Data individu langsung dipakai sebagai anggota group—tidak perlu dihapus atau diisi ulang.</div></div>
       <div class="jamaah-bulk-package" style="display:flex;gap:8px;align-items:end;flex-wrap:wrap;margin:0 0 12px;padding:10px;border:1px solid #dce8e3;border-radius:8px;background:#f7faf8">
         <div style="flex:1;min-width:190px"><label for="groupBulkPackage">Ubah paket seluruh anggota</label><select id="groupBulkPackage"><option value="">-- Pilih paket untuk semua --</option></select></div>
         <button type="button" class="btn secondary" onclick="applyGroupBulkPackage()">Terapkan ke Semua</button>
@@ -3519,32 +3519,32 @@ function addJamaahMember(data={}){
   box.insertAdjacentHTML('beforeend',jamaahMemberTemplate(index,data));
 }
 function refreshGroupIndividualChoices(){
-  const sel=document.getElementById('groupImportIndividualSelect');if(!sel)return;
-  const current=[...sel.selectedOptions].map(o=>o.value);
+  const input=document.getElementById('groupImportIndividualSearch');
+  if(input)renderGroupIndividualSearch();
+}
+function renderGroupIndividualSearch(){
+  const input=document.getElementById('groupImportIndividualSearch');
+  const box=document.getElementById('groupImportIndividualResults');
+  if(!input||!box)return;
+  const q=String(input.value||'').trim().toLocaleLowerCase('id');
   const dep=String(document.getElementById('groupDepartureSelect')?.value||'');
   const already=new Set([...(document.querySelectorAll('#jamaahMembers .jamaah-member-card'))].map(c=>String(c.dataset.jamaahId||'')).filter(Boolean));
-  const individuals=(data||[]).filter(j=>!isGroupJamaah(j)&&String(j.kategori||'individu').toLowerCase()!=='grup'&&!already.has(String(j.id))&&(!dep||String(j.departure_id||'')===dep)).sort((a,b)=>String(a.nama||'').localeCompare(String(b.nama||''),'id',{sensitivity:'base'}));
-  sel.innerHTML=individuals.map(j=>'<option value="'+esc(j.id)+'">'+esc(j.nama||'-')+' — '+esc(j.paket||'Paket belum diisi')+'</option>').join('')||'<option value="" disabled>Tidak ada jamaah individu yang cocok</option>';
-  current.forEach(id=>{const opt=[...sel.options].find(o=>o.value===id);if(opt)opt.selected=true});
+  if(q.length<2){box.innerHTML='<div class="muted">Ketik minimal 2 huruf untuk mencari.</div>';return}
+  const rows=(data||[]).filter(j=>!isGroupJamaah(j)&&String(j.kategori||'individu').toLowerCase()!=='grup'&&!already.has(String(j.id))&&(!dep||String(j.departure_id||'')===dep)&&String(j.nama||'').toLocaleLowerCase('id').includes(q)).sort((a,b)=>String(a.nama||'').localeCompare(String(b.nama||''),'id',{sensitivity:'base'})).slice(0,12);
+  box.innerHTML=rows.length?rows.map(j=>'<button type="button" class="btn secondary" style="text-align:left;display:flex;justify-content:space-between;gap:10px;align-items:center" onclick="importIndividualToGroup(\''+String(j.id).replace(/'/g,'\\\\\\\'')+'\')"><span>'+esc(j.nama||'-')+'<small style="display:block;font-weight:400;margin-top:3px">'+esc(j.paket||'Paket belum diisi')+'</small></span><strong>+ Tambah</strong></button>').join(''):'<div class="muted">Nama tidak ditemukan pada jadwal ini.</div>';
 }
-function importIndividualsToGroup(){
-  const sel=document.getElementById('groupImportIndividualSelect');
-  const ids=[...(sel?.selectedOptions||[])].map(o=>String(o.value)).filter(Boolean);
-  if(!ids.length){notice('Pilih minimal satu jamaah individu yang ingin dimasukkan ke group.','error');return}
+function importIndividualToGroup(id){
+  const j=(data||[]).find(x=>String(x.id)===String(id));
+  if(!j)return;
   const box=document.getElementById('jamaahMembers');
-  const existing=new Set([...(box?.querySelectorAll('.jamaah-member-card')||[])].map(c=>String(c.dataset.jamaahId||'')).filter(Boolean));
-  let added=0;
-  ids.forEach(id=>{
-    if(existing.has(id))return;
-    const j=(data||[]).find(x=>String(x.id)===id);if(!j)return;
-    addJamaahMember({...j,group_id:document.getElementById('editingGroupId')?.value||newGroupId()});
-    const card=box?.lastElementChild;
-    if(card)card.dataset.jamaahId=String(j.id);
-    added++;
-  });
-  refreshGroupIndividualChoices();
-  if(added)notice(added+' jamaah individu dimasukkan ke daftar anggota group. Klik Simpan Jamaah untuk menyimpan perubahan.');
+  if([...box.querySelectorAll('.jamaah-member-card')].some(c=>String(c.dataset.jamaahId||'')===String(j.id))){notice('Jamaah ini sudah ada di daftar anggota group.','error');return}
+  addJamaahMember({...j,group_id:document.getElementById('editingGroupId')?.value||newGroupId()});
+  const card=box.lastElementChild;if(card)card.dataset.jamaahId=String(j.id);
+  const input=document.getElementById('groupImportIndividualSearch');if(input)input.value='';
+  renderGroupIndividualSearch();
+  notice(j.nama+' ditambahkan. Klik Simpan Jamaah untuk menyimpan group.');
 }
+
 function fillGroupBulkPackage(selected=''){
   const sel=document.getElementById('groupBulkPackage');if(!sel)return;
   const current=selected||'';
