@@ -2274,8 +2274,10 @@ function editRoom(roomId){
       const capacityInput=Number(document.getElementById('roomEditCapacity').value);
       if(!hotel){notice('Hotel wajib diisi.','error');return}
       if(!Number.isFinite(capacityInput)||capacityInput<1||capacityInput>10){notice('Kapasitas harus antara 1 sampai 10.','error');return}
+      const occupied=(target.member_ids||[]).length;
+      if(capacityInput<occupied){notice('Kapasitas tidak boleh lebih kecil dari jumlah jamaah yang sudah menempati kamar ('+occupied+').','error');return}
       if(n&&rows.some(r=>String(r.id)!==String(target.id)&&String(r.departure_id)===String(target.departure_id)&&String(r.hotel||'').toLowerCase()===hotel.toLowerCase()&&String(r.city||'')===String(target.city||'')&&String(r.room_number||'').toLowerCase()===n.toLowerCase())){notice('Nomor kamar tersebut sudah dipakai pada hotel dan jadwal ini.','error');return}
-      target.room_number=n;target.hotel=hotel;target.capacity=Math.max((target.member_ids||[]).length,capacityInput);target.notes=document.getElementById('roomEditNotes').value.trim();
+      target.room_number=n;target.hotel=hotel;target.capacity=capacityInput;target.notes=document.getElementById('roomEditNotes').value.trim();
       saveRoomListStore(rows);close();renderRoomList();notice('Perubahan kamar berhasil disimpan.');
     });
   }
@@ -2346,9 +2348,15 @@ function moveRoomMember(targetRoomId,jamaahId){
     }
     if(!confirm('PERIKSA KEMBALI: kamar ini berisi jamaah berbeda jenis kelamin. Data menunjukkan nama keluarga yang sama atau nama pendamping/mahram, tetapi sistem tidak dapat memastikan status mahram secara agama. Sudah diverifikasi oleh admin dan jamaah?')){renderRoomList();return}
   }
-  if(current)current.member_ids=current.member_ids.filter(id=>String(id)!==String(jamaahId));
+  // Bersihkan penempatan lama pada seluruh kamar di jadwal yang sama agar satu jamaah hanya berada di satu kamar.
+  rows.forEach(room=>{
+    if(String(room.departure_id)===String(target.departure_id)){
+      room.member_ids=(Array.isArray(room.member_ids)?room.member_ids:[]).filter(id=>String(id)!==String(jamaahId));
+    }
+  });
   target.member_ids=Array.isArray(target.member_ids)?target.member_ids:[];
-  if(!target.member_ids.some(id=>String(id)===String(jamaahId)))target.member_ids.push(String(jamaahId));
+  if(target.member_ids.length>=Number(target.capacity)){notice('Kamar tujuan sudah penuh.','error');renderRoomList();return}
+  target.member_ids.push(String(jamaahId));
   saveRoomListStore(rows);renderRoomList();notice('Jamaah berhasil dipindahkan ke kamar tujuan.');
 }
 function deleteRoom(roomId){if(!confirm('Hapus kamar ini? Data jamaah tidak akan dihapus.'))return;saveRoomListStore(loadRoomListStore().filter(r=>r.id!==roomId));renderRoomList()}
