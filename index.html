@@ -4747,7 +4747,7 @@ function renderRoomAssignChoices(){
     const assignedRoom=assigned.get(String(j.id));
     const here=assignedRoom&&String(assignedRoom.id)===String(room.id);
     const full=(room.member_ids||[]).length>=Number(room.capacity)&&!here;
-    const meta=[j.jenis_kelamin||'Jenis kelamin belum diisi',j.family_group||j.nama_rombongan?'Keluarga: '+(j.family_group||j.nama_rombongan):'',j.family_relation?'Hubungan: '+j.family_relation:'',j.mahram_name?'Pendamping/mahram: '+j.mahram_name:'',assignedRoom?(here?'Sudah di kamar ini':'Saat ini: '+(assignedRoom.room_number?'Kamar '+assignedRoom.room_number:'Slot '+(assignedRoom.slot_no||''))+' · '+assignedRoom.hotel):'Belum ditempatkan'].filter(Boolean).join(' · ');
+    const meta=[j.jenis_kelamin||'Jenis kelamin belum diisi',j.family_group||j.nama_rombongan?'Keluarga: '+(j.family_group||j.nama_rombongan):'',j.family_relation?'Hubungan: '+j.family_relation:'',j.mahram_name?'Pendamping/mahram: '+j.mahram_name:'',j.keterangan?'Keterangan: '+j.keterangan:'',j.catatan?'Catatan: '+j.catatan:'',j.keterangan_rombongan?'Catatan group: '+j.keterangan_rombongan:'',Number(j.upgrade_amount||0)>0?'Upgrade: '+rupiah(j.upgrade_amount):'',assignedRoom?(here?'Sudah di kamar ini':'Saat ini: '+(assignedRoom.room_number?'Kamar '+assignedRoom.room_number:'Slot '+(assignedRoom.slot_no||''))+' · '+assignedRoom.hotel):'Belum ditempatkan'].filter(Boolean).join(' · ');
     const disabled=here||full;
     return '<button type="button" class="room-assignee-option '+(here?'is-current':'')+'" '+(disabled?'disabled':'')+' onclick="assignRoomFromModal(\''+String(room.id).replace(/'/g,"\\'")+'\',\''+String(j.id).replace(/'/g,"\\'")+'\')"><span>'+esc(j.nama||'-')+(here?' ✓':'')+'</span><small>'+esc(meta)+(full?' · KAMAR PENUH':'')+'</small></button>';
   }).join(''):'<div class="room-assignee-empty">'+(q?'Tidak ada jamaah yang cocok dengan pencarian.':'Belum ada jamaah pada jadwal ini.')+'</div>';
@@ -4772,7 +4772,7 @@ function filterRoomMemberChoices(roomId,query=''){
   result.classList.add('open');
   result.innerHTML=options.length?options.map(j=>{
     const already=assigned.has(String(j.id));
-    const meta=[j.jenis_kelamin||'Jenis kelamin belum diisi',j.family_group||j.nama_rombongan?'Keluarga: '+(j.family_group||j.nama_rombongan):'',j.family_relation?'Hubungan: '+j.family_relation:'',j.mahram_name?'Pendamping/mahram: '+j.mahram_name:'',j.keterangan?'Keterangan: '+j.keterangan:'',j.catatan?'Catatan: '+j.catatan:'',j.keterangan_rombongan?'Catatan group: '+j.keterangan_rombongan:'',already?'Sudah ditempatkan di kamar lain':'Belum ditempatkan'].filter(Boolean).join(' · ');
+    const meta=[j.jenis_kelamin||'Jenis kelamin belum diisi',j.family_group||j.nama_rombongan?'Keluarga: '+(j.family_group||j.nama_rombongan):'',j.family_relation?'Hubungan: '+j.family_relation:'',j.mahram_name?'Pendamping/mahram: '+j.mahram_name:'',j.keterangan?'Keterangan: '+j.keterangan:'',j.catatan?'Catatan: '+j.catatan:'',j.keterangan_rombongan?'Catatan group: '+j.keterangan_rombongan:'',Number(j.upgrade_amount||0)>0?'Upgrade: '+rupiah(j.upgrade_amount):'',already?'Sudah ditempatkan di kamar lain':'Belum ditempatkan'].filter(Boolean).join(' · ');
     return '<button type="button" class="room-assignee-option" onclick="moveRoomMember(\''+roomId+'\',\''+String(j.id).replace(/'/g,'\\\\\\\'')+'\')"><span>'+esc(j.nama||'-')+'</span><small>'+esc(meta)+'</small></button>';
   }).join(''):'<div class="room-assignee-empty">'+(q?'Tidak ada jamaah yang cocok dengan pencarian.':'Tidak ada jamaah pada jadwal ini.')+'</div>';
 }
