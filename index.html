@@ -4286,6 +4286,21 @@ function renderEquipment(){
     return `<tr><td style="text-align:center"><input class="bulk-check equipment-check" type="checkbox" value="${esc(j.id)}" onchange="syncBulkState('equipment')"></td><td>${i+1}</td><td><b>${esc(j.nama)}</b></td><td>${esc(dep?.name||j.berangkat||'-')}</td><td>${eqCell(x.mukena_ihram ?? x.ihram ?? x.mukena)}</td><td>${eqCell(x.batik)}</td><td>${eqCell(x.koper)}</td><td>${eqCell(x.buku)}</td><td>${esc(x.taken_date||'-')}</td><td>${esc(x.note||'-')}</td></tr>`;
   }).join('')||'<tr><td colspan="10">Nama jamaah tidak ditemukan.</td></tr>';
 }
+function openDocumentsForJamaah(id){
+  const j=data.find(x=>String(x.id)===String(id));
+  if(!j){notice('Data jamaah tidak ditemukan.','error');return}
+  const sel=document.getElementById('docJamaah');
+  const input=document.getElementById('docJamaahSearch');
+  if(!sel)return;
+  sel.value=j.id;
+  if(input)input.value=j.nama||'';
+  const selected=document.getElementById('docJamaahSelected');
+  if(selected)selected.innerHTML='Jamaah dipilih: <b>'+esc(j.nama)+'</b>';
+  const results=document.getElementById('docJamaahResults');
+  if(results)results.style.display='none';
+  loadDocumentForm();
+  document.getElementById('dokumen')?.scrollIntoView({behavior:'smooth',block:'start'});
+}
 function resetDocumentRecapFilters(){
   ['docRecapSearch','docRecapPackage','docRecapDeparture','docRecapStatus','docRecapMissingType'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   renderDocuments();
@@ -4316,7 +4331,7 @@ function renderDocuments(){
   if(count)count.textContent='Menampilkan '+rows.length+' dari '+data.length+' jamaah';
   body.innerHTML=rows.map(({j,n,dep,phone,doc})=>{
     const details=DOC_TYPES.map(([key,label])=>doc[key+'_path'?key+'_path':key+'_path']?'<span style="display:inline-block;margin:2px 4px 2px 0;padding:3px 6px;border-radius:5px;background:#e8f6ee;color:#176344;font-size:10px">'+esc(label)+' ✓ <button type="button" style="border:0;background:transparent;color:inherit;cursor:pointer;text-decoration:underline;padding:0" onclick="openStoredFile(\''+encodeURIComponent(doc[key+'_path'])+'\')">Lihat</button></span>':'<span style="display:inline-block;margin:2px 4px 2px 0;padding:3px 6px;border-radius:5px;background:#fff1e8;color:#8a4b18;font-size:10px">'+esc(label)+' —</span>').join('');
-    return `<tr><td style="text-align:center"><input class="bulk-check doc-check" type="checkbox" value="${esc(j.id)}" onchange="syncBulkState('doc')"></td><td><b>${esc(j.nama||'-')}</b><div class="muted" style="font-size:11px;margin-top:3px">No. HP: ${esc(phone||'-')}</div></td><td>${esc(j.paket||'-')}</td><td>${esc(dep?.name||j.berangkat||'-')}</td><td>${n}/${DOC_TYPES.length}</td><td>${n===DOC_TYPES.length?'<span class="badge paid">Lengkap</span>':'<span class="badge unpaid">Belum Lengkap</span>'}</td><td style="min-width:260px">${details}</td></tr>`;
+    return `<tr><td style="text-align:center"><input class="bulk-check doc-check" type="checkbox" value="${esc(j.id)}" onchange="syncBulkState('doc')"></td><td><b>${esc(j.nama||'-')}</b><div class="muted" style="font-size:11px;margin-top:3px">No. HP: ${esc(phone||'-')}</div><div style="margin-top:7px"><button type="button" class="btn small-btn" onclick="openDocumentsForJamaah('${esc(j.id)}')">Kelola Dokumen</button></div></td><td>${esc(j.paket||'-')}</td><td>${esc(dep?.name||j.berangkat||'-')}</td><td>${n}/${DOC_TYPES.length}</td><td>${n===DOC_TYPES.length?'<span class="badge paid">Lengkap</span>':'<span class="badge unpaid">Belum Lengkap</span>'}</td><td style="min-width:260px">${details}</td></tr>`;
   }).join('')||'<tr><td colspan="7">Tidak ada jamaah yang sesuai dengan filter.</td></tr>';
   const selectAll=document.getElementById('docSelectAll');if(selectAll)selectAll.checked=false;
 }
