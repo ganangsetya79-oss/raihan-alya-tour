@@ -1255,10 +1255,11 @@ img,svg,video,canvas{max-width:100%}
       <div><label for="docRecapPackage">Paket</label><select id="docRecapPackage" onchange="renderDocuments()"><option value="">Semua Paket</option></select></div>
       <div><label for="docRecapDeparture">Jadwal Keberangkatan</label><select id="docRecapDeparture" onchange="renderDocuments()"><option value="">Semua Jadwal</option></select></div>
       <div><label for="docRecapStatus">Status Dokumen</label><select id="docRecapStatus" onchange="renderDocuments()"><option value="">Semua Status</option><option value="complete">Lengkap</option><option value="incomplete">Belum Lengkap</option></select></div>
+      <div><label for="docRecapMissingType">Dokumen yang belum ada</label><select id="docRecapMissingType" onchange="renderDocuments()"><option value="">Semua Jenis</option><option value="ktp">KTP</option><option value="kk">KK</option><option value="passport">Paspor</option><option value="bpjs">BPJS</option><option value="vaccine">Vaksin</option><option value="visa">Visa</option><option value="ticket">Tiket</option><option value="other">Dokumen Lainnya</option></select></div>
       <div style="display:flex;align-items:end"><button class="btn secondary" type="button" onclick="resetDocumentRecapFilters()">Reset Filter</button></div>
     </div>
     <div id="docRecapCount" class="muted" style="font-size:12px;margin-bottom:10px"></div>
-    <div class="table-wrap"><table><thead><tr><th style="width:38px;text-align:center"><input class="bulk-select-all" id="docSelectAll" type="checkbox" onchange="toggleAllDocuments(this.checked)" title="Pilih semua"></th><th>Info Jamaah</th><th>Paket</th><th>Jadwal Keberangkatan</th><th>Lengkap</th><th>Status</th></tr></thead><tbody id="docBody"></tbody></table></div>
+    <div class="table-wrap"><table><thead><tr><th style="width:38px;text-align:center"><input class="bulk-select-all" id="docSelectAll" type="checkbox" onchange="toggleAllDocuments(this.checked)" title="Pilih semua"></th><th>Info Jamaah</th><th>Paket</th><th>Jadwal Keberangkatan</th><th>Lengkap</th><th>Status</th><th>Rincian Dokumen</th></tr></thead><tbody id="docBody"></tbody></table></div>
   </div>
 </section>
 <section id="perlengkapan" class="hidden">
@@ -4296,7 +4297,7 @@ function renderEquipment(){
   }).join('')||'<tr><td colspan="10">Nama jamaah tidak ditemukan.</td></tr>';
 }
 function resetDocumentRecapFilters(){
-  ['docRecapSearch','docRecapPackage','docRecapDeparture','docRecapStatus'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  ['docRecapSearch','docRecapPackage','docRecapDeparture','docRecapStatus','docRecapMissingType'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   renderDocuments();
 }
 function renderDocuments(){
@@ -4315,14 +4316,18 @@ function renderDocuments(){
     departureSelect.innerHTML='<option value="">Semua Jadwal</option>'+deps.map(([id,name])=>'<option value="'+esc(id)+'">'+esc(name)+'</option>').join('');
     if(deps.some(([id])=>id===oldDeparture))departureSelect.value=oldDeparture;
   }
-  const selectedPackage=packageSelect?.value||'', selectedDeparture=departureSelect?.value||'', selectedStatus=document.getElementById('docRecapStatus')?.value||'';
-  const rows=data.map(j=>{const doc=getDoc(j.id)||{},n=DOC_TYPES.filter(([k])=>doc[k+'_path']).length,dep=departureFor(j),phone=j.hp||j.telepon||j.no_hp||'';return {j,n,dep,phone};}).filter(({j,n,dep,phone})=>{
-    const statusMatch=!selectedStatus||(selectedStatus==='complete'?n===8:n<8);
-    return (!search||[j.nama,phone,j.paket,dep?.name,j.berangkat].some(v=>String(v||'').toLocaleLowerCase('id-ID').includes(search)))&&(!selectedPackage||j.paket===selectedPackage)&&(!selectedDeparture||dep?.id===selectedDeparture)&&statusMatch;
+  const selectedPackage=packageSelect?.value||'', selectedDeparture=departureSelect?.value||'', selectedStatus=document.getElementById('docRecapStatus')?.value||'', missingType=document.getElementById('docRecapMissingType')?.value||'';
+  const rows=data.map(j=>{const doc=getDoc(j.id)||{},n=DOC_TYPES.filter(([k])=>doc[k+'_path']).length,dep=departureFor(j),phone=j.hp||j.telepon||j.no_hp||'';return {j,n,dep,phone,doc};}).filter(({j,n,dep,phone,doc})=>{
+    const statusMatch=!selectedStatus||(selectedStatus==='complete'?n===DOC_TYPES.length:n<DOC_TYPES.length);
+    const missingMatch=!missingType||!doc[missingType+'_path'];
+    return (!search||[j.nama,phone,j.paket,dep?.name,j.berangkat].some(v=>String(v||'').toLocaleLowerCase('id-ID').includes(search)))&&(!selectedPackage||j.paket===selectedPackage)&&(!selectedDeparture||dep?.id===selectedDeparture)&&statusMatch&&missingMatch;
   });
   const count=document.getElementById('docRecapCount');
   if(count)count.textContent='Menampilkan '+rows.length+' dari '+data.length+' jamaah';
-  body.innerHTML=rows.map(({j,n,dep,phone})=>`<tr><td style="text-align:center"><input class="bulk-check doc-check" type="checkbox" value="${esc(j.id)}" onchange="syncBulkState('doc')"></td><td><b>${esc(j.nama||'-')}</b><div class="muted" style="font-size:11px;margin-top:3px">No. HP: ${esc(phone||'-')}</div></td><td>${esc(j.paket||'-')}</td><td>${esc(dep?.name||j.berangkat||'-')}</td><td>${n}/8</td><td>${n===8?'<span class="badge paid">Lengkap</span>':'<span class="badge unpaid">Belum Lengkap</span>'}</td></tr>`).join('')||'<tr><td colspan="6">Tidak ada jamaah yang sesuai dengan filter.</td></tr>';
+  body.innerHTML=rows.map(({j,n,dep,phone,doc})=>{
+    const details=DOC_TYPES.map(([key,label])=>doc[key+'_path'?key+'_path':key+'_path']?'<span style="display:inline-block;margin:2px 4px 2px 0;padding:3px 6px;border-radius:5px;background:#e8f6ee;color:#176344;font-size:10px">'+esc(label)+' ✓ <button type="button" style="border:0;background:transparent;color:inherit;cursor:pointer;text-decoration:underline;padding:0" onclick="openStoredFile(\''+encodeURIComponent(doc[key+'_path'])+'\')">Lihat</button></span>':'<span style="display:inline-block;margin:2px 4px 2px 0;padding:3px 6px;border-radius:5px;background:#fff1e8;color:#8a4b18;font-size:10px">'+esc(label)+' —</span>').join('');
+    return `<tr><td style="text-align:center"><input class="bulk-check doc-check" type="checkbox" value="${esc(j.id)}" onchange="syncBulkState('doc')"></td><td><b>${esc(j.nama||'-')}</b><div class="muted" style="font-size:11px;margin-top:3px">No. HP: ${esc(phone||'-')}</div></td><td>${esc(j.paket||'-')}</td><td>${esc(dep?.name||j.berangkat||'-')}</td><td>${n}/${DOC_TYPES.length}</td><td>${n===DOC_TYPES.length?'<span class="badge paid">Lengkap</span>':'<span class="badge unpaid">Belum Lengkap</span>'}</td><td style="min-width:260px">${details}</td></tr>`;
+  }).join('')||'<tr><td colspan="7">Tidak ada jamaah yang sesuai dengan filter.</td></tr>';
   const selectAll=document.getElementById('docSelectAll');if(selectAll)selectAll.checked=false;
 }
 
