@@ -4332,7 +4332,7 @@ function renderDocuments(){
   const selectedPackage=packageSelect?.value||'', selectedDeparture=departureSelect?.value||'', selectedStatus=document.getElementById('docRecapStatus')?.value||'', missingType=document.getElementById('docRecapMissingType')?.value||'';
   const rows=data.map(j=>{const doc=getDoc(j.id)||{},n=DOC_TYPES.filter(([k])=>doc[k+'_path']).length,dep=departureFor(j),phone=j.hp||j.telepon||j.no_hp||'';return {j,n,dep,phone,doc};}).filter(({j,n,dep,phone,doc})=>{
     const statusMatch=!selectedStatus||(selectedStatus==='complete'?n===DOC_TYPES.length:n<DOC_TYPES.length);
-    const missingMatch=!missingType||!doc[missingType+'_path'];
+    const missingMatch=!missingType||(missingType==='passport'?!(doc.passport_path||doc.passport2_path):!doc[missingType+'_path']);
     return (!search||[j.nama,phone,j.paket,dep?.name,j.berangkat].some(v=>String(v||'').toLocaleLowerCase('id-ID').includes(search)))&&(!selectedPackage||j.paket===selectedPackage)&&(!selectedDeparture||dep?.id===selectedDeparture)&&statusMatch&&missingMatch;
   });
   const count=document.getElementById('docRecapCount');
