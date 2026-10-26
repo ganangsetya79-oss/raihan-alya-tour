@@ -2771,7 +2771,7 @@ function printReport(){
 }
 const PACKAGE_KEY='raihan_alya_packages_v1';
 const OTHER_PACKAGE={id:'pkg-other',name:'Other / Belum Diketahui',price:'',hotel:'',duration:'',departure:'',returnDate:'',notes:'Paket belum ditentukan / belum diketahui'};
-const defaultPackages=[{id:'pkg-executive',name:'Executive',price:'',hotel:'',duration:'',departure:'',returnDate:'',notes:''},{id:'pkg-premium',name:'Premium',price:'',hotel:'',duration:'',departure:'',returnDate:'',notes:''},{id:'pkg-economis',name:'Economis',price:'',hotel:'',duration:'',departure:'',returnDate:'',notes:''},OTHER_PACKAGE];
+const defaultPackages=[{id:'pkg-executive',name:'Executive',price:'41500000',hotel:'',duration:'',departure:'',returnDate:'',notes:''},{id:'pkg-premium',name:'Premium',price:'37500000',hotel:'',duration:'',departure:'',returnDate:'',notes:''},{id:'pkg-economis',name:'Economis',price:'',hotel:'',duration:'',departure:'',returnDate:'',notes:''},OTHER_PACKAGE];
 function getPackages(){
   try{
     const r=localStorage.getItem(PACKAGE_KEY);
@@ -2789,7 +2789,11 @@ function packageOptions(selected=''){
   return list.map(p=>'<option value="'+esc(p.name)+'" '+(p.name===selected?'selected':'')+'>'+esc(p.name)+'</option>').join('');
 }
 function refreshPackageSelects(){const s=document.getElementById('jPaketSelect');if(s){const old=s.value;s.innerHTML=packageOptions(old);if(old)s.value=old;if(s.value)syncPackagePrice('jPaketSelect','harga')}document.querySelectorAll('#jamaahMembers select[data-field="paket"]').forEach(s=>{const old=s.value;s.innerHTML=packageOptions(old);if(old)s.value=old;if(s.value)syncPackageMemberPrice(s)});const r=document.getElementById('reportPackage');if(r){const old=r.value;r.innerHTML='<option value="">Semua Paket</option>'+getPackages().map(p=>'<option value="'+esc(p.name)+'">'+esc(p.name)+'</option>').join('');if(old)r.value=old}}
-function packageByName(name){return getPackages().find(p=>p.name===name)}
+function packageByName(name){
+  const key=String(name||'').trim().toLocaleLowerCase('id');
+  const list=getPackages();
+  return list.find(p=>String(p.name||'').trim().toLocaleLowerCase('id')===key);
+}
 function syncPackagePrice(selectId,priceId){const s=document.getElementById(selectId),p=document.getElementById(priceId);if(!p)return;const item=packageByName(s?.value);p.value=(item&&item.price!=='')?(Number(item.price)||0):''}
 function syncPackageMemberPrice(s){const item=packageByName(s.value),card=s.closest('.jamaah-member-card'),p=card?.querySelector('[data-field="harga"]');if(!p)return;p.value=(item&&item.price!=='')?(Number(item.price)||0):''}
 function renderPackages(){const b=document.getElementById('packageBody');if(!b)return;const a=getPackages();document.getElementById('packageCount').textContent=a.length+' paket';b.innerHTML=a.map(p=>'<tr><td><b>'+esc(p.name)+'</b><div class="muted">'+esc(p.notes||'')+'</div></td><td>'+rupiah(p.price||0)+'</td><td>'+esc(p.hotel||'-')+'</td><td>'+esc(p.duration||'-')+'</td><td>'+esc(p.departure||'-')+'</td><td>'+esc(p.returnDate||'-')+'</td><td><div class="package-actions"><button type="button" class="btn" onclick="editPackage(\''+esc(p.id)+'\')">Edit</button><button type="button" class="btn danger" onclick="deletePackage(\''+esc(p.id)+'\')">Hapus</button></div></td></tr>').join('')}
