@@ -923,6 +923,19 @@ img,svg,video,canvas{max-width:100%}
       <button type="button" class="btn secondary small-btn dashboard-filter-reset" onclick="resetDashFilters()">Reset</button>
     </div>
   </div>
+  <div class="dashboard-month-settings-wrap" style="margin:-5px 0 14px">
+    <button type="button" class="btn secondary small-btn" onclick="toggleDashMonthSettings()">⚙ Atur Bulan Dashboard</button>
+    <div id="dashMonthSettings" class="panel hidden" style="margin-top:8px;padding:14px">
+      <strong style="display:block;margin-bottom:6px">Atur pilihan bulan</strong>
+      <div class="muted" style="margin-bottom:10px">Tambahkan bulan yang ingin muncul pada Filter Dashboard. Pengaturan tersimpan di browser ini.</div>
+      <div style="display:flex;gap:8px;align-items:end;flex-wrap:wrap">
+        <div style="flex:1;min-width:180px"><label for="dashMonthCustomInput">Bulan tambahan</label><input id="dashMonthCustomInput" type="month" style="width:100%;padding:10px;border:1px solid #d8dde0;border-radius:7px;margin-top:5px"></div>
+        <button type="button" class="btn" onclick="addDashCustomMonth()">Tambah Bulan</button>
+      </div>
+      <div id="dashMonthCustomList" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px"></div>
+      <button type="button" class="btn secondary small-btn" style="margin-top:10px" onclick="resetDashCustomMonths()">Hapus Bulan Tambahan</button>
+    </div>
+  </div>
 
 
   <div class="dashboard-calendar-row" id="dashboardCalendarPanel" style="display:none">
@@ -3215,6 +3228,23 @@ function resetDashFilters(){
   if(dep)dep.value='';
   renderDash();
 }
+const DASH_CUSTOM_MONTHS_KEY='raihan_alya_dashboard_custom_months_v1';
+function getDashCustomMonths(){try{const v=JSON.parse(localStorage.getItem(DASH_CUSTOM_MONTHS_KEY)||'[]');return Array.isArray(v)?v.filter(x=>/^\\d{4}-\\d{2}$/.test(x)):[]}catch(e){return[]}}
+function saveDashCustomMonths(months){localStorage.setItem(DASH_CUSTOM_MONTHS_KEY,JSON.stringify([...new Set(months)].sort().reverse()))}
+function toggleDashMonthSettings(){const el=document.getElementById('dashMonthSettings');if(el)el.classList.toggle('hidden');renderDashCustomMonthList()}
+function renderDashCustomMonthList(){
+ const el=document.getElementById('dashMonthCustomList');if(!el)return;
+ const months=getDashCustomMonths();
+ el.innerHTML=months.length?months.map(m=>'<span style="display:inline-flex;align-items:center;gap:6px;padding:5px 8px;background:#eef7f3;border:1px solid #d7e9e2;border-radius:7px;font-size:12px">'+esc(monthLabel(m))+' <button type="button" aria-label="Hapus '+esc(monthLabel(m))+'" onclick="removeDashCustomMonth(\\''+m+'\\')" style="border:0;background:transparent;color:#a33;cursor:pointer;font-weight:700">×</button></span>').join(''):'<span class="muted">Belum ada bulan tambahan.</span>';
+}
+function addDashCustomMonth(){
+ const input=document.getElementById('dashMonthCustomInput'),value=input?.value||'';
+ if(!/^\\d{4}-\\d{2}$/.test(value)){notice('Pilih bulan dan tahun terlebih dahulu.','error');return}
+ const months=getDashCustomMonths();if(months.includes(value)){notice('Bulan tersebut sudah ditambahkan.','error');return}
+ months.push(value);saveDashCustomMonths(months);if(input)input.value='';renderDash();renderDashCustomMonthList();notice('Bulan berhasil ditambahkan ke Filter Dashboard.');
+}
+function removeDashCustomMonth(month){saveDashCustomMonths(getDashCustomMonths().filter(x=>x!==month));renderDash();renderDashCustomMonthList();notice('Bulan tambahan dihapus.')}
+function resetDashCustomMonths(){saveDashCustomMonths([]);renderDash();renderDashCustomMonthList();notice('Daftar bulan tambahan dikosongkan.')}
 function fillDashFilters(){
   const monthSel=document.getElementById('dashMonth');
   const depSel=document.getElementById('dashDeparture');
@@ -3227,7 +3257,8 @@ function fillDashFilters(){
     ...(departures||[]).map(d=>monthKey(d.start_date)),
     ...(data||[]).map(j=>monthKey(departureFor(j)?.start_date||j.berangkat)),
     ...(payments||[]).map(p=>monthKey(p.payment_date||p.tanggal)),
-    ...(expenses||[]).map(x=>monthKey(x.date||x.tanggal))
+    ...(expenses||[]).map(x=>monthKey(x.date||x.tanggal)),
+    ...getDashCustomMonths()
   ].filter(Boolean));
   // Sediakan bulan lampau dan bulan mendatang meskipun belum ada transaksi/jadwal tersimpan.
   for(let offset=-12;offset<=24;offset++){
