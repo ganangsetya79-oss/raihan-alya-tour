@@ -3222,12 +3222,19 @@ function fillDashFilters(){
   const oldMonth=monthSel.value, oldDep=depSel.value;
   // Gabungkan bulan dari jadwal, tanggal keberangkatan jamaah, transaksi pembayaran, dan pengeluaran.
   // Dengan begitu bulan transaksi tetap muncul meskipun tidak ada jadwal keberangkatan pada bulan tersebut.
-  const months=[...new Set([
+  const now=new Date();
+  const monthSet=new Set([
     ...(departures||[]).map(d=>monthKey(d.start_date)),
     ...(data||[]).map(j=>monthKey(departureFor(j)?.start_date||j.berangkat)),
     ...(payments||[]).map(p=>monthKey(p.payment_date||p.tanggal)),
     ...(expenses||[]).map(x=>monthKey(x.date||x.tanggal))
-  ].filter(Boolean))].sort().reverse();
+  ].filter(Boolean));
+  // Sediakan bulan lampau dan bulan mendatang meskipun belum ada transaksi/jadwal tersimpan.
+  for(let offset=-12;offset<=24;offset++){
+    const date=new Date(now.getFullYear(),now.getMonth()+offset,1);
+    monthSet.add(date.getFullYear()+'-'+String(date.getMonth()+1).padStart(2,'0'));
+  }
+  const months=[...monthSet].sort().reverse();
   monthSel.innerHTML='<option value="">Semua Bulan</option>'+months.map(m=>`<option value="${m}">${monthLabel(m)}</option>`).join('');
   monthSel.value=months.includes(oldMonth)?oldMonth:'';
   const selectedMonth=monthSel.value;
