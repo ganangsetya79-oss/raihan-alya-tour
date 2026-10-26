@@ -3119,7 +3119,7 @@ async function deleteSelectedDocuments(){
   if(!confirm('Hapus seluruh data dokumen yang tersimpan untuk '+ids.length+' jamaah terpilih? File dokumen di Storage yang tercatat juga akan dihapus.'))return;
   for(const jamaahId of ids){
     const d=getDoc(jamaahId)||{};
-    const paths=DOC_TYPES.map(([k])=>d[k+'_path']).filter(Boolean);
+    const paths=[...DOC_TYPES.map(([k])=>d[k+'_path']),d.passport2_path].filter(Boolean);
     if(paths.length)await sb.storage.from('document').remove(paths);
     const result=await sb.from('documents').delete().eq('jamaah_id',jamaahId);
     if(result.error){notice('Gagal menghapus dokumen '+jamaahId+': '+result.error.message,'error');return}
@@ -4103,17 +4103,25 @@ function renderDocGrid(){
   if(!id){grid.innerHTML='';return}
   const d=getDoc(id)||{};
   grid.innerHTML=DOC_TYPES.map(([key,label])=>{
-    const fileUrl=d[key+'_url'];
-    const filePath=d[key+'_path'];
     const fileName=d[key+'_name'];
-    return `<div class="doc-card">
-      <div class="doc-card-title">${label}</div>
+    const first=`<div class="doc-card">
+      <div class="doc-card-title">${label}${key==='passport'?' — File 1':''}</div>
       <input type="file" id="file_${key}" accept=".pdf,.jpg,.jpeg,.png" aria-label="Pilih hasil scan ${label}">
       <div class="doc-card-actions">
         <button class="btn" type="button" onclick="uploadDocument('${key}')">⬆️ Upload Hasil Scan</button>
         ${d[key+'_path']?`<button class="btn secondary" type="button" onclick="openStoredFile('${encodeURIComponent(d[key+'_path'])}')">👁 Lihat</button>`:''}
       </div>
       <div class="file-name">${fileName?`✓ ${esc(fileName)}`:'Belum ada file'}</div>
+    </div>`;
+    if(key!=='passport')return first;
+    return first+`<div class="doc-card">
+      <div class="doc-card-title">Paspor — File 2 (opsional)</div>
+      <input type="file" id="file_passport2" accept=".pdf,.jpg,.jpeg,.png" aria-label="Pilih file paspor kedua">
+      <div class="doc-card-actions">
+        <button class="btn" type="button" onclick="uploadDocument('passport2')">⬆️ Upload File 2</button>
+        ${d.passport2_path?`<button class="btn secondary" type="button" onclick="openStoredFile('${encodeURIComponent(d.passport2_path)}')">👁 Lihat</button>`:''}
+      </div>
+      <div class="file-name">${d.passport2_name?`✓ ${esc(d.passport2_name)}`:'Belum ada file kedua'}</div>
     </div>`;
   }).join('');
 }
@@ -4132,7 +4140,7 @@ function loadDocumentForm(){
 function updateDocSummary(){
   const id=document.getElementById('docJamaah').value;
   const d=getDoc(id)||{};
-  const n=DOC_TYPES.filter(([k])=>d[k+'_path']).length;
+  const n=DOC_TYPES.filter(([k])=>k==='passport'?(d.passport_path||d.passport2_path):d[k+'_path']).length;
   const el=document.getElementById('docSummary');
   if(el)el.innerHTML=n===DOC_TYPES.length
     ? '<span class="complete">✓ 8/8 dokumen lengkap</span>'
