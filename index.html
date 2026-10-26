@@ -2771,7 +2771,14 @@ function printReport(){
 }
 const PACKAGE_KEY='raihan_alya_packages_v1';
 const OTHER_PACKAGE={id:'pkg-other',name:'Other / Belum Diketahui',price:'',hotel:'',duration:'',departure:'',returnDate:'',notes:'Paket belum ditentukan / belum diketahui'};
-const defaultPackages=[{id:'pkg-executive',name:'Executive',price:'41500000',hotel:'',duration:'',departure:'',returnDate:'',notes:''},{id:'pkg-premium',name:'Premium',price:'37500000',hotel:'',duration:'',departure:'',returnDate:'',notes:''},{id:'pkg-economis',name:'Economis',price:'',hotel:'',duration:'',departure:'',returnDate:'',notes:''},OTHER_PACKAGE];
+const defaultPackages=[
+  {id:'pkg-executive-movenpick',name:'Executive/Movenpick',price:'42500000',hotel:'Movenpick',duration:'12 Hari',departure:'10 Desember 2026',returnDate:'22 Desember 2026',notes:''},
+  {id:'pkg-premium-anjum',name:'Premium/Anjum',price:'38000000',hotel:'Anjum/Setaraf',duration:'12 Hari',departure:'10 Desember 2026',returnDate:'22 Desember 2026',notes:''},
+  {id:'pkg-regular-elaf-diamond',name:'Regular/Elaf Diamond',price:'35000000',hotel:'Elaf Diamond',duration:'11 Hari',departure:'10 Januari 2027',returnDate:'22 Januari 2027',notes:''},
+  {id:'pkg-safwah-dallah-thaiba',name:'SAFWAH/DALLAH THAIBA',price:'54000000',hotel:'SAFWAH/DALLAH THAIBA',duration:'16 Hari',departure:'',returnDate:'',notes:''},
+  {id:'pkg-cadangan',name:'Cadangan',price:'0',hotel:'',duration:'',departure:'',returnDate:'',notes:''},
+  OTHER_PACKAGE
+];
 function getPackages(){
   try{
     const r=localStorage.getItem(PACKAGE_KEY);
