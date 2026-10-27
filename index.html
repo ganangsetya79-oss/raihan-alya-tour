@@ -3229,21 +3229,39 @@ function resetDashFilters(){
   renderDash();
 }
 const DASH_CUSTOM_MONTHS_KEY='raihan_alya_dashboard_custom_months_v1';
-function getDashCustomMonths(){try{const v=JSON.parse(localStorage.getItem(DASH_CUSTOM_MONTHS_KEY)||'[]');return Array.isArray(v)?v.filter(x=>/^\\d{4}-\\d{2}$/.test(x)):[]}catch(e){return[]}}
-function saveDashCustomMonths(months){localStorage.setItem(DASH_CUSTOM_MONTHS_KEY,JSON.stringify([...new Set(months)].sort().reverse()))}
-function toggleDashMonthSettings(){const el=document.getElementById('dashMonthSettings');if(el)el.classList.toggle('hidden');renderDashCustomMonthList()}
+function getDashCustomMonths(){
+  try{
+    const value=JSON.parse(localStorage.getItem(DASH_CUSTOM_MONTHS_KEY)||'[]');
+    return Array.isArray(value)?value.filter(x=>/^\d{4}-\d{2}$/.test(x)):[];
+  }catch(e){return[]}
+}
+function saveDashCustomMonths(months){
+  localStorage.setItem(DASH_CUSTOM_MONTHS_KEY,JSON.stringify([...new Set(months)].sort().reverse()));
+}
+function toggleDashMonthSettings(){
+  const el=document.getElementById('dashMonthSettings');
+  if(el)el.classList.toggle('hidden');
+  renderDashCustomMonthList();
+}
 function renderDashCustomMonthList(){
- const el=document.getElementById('dashMonthCustomList');if(!el)return;
- const months=getDashCustomMonths();
- el.innerHTML=months.length?months.map(m=>'<span style="display:inline-flex;align-items:center;gap:6px;padding:5px 8px;background:#eef7f3;border:1px solid #d7e9e2;border-radius:7px;font-size:12px">'+esc(monthLabel(m))+' <button type="button" aria-label="Hapus '+esc(monthLabel(m))+'" onclick="removeDashCustomMonth(\\''+m+'\\')" style="border:0;background:transparent;color:#a33;cursor:pointer;font-weight:700">×</button></span>').join(''):'<span class="muted">Belum ada bulan tambahan.</span>';
+  const el=document.getElementById('dashMonthCustomList');
+  if(!el)return;
+  const months=getDashCustomMonths();
+  el.innerHTML=months.length?months.map(m=>`<span style="display:inline-flex;align-items:center;gap:6px;padding:5px 8px;background:#eef7f3;border:1px solid #d7e9e2;border-radius:7px;font-size:12px">${esc(monthLabel(m))} <button type="button" aria-label="Hapus ${esc(monthLabel(m))}" onclick="removeDashCustomMonth('${m}')" style="border:0;background:transparent;color:#a33;cursor:pointer;font-weight:700">×</button></span>`).join(''):'<span class="muted">Belum ada bulan tambahan.</span>';
 }
 function addDashCustomMonth(){
- const input=document.getElementById('dashMonthCustomInput'),value=input?.value||'';
- if(!/^\\d{4}-\\d{2}$/.test(value)){notice('Pilih bulan dan tahun terlebih dahulu.','error');return}
- const months=getDashCustomMonths();if(months.includes(value)){notice('Bulan tersebut sudah ditambahkan.','error');return}
- months.push(value);saveDashCustomMonths(months);if(input)input.value='';renderDash();renderDashCustomMonthList();notice('Bulan berhasil ditambahkan ke Filter Dashboard.');
+  const input=document.getElementById('dashMonthCustomInput'),value=input?.value||'';
+  if(!/^\d{4}-\d{2}$/.test(value)){notice('Pilih bulan dan tahun terlebih dahulu.','error');return}
+  const months=getDashCustomMonths();
+  if(months.includes(value)){notice('Bulan tersebut sudah ditambahkan.','error');return}
+  months.push(value);saveDashCustomMonths(months);
+  if(input)input.value='';
+  renderDash();renderDashCustomMonthList();notice('Bulan berhasil ditambahkan ke Filter Dashboard.');
 }
-function removeDashCustomMonth(month){saveDashCustomMonths(getDashCustomMonths().filter(x=>x!==month));renderDash();renderDashCustomMonthList();notice('Bulan tambahan dihapus.')}
+function removeDashCustomMonth(month){
+  saveDashCustomMonths(getDashCustomMonths().filter(x=>x!==month));
+  renderDash();renderDashCustomMonthList();notice('Bulan tambahan dihapus.');
+}
 function resetDashCustomMonths(){saveDashCustomMonths([]);renderDash();renderDashCustomMonthList();notice('Daftar bulan tambahan dikosongkan.')}
 function fillDashFilters(){
   const monthSel=document.getElementById('dashMonth');
