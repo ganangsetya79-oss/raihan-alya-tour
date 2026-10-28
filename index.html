@@ -939,6 +939,42 @@ hr,.divider{border-color:var(--raihan-border)}
 </style>
 
 
+<!-- RAIHAN_DASHBOARD_STATS_VISIBILITY_FIX_V1 -->
+<style id="raihanDashboardStatsVisibilityFix">
+/* Ensure statistic labels and values remain visible after theme overrides */
+#dashboard .dashboard-stat-cards .stat-card .stat-main,
+#dashboard .dashboard-stat-cards .stat-card .stat-main > div {
+  display:flex !important;
+  visibility:visible !important;
+  opacity:1 !important;
+}
+#dashboard .dashboard-stat-cards .stat-card .stat-main {
+  justify-content:space-between !important;
+  align-items:center !important;
+}
+#dashboard .dashboard-stat-cards .stat-card .stat-main > div {
+  display:block !important;
+  flex:1 1 auto !important;
+  min-width:0 !important;
+  color:#183d2d !important;
+}
+#dashboard .dashboard-stat-cards .stat-card .label {
+  display:block !important;
+  visibility:visible !important;
+  opacity:1 !important;
+  color:#607568 !important;
+  line-height:1.4 !important;
+}
+#dashboard .dashboard-stat-cards .stat-card .num {
+  display:block !important;
+  visibility:visible !important;
+  opacity:1 !important;
+  color:#174d37 !important;
+  font-weight:800 !important;
+  line-height:1.25 !important;
+}
+</style>
+
 <!-- RAIHAN_DASHBOARD_POLISH_V1: dashboard-only layout refinement; no application logic changed -->
 <style id="raihanDashboardPolish">
 /* Dashboard hierarchy */
