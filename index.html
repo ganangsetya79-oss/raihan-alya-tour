@@ -1220,6 +1220,117 @@ table td{border-color:#e6eeec!important}
 }
 </style>
 
+<!-- RAIHAN_DASHBOARD_VISUAL_UPGRADE_V1 -->
+<style id="raihanDashboardVisualUpgrade">
+/* Dashboard: polished CRM overview */
+#dashboard{position:relative;isolation:isolate;padding-bottom:20px}
+#dashboard:before{
+ content:"";position:absolute;z-index:-1;pointer-events:none;top:-24px;left:-30px;right:-30px;height:340px;
+ background:radial-gradient(ellipse at 8% 0%,rgba(11,147,139,.10),transparent 55%),
+            radial-gradient(ellipse at 95% 0%,rgba(194,154,67,.10),transparent 42%);
+}
+#dashboard .dashboard-top{
+ position:relative;padding:22px 24px 20px!important;margin-bottom:18px!important;
+ border:1px solid #dce9e7!important;border-radius:18px!important;
+ background:linear-gradient(115deg,#fff 0%,#f4faf9 67%,#fbf7ec 100%)!important;
+ box-shadow:0 8px 26px rgba(6,63,64,.055)!important;overflow:hidden;
+}
+#dashboard .dashboard-top:after{
+ content:"";position:absolute;left:0;top:0;bottom:0;width:5px;
+ background:linear-gradient(180deg,#0b938b 0%,#c29a43 100%);
+}
+#dashboard .dashboard-top h1{font-size:clamp(26px,2.5vw,34px)!important;font-weight:850!important;letter-spacing:-1px!important}
+#dashboard .dashboard-live-datetime{font-size:12px!important;color:#6b8380!important}
+#dashboard .dashboard-greeting{
+ border:1px solid #d8eae5!important;border-radius:11px!important;padding:11px 14px!important;
+ margin-top:13px!important;background:rgba(232,246,242,.85)!important;color:#155b56!important;
+}
+#dashboard .dashboard-running{border-radius:10px!important;max-width:100%!important}
+#dashboard .dashboard-brand{
+ min-height:90px!important;padding:17px 22px!important;margin-bottom:16px!important;
+ border-radius:16px!important;position:relative;overflow:hidden;
+}
+#dashboard .dashboard-brand:before{
+ content:"";position:absolute;width:180px;height:180px;border-radius:50%;
+ right:7%;top:-125px;border:1px solid rgba(8,125,121,.12);
+ box-shadow:0 0 0 18px rgba(8,125,121,.025),0 0 0 38px rgba(8,125,121,.02);
+ pointer-events:none;
+}
+#dashboard .dashboard-brand-logo{border:1px solid #edf1ef!important;box-shadow:0 4px 10px rgba(6,63,64,.04)!important}
+#dashboard .dashboard-filter-panel{
+ padding:17px 19px!important;border-radius:15px!important;
+ box-shadow:0 5px 18px rgba(6,63,64,.04)!important;margin-bottom:13px!important
+}
+#dashboard .dashboard-filter-heading strong{font-size:14px!important;color:#073f40!important}
+#dashboard .dashboard-filter-controls{flex-basis:720px!important}
+#dashboard .dashboard-month-settings-wrap,#dashboard .dashboard-calendar-toggle-wrap{margin-top:0!important;margin-bottom:12px!important}
+#dashboard .dashboard-month-settings-wrap .btn,#dashboard .dashboard-calendar-open-btn{
+ min-height:36px!important;padding:8px 12px!important;border-radius:10px!important
+}
+/* KPI cards */
+#dashboard .dashboard-stat-cards{
+ gap:14px!important;margin-top:12px!important;margin-bottom:20px!important;
+ grid-template-columns:repeat(3,minmax(0,1fr))!important
+}
+#dashboard .dashboard-stat-cards .stat-card{
+ position:relative!important;min-height:128px!important;border-radius:15px!important;
+ border:1px solid #e0ebe8!important;box-shadow:0 5px 18px rgba(6,63,64,.055)!important;
+ background:linear-gradient(145deg,#fff 0%,#fbfdfc 100%)!important;
+}
+#dashboard .dashboard-stat-cards .stat-card:before{
+ content:"";display:block!important;position:absolute;left:0;top:0;bottom:0;width:3px;
+ background:#0b938b;opacity:.8
+}
+#dashboard .dashboard-stat-cards .stat-belum:before{background:#c29a43}
+#dashboard .dashboard-stat-cards .stat-paket:before{background:#678fc7}
+#dashboard .dashboard-stat-cards .stat-sisa:before{background:#c8794a}
+#dashboard .dashboard-stat-cards .stat-main{min-height:91px!important;padding:17px 16px 11px 19px!important}
+#dashboard .dashboard-stat-cards .stat-main>div{min-width:0}
+#dashboard .dashboard-stat-cards .label{font-size:10px!important;letter-spacing:.7px!important;font-weight:750!important;text-transform:uppercase!important;color:#738784!important}
+#dashboard .dashboard-stat-cards .num{font-size:clamp(21px,2.1vw,29px)!important;font-weight:850!important;letter-spacing:-.8px!important;margin-top:8px!important;color:#073f40!important}
+#dashboard .dashboard-stat-cards .stat-icon{width:43px!important;height:43px!important;border-radius:13px!important;background:#e6f5f1!important;color:#087d79!important}
+#dashboard .dashboard-stat-cards .stat-belum .stat-icon{background:#fbf2df!important;color:#a67c2e!important}
+#dashboard .dashboard-stat-cards .stat-paket .stat-icon{background:#edf3ff!important;color:#547bb4!important}
+#dashboard .dashboard-stat-cards .stat-sisa .stat-icon{background:#fff0e8!important;color:#b7653c!important}
+#dashboard .dashboard-stat-cards .stat-link{
+ height:34px!important;padding:0 16px 0 19px!important;border-top:1px solid #edf2f0!important;
+ background:#fbfdfc!important;color:#087d79!important;font-weight:700!important
+}
+#dashboard .dashboard-stat-cards .stat-link:hover{background:#edf7f5!important}
+#dashboard .dashboard-extra-grid{gap:16px!important}
+#dashboard .panel{border-radius:16px!important;box-shadow:0 5px 18px rgba(6,63,64,.045)!important;padding:18px!important}
+#dashboard .panel-head{margin-bottom:13px!important}
+#dashboard .panel-head h2,#dashboard .panel h2{font-size:15px!important;font-weight:800!important;letter-spacing:-.2px!important}
+#dashboard .panel-head p,#dashboard .panel .muted{color:#718582!important}
+#dashboard .dashboard-finance-panel table,#dashboard table{border-radius:10px!important;overflow:hidden}
+#dashboard .dashboard-finance-panel th{font-size:10px!important;letter-spacing:.35px!important}
+#dashboard .dashboard-finance-panel td{font-size:12px!important}
+#dashboard .dashboard-calendar-card{border:1px solid #dce9e7!important;border-radius:16px!important;box-shadow:0 10px 28px rgba(6,63,64,.08)!important}
+@media(max-width:900px){
+ #dashboard .dashboard-top{padding:18px!important}
+ #dashboard .dashboard-filter-panel{align-items:stretch!important;flex-direction:column!important}
+ #dashboard .dashboard-filter-controls{flex:1 1 auto!important;width:100%!important}
+ #dashboard .dashboard-extra-grid{grid-template-columns:minmax(0,1fr)!important}
+}
+@media(max-width:650px){
+ #dashboard .dashboard-top{padding:17px 15px 15px!important;border-radius:14px!important}
+ #dashboard .dashboard-top h1{font-size:25px!important}
+ #dashboard .dashboard-brand{padding:13px!important;gap:11px!important}
+ #dashboard .dashboard-stat-cards{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:9px!important}
+ #dashboard .dashboard-stat-cards .stat-card{min-height:108px!important;border-radius:12px!important}
+ #dashboard .dashboard-stat-cards .stat-main{min-height:76px!important;padding:12px 9px 8px 12px!important;gap:6px!important}
+ #dashboard .dashboard-stat-cards .label{font-size:9px!important;letter-spacing:.25px!important}
+ #dashboard .dashboard-stat-cards .num{font-size:clamp(16px,4.5vw,22px)!important;letter-spacing:-.4px!important;overflow-wrap:anywhere}
+ #dashboard .dashboard-stat-cards .stat-icon{width:31px!important;height:31px!important;border-radius:9px!important}
+ #dashboard .dashboard-stat-cards .stat-icon svg{width:18px!important;height:18px!important}
+ #dashboard .dashboard-stat-cards .stat-link{height:29px!important;padding:0 10px 0 12px!important;font-size:10px!important}
+ #dashboard .dashboard-filter-controls{flex-wrap:wrap!important}
+ #dashboard .dashboard-filter-field{min-width:calc(50% - 6px)!important}
+ #dashboard .dashboard-filter-reset{flex:1 1 100%!important}
+ #dashboard .panel{padding:13px!important}
+}
+</style>
+
 </head>
 <body>
 <button type="button" class="mobile-menu-btn" id="mobileMenuBtn" onclick="toggleMobileNav()" aria-label="Buka menu" title="Buka menu"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"></path></svg></button>
