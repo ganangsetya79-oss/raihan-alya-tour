@@ -1044,6 +1044,66 @@ img,svg,video,canvas{max-width:100%}
 }
 </style>
 
+
+<!-- RAIHAN_MOBILE_DASHBOARD_FINORA_DESIGN_V4 -->
+<style id="raihanMobileDashboardFinoraDesign">
+@media screen and (max-width:768px){
+  html,body{overflow-x:hidden!important;width:100%!important}
+  body #mainApp{display:flex;min-width:0!important;width:100%!important}
+  body #mainApp .main,body #mainApp.sidebar-collapsed .main{
+    width:100%!important;min-width:0!important;margin:0!important;
+    padding:64px 14px 26px!important;overflow-x:hidden!important;
+  }
+  body #mainApp #dashboard{width:100%!important;max-width:100%!important;min-width:0!important;padding:0!important;margin:0!important;overflow:visible!important}
+  body #dashboard .dashboard-top{margin:0 0 14px!important;gap:9px!important}
+  body #dashboard .dashboard-top h1{font-size:25px!important;font-weight:800!important;letter-spacing:-.5px!important}
+  body #dashboard .dashboard-live-datetime{padding:0!important;font-size:11px!important;color:#687a73!important}
+  body #dashboard .dashboard-welcome{font-size:12px!important;color:#66766f!important}
+  body #dashboard .dashboard-greeting{font-size:12px!important;line-height:1.5!important;padding:10px 12px!important;background:#f1f8f4!important;border:1px solid #dcece3!important;border-radius:13px!important;color:#254a3d!important}
+  body #dashboard .dashboard-running{border-radius:12px!important;padding:10px 12px!important;margin:0 0 12px!important;background:#eaf6ef!important;border:1px solid #d7eadf!important;color:#244b3d!important;font-size:11px!important;line-height:1.45!important}
+  body #dashboard .dashboard-brand{display:flex!important;width:100%!important;min-width:0!important;margin:0 0 12px!important;padding:13px!important;border-radius:18px!important;background:linear-gradient(135deg,#e2f7eb 0%,#d9f4f0 55%,#e6efff 100%)!important;border:1px solid #d0e9dd!important;box-shadow:0 5px 15px rgba(23,63,53,.06)!important}
+  body #dashboard .dashboard-brand-title{font-size:15px!important;line-height:1.3!important}
+  body #dashboard .dashboard-filter-panel{width:100%!important;min-width:0!important;margin:0 0 12px!important;padding:14px!important;border-radius:18px!important;background:#fff!important;border:1px solid #e2ebe6!important;box-shadow:0 5px 18px rgba(25,65,48,.06)!important}
+  body #dashboard .dashboard-filter-heading{display:flex!important;align-items:flex-start!important;gap:9px!important;margin-bottom:12px!important}
+  body #dashboard .dashboard-filter-heading strong{font-size:13px!important;color:#173f35!important}
+  body #dashboard .dashboard-filter-heading small{display:block!important;font-size:11px!important;line-height:1.4!important;color:#74817b!important}
+  body #dashboard .dashboard-filter-controls{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:9px!important}
+  body #dashboard .dashboard-filter-field{min-width:0!important}
+  body #dashboard .dashboard-filter-field label{display:block!important;font-size:11px!important;font-weight:700!important;color:#475950!important;margin:0 0 5px!important}
+  body #dashboard .dashboard-filter-field select{width:100%!important;min-width:0!important;max-width:100%!important;height:42px!important;padding:0 9px!important;border:1px solid #dce6e0!important;border-radius:12px!important;background:#f8fbf9!important;font-size:12px!important;color:#243b31!important}
+  body #dashboard .dashboard-filter-controls .btn{min-height:40px!important;border-radius:12px!important;margin:0!important}
+  body #dashboard .dashboard-filter-panel+.btn,body #dashboard .dashboard-filter-panel~.btn{border-radius:12px!important}
+  body #dashboard .cards.dashboard-stat-cards{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:11px!important;width:100%!important;margin:14px 0!important;padding:0!important}
+  body #dashboard .cards.dashboard-stat-cards>.stat-card{display:flex!important;flex-direction:column!important;justify-content:space-between!important;min-width:0!important;width:100%!important;max-width:100%!important;min-height:136px!important;margin:0!important;padding:0!important;border:1px solid rgba(22,58,45,.07)!important;border-radius:18px!important;overflow:hidden!important;box-shadow:0 5px 14px rgba(29,63,47,.08)!important}
+  body #dashboard .cards.dashboard-stat-cards>.stat-card .stat-main{display:flex!important;justify-content:space-between!important;align-items:flex-start!important;gap:5px!important;min-height:100px!important;padding:13px 11px 8px!important}
+  body #dashboard .cards.dashboard-stat-cards>.stat-card .label{font-size:11px!important;line-height:1.35!important;font-weight:700!important;color:#21342c!important}
+  body #dashboard .cards.dashboard-stat-cards>.stat-card .num{font-size:clamp(15px,4.1vw,21px)!important;line-height:1.2!important;font-weight:800!important;letter-spacing:-.35px!important;color:#14251d!important;white-space:normal!important;overflow-wrap:normal!important;word-break:normal!important;max-width:100%!important}
+  body #dashboard .cards.dashboard-stat-cards>.stat-card .stat-icon{width:25px!important;height:25px!important;flex:0 0 25px!important;opacity:.35!important;color:#234d3e!important}
+  body #dashboard .cards.dashboard-stat-cards>.stat-card .stat-icon svg{width:100%!important;height:100%!important}
+  body #dashboard .cards.dashboard-stat-cards>.stat-card .stat-link{display:flex!important;align-items:center!important;justify-content:space-between!important;width:100%!important;height:35px!important;padding:0 11px!important;background:rgba(255,255,255,.35)!important;border:0!important;border-top:1px solid rgba(30,65,48,.07)!important;color:#253b31!important;font-size:11px!important}
+  body #dashboard .cards.dashboard-stat-cards>.stat-card .stat-link span{font-size:17px!important}
+  body #dashboard .cards.dashboard-stat-cards>.stat-card.stat-jamaah{background:linear-gradient(140deg,#d4f4f0,#a9e5df)!important}
+  body #dashboard .cards.dashboard-stat-cards>.stat-card.stat-lunas{background:linear-gradient(140deg,#d7f3df,#a9dfbd)!important}
+  body #dashboard .cards.dashboard-stat-cards>.stat-card.stat-belum{background:linear-gradient(140deg,#fff0c9,#f6d78d)!important}
+  body #dashboard .cards.dashboard-stat-cards>.stat-card.stat-paket{background:linear-gradient(140deg,#ffe0da,#efb8b0)!important}
+  body #dashboard .cards.dashboard-stat-cards>.stat-card.stat-terbayar{background:linear-gradient(140deg,#e5defc,#c9bff0)!important}
+  body #dashboard .cards.dashboard-stat-cards>.stat-card.stat-sisa{background:linear-gradient(140deg,#d7ebfc,#b3d4f0)!important}
+  body #dashboard .dashboard-chart-grid{display:grid!important;grid-template-columns:minmax(0,1fr)!important;gap:12px!important;width:100%!important;margin:14px 0!important}
+  body #dashboard .dashboard-chart-grid>.panel,body #dashboard>.panel{width:100%!important;min-width:0!important;max-width:100%!important;margin:0 0 12px!important;padding:14px!important;border-radius:17px!important;background:#fff!important;border:1px solid #e6eee9!important;box-shadow:0 5px 16px rgba(29,63,47,.05)!important}
+  body #dashboard .dashboard-chart-grid .panel-head h2,body #dashboard .panel-head h2{font-size:14px!important;color:#1c3529!important}
+  body #dashboard .dashboard-chart-grid .muted{font-size:11px!important;line-height:1.4!important}
+  body #dashboard .dashboard-calendar-row{width:100%!important;max-width:100%!important;min-width:0!important}
+  body #dashboard table{max-width:100%!important}
+}
+@media screen and (max-width:390px){
+  body #mainApp .main,body #mainApp.sidebar-collapsed .main{padding-left:10px!important;padding-right:10px!important}
+  body #dashboard .cards.dashboard-stat-cards{gap:8px!important}
+  body #dashboard .cards.dashboard-stat-cards>.stat-card{min-height:128px!important}
+  body #dashboard .cards.dashboard-stat-cards>.stat-card .stat-main{padding:11px 9px 7px!important}
+  body #dashboard .cards.dashboard-stat-cards>.stat-card .num{font-size:15px!important;letter-spacing:-.45px!important}
+}
+</style>
+
 </head>
 <body>
 <button type="button" class="mobile-menu-btn" id="mobileMenuBtn" onclick="toggleMobileNav()" aria-label="Buka menu" title="Buka menu"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"></path></svg></button>
