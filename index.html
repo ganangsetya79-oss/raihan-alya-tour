@@ -1612,6 +1612,86 @@ section:not(#dashboard) > .top h1{
 }
 </style>
 
+
+<!-- RAIHAN_DASHBOARD_MATCHA_BOLDER_V2 -->
+<style id="raihanDashboardMatchaBolder">
+/* Stronger, brighter colors on dashboard only */
+#dashboard{
+ --matcha-green:#11976d;--matcha-teal:#079eb4;--matcha-purple:#5945e8;--matcha-orange:#f59e0b;
+}
+#dashboard:before{
+ background:
+ radial-gradient(ellipse at 8% 0%,rgba(17,151,109,.22),transparent 48%),
+ radial-gradient(ellipse at 90% 10%,rgba(7,158,180,.20),transparent 42%),
+ radial-gradient(ellipse at 65% 70%,rgba(89,69,232,.12),transparent 48%)!important;
+}
+#dashboard .dashboard-top{
+ background:linear-gradient(115deg,#ffffff 0%,#e3f8eb 42%,#d7f5f4 76%,#e7e2ff 100%)!important;
+ border-color:#c8e9d8!important;box-shadow:0 10px 28px rgba(17,110,78,.12)!important;
+}
+#dashboard .dashboard-top:after{
+ width:7px!important;background:linear-gradient(180deg,#11976d 0%,#079eb4 48%,#5945e8 78%,#f59e0b 100%)!important;
+}
+#dashboard .dashboard-greeting{
+ background:linear-gradient(105deg,#c8f1d6 0%,#bcefe8 100%)!important;
+ border-color:#9fdfc1!important;color:#111!important;
+}
+#dashboard .dashboard-running{
+ background:#e4f5e6!important;border-color:#c8e8cf!important;
+}
+#dashboard .dashboard-brand{
+ background:linear-gradient(110deg,#bdeed8 0%,#b6eaf1 46%,#d4caff 100%)!important;
+ border:1px solid #b9dfd0!important;box-shadow:0 8px 22px rgba(23,121,87,.12)!important;
+}
+#dashboard .dashboard-brand-title,#dashboard .dashboard-brand-slogan,
+#dashboard .dashboard-welcome,#dashboard .dashboard-live-datetime{color:#111!important}
+#dashboard .dashboard-stat-cards .stat-card{
+ border:0!important;border-radius:15px!important;
+ box-shadow:0 7px 18px rgba(24,45,35,.12)!important;
+}
+#dashboard .dashboard-stat-cards .stat-card:nth-child(4n+1){
+ background:linear-gradient(135deg,#13b6c7 0%,#42d0d0 100%)!important;
+}
+#dashboard .dashboard-stat-cards .stat-card:nth-child(4n+2){
+ background:linear-gradient(135deg,#6550ed 0%,#9580ff 100%)!important;
+}
+#dashboard .dashboard-stat-cards .stat-card:nth-child(4n+3){
+ background:linear-gradient(135deg,#0d9b70 0%,#48c78e 100%)!important;
+}
+#dashboard .dashboard-stat-cards .stat-card:nth-child(4n+4){
+ background:linear-gradient(135deg,#f59e0b 0%,#ffc247 100%)!important;
+}
+#dashboard .dashboard-stat-cards .stat-card *,
+#dashboard .dashboard-stat-cards .stat-card .label,
+#dashboard .dashboard-stat-cards .stat-card .value{color:#111!important}
+#dashboard .dashboard-stat-cards .stat-card:before{
+ opacity:1!important;filter:saturate(1.3);
+}
+#dashboard .dashboard-stat-cards .stat-belum:before{background:#079eb4!important}
+#dashboard .dashboard-stat-cards .stat-paket:before{background:#5945e8!important}
+#dashboard .dashboard-stat-cards .stat-sisa:before{background:#11976d!important}
+#dashboard .dashboard-filter-panel,#dashboard .panel,#dashboard .card,
+#dashboard .dashboard-chart-panel{
+ border-color:#d6e7dc!important;box-shadow:0 5px 17px rgba(28,76,51,.07)!important;
+}
+#dashboard .panel-head h2,#dashboard .panel h2,#dashboard .panel h3,
+#dashboard .dashboard-filter-heading strong{color:#111!important}
+#dashboard .panel-head p,#dashboard .panel .muted,
+#dashboard .dashboard-filter-heading small{color:#3f4842!important}
+#dashboard .dashboard-calendar-card{
+ background:linear-gradient(145deg,#ffffff 0%,#e2f5e8 100%)!important;
+ border-color:#cce6d3!important;
+}
+#dashboard .dashboard-calendar-open-btn,
+#dashboard .dashboard-month-settings-wrap .btn{
+ background:#d3f1df!important;border-color:#a8dec0!important;color:#111!important;
+}
+@media(max-width:650px){
+ #dashboard .dashboard-stat-cards .stat-card{border-radius:12px!important}
+ #dashboard .dashboard-top{background:linear-gradient(135deg,#fff 0%,#e3f8eb 48%,#d7f5f4 100%)!important}
+}
+</style>
+
 </head>
 <body>
 <button type="button" class="mobile-menu-btn" id="mobileMenuBtn" onclick="toggleMobileNav()" aria-label="Buka menu" title="Buka menu"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"></path></svg></button>
