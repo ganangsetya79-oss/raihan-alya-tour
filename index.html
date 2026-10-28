@@ -1410,7 +1410,8 @@ table td{border-color:#e6eeec!important}
       <strong style="display:block;margin-bottom:6px">Atur pilihan bulan</strong>
       <div class="muted" style="margin-bottom:10px">Tambahkan bulan yang ingin muncul pada Filter Dashboard. Pengaturan tersimpan di browser ini.</div>
       <div style="display:flex;gap:8px;align-items:end;flex-wrap:wrap">
-        <div style="flex:1;min-width:180px"><label for="dashMonthCustomInput">Bulan tambahan</label><input id="dashMonthCustomInput" type="month" style="width:100%;padding:10px;border:1px solid #d8dde0;border-radius:7px;margin-top:5px"></div>
+        <div style="flex:1;min-width:150px"><label for="dashMonthCustomMonth">Bulan</label><select id="dashMonthCustomMonth" style="width:100%;padding:10px;border:1px solid #d8dde0;border-radius:7px;margin-top:5px"><option value="01">Januari</option><option value="02">Februari</option><option value="03">Maret</option><option value="04">April</option><option value="05">Mei</option><option value="06">Juni</option><option value="07">Juli</option><option value="08">Agustus</option><option value="09">September</option><option value="10">Oktober</option><option value="11">November</option><option value="12">Desember</option></select></div>
+        <div style="flex:1;min-width:120px"><label for="dashMonthCustomYear">Tahun</label><select id="dashMonthCustomYear" style="width:100%;padding:10px;border:1px solid #d8dde0;border-radius:7px;margin-top:5px"></select></div>
         <button type="button" class="btn" onclick="addDashCustomMonth()">Tambah Bulan</button>
       </div>
       <div id="dashMonthCustomList" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px"></div>
@@ -3719,9 +3720,21 @@ function getDashCustomMonths(){
 function saveDashCustomMonths(months){
   localStorage.setItem(DASH_CUSTOM_MONTHS_KEY,JSON.stringify([...new Set(months)].sort().reverse()));
 }
+function initDashCustomMonthYear(){
+  const yearSel=document.getElementById('dashMonthCustomYear');
+  const monthSel=document.getElementById('dashMonthCustomMonth');
+  if(!yearSel||yearSel.dataset.ready==='1')return;
+  const currentYear=new Date().getFullYear();
+  yearSel.innerHTML=Array.from({length:41},(_,i)=>currentYear-20+i)
+    .map(y=>'<option value="'+y+'">'+y+'</option>').join('');
+  yearSel.value=String(currentYear);
+  if(monthSel)monthSel.value=String(new Date().getMonth()+1).padStart(2,'0');
+  yearSel.dataset.ready='1';
+}
 function toggleDashMonthSettings(){
   const el=document.getElementById('dashMonthSettings');
   if(el)el.classList.toggle('hidden');
+  initDashCustomMonthYear();
   renderDashCustomMonthList();
 }
 function renderDashCustomMonthList(){
@@ -3731,8 +3744,11 @@ function renderDashCustomMonthList(){
   el.innerHTML=months.length?months.map(m=>`<span style="display:inline-flex;align-items:center;gap:6px;padding:5px 8px;background:#eef7f3;border:1px solid #d7e9e2;border-radius:7px;font-size:12px">${esc(monthLabel(m))} <button type="button" aria-label="Hapus ${esc(monthLabel(m))}" onclick="removeDashCustomMonth('${m}')" style="border:0;background:transparent;color:#a33;cursor:pointer;font-weight:700">×</button></span>`).join(''):'<span class="muted">Belum ada bulan tambahan.</span>';
 }
 function addDashCustomMonth(){
-  const input=document.getElementById('dashMonthCustomInput'),value=input?.value||'';
-  if(!/^\d{4}-\d{2}$/.test(value)){notice('Pilih bulan dan tahun terlebih dahulu.','error');return}
+  initDashCustomMonthYear();
+  const month=document.getElementById('dashMonthCustomMonth')?.value||'';
+  const year=document.getElementById('dashMonthCustomYear')?.value||'';
+  const value=year+'-'+month;
+  if(!/^\d{4}-(0[1-9]|1[0-2])$/.test(value)){notice('Pilih bulan dan tahun terlebih dahulu.','error');return}
   const months=getDashCustomMonths();
   if(months.includes(value)){notice('Bulan tersebut sudah ditambahkan.','error');return}
   months.push(value);saveDashCustomMonths(months);
