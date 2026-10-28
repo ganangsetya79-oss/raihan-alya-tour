@@ -1149,6 +1149,42 @@ img,svg,video,canvas{max-width:100%}
 }
 </style>
 
+
+<!-- RAIHAN_MOBILE_DASHBOARD_BUTTON_LAYOUT_FIX_V6 -->
+<style id="raihanMobileDashboardButtonLayoutFix">
+@media screen and (max-width:768px){
+  body #mainApp #dashboard .dashboard-month-settings-wrap{
+    display:block!important;float:left!important;clear:none!important;
+    width:calc(50% - 6px)!important;max-width:calc(50% - 6px)!important;
+    margin:0 0 12px!important;padding:0!important;
+  }
+  body #mainApp #dashboard .dashboard-calendar-toggle-wrap{
+    display:flex!important;float:right!important;clear:none!important;
+    align-items:stretch!important;justify-content:stretch!important;
+    width:calc(50% - 6px)!important;max-width:calc(50% - 6px)!important;
+    margin:0 0 12px!important;padding:0!important;
+  }
+  body #mainApp #dashboard .dashboard-month-settings-wrap>button,
+  body #mainApp #dashboard .dashboard-calendar-toggle-wrap>.dashboard-calendar-open-btn{
+    display:flex!important;align-items:center!important;justify-content:center!important;
+    width:100%!important;max-width:100%!important;min-width:0!important;
+    min-height:50px!important;margin:0!important;padding:8px 6px!important;
+    border-radius:14px!important;border:1px solid #dce9e2!important;
+    background:#edf8f1!important;color:#214b3b!important;
+    box-shadow:0 4px 12px rgba(23,63,53,.06)!important;
+    font-size:11px!important;font-weight:700!important;line-height:1.25!important;
+    white-space:normal!important;text-align:center!important;
+  }
+  body #mainApp #dashboard .dashboard-calendar-toggle-wrap>.dashboard-calendar-open-btn{background:#fff!important}
+  body #mainApp #dashboard .dashboard-month-settings-wrap #dashMonthSettings{
+    position:relative!important;width:calc(200% + 12px)!important;max-width:calc(200% + 12px)!important;
+    margin-top:8px!important;
+  }
+  body #mainApp #dashboard .dashboard-calendar-row{clear:both!important}
+  body #mainApp #dashboard .cards.dashboard-stat-cards{clear:both!important}
+}
+</style>
+
 </head>
 <body>
 <button type="button" class="mobile-menu-btn" id="mobileMenuBtn" onclick="toggleMobileNav()" aria-label="Buka menu" title="Buka menu"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"></path></svg></button>
