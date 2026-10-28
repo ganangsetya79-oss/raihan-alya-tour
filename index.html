@@ -1533,6 +1533,85 @@ section:not(#dashboard) > .top h1{
 .main input::placeholder,.main textarea::placeholder{color:#666!important;opacity:1}
 </style>
 
+
+<!-- RAIHAN_DASHBOARD_MATCHA_BOLD_V1 -->
+<style id="raihanDashboardMatchaBold">
+/* Dashboard-only colorful Matcha theme inspired by the reference dashboard */
+#dashboard{
+ --matcha-green:#31966f;--matcha-teal:#20a5b8;--matcha-purple:#6554dc;
+ --matcha-orange:#f2a11d;--matcha-soft:#eef5ef;--matcha-ink:#111111;
+}
+#dashboard:before{
+ background:
+ radial-gradient(ellipse at 8% 0%,rgba(49,150,111,.14),transparent 48%),
+ radial-gradient(ellipse at 90% 10%,rgba(32,165,184,.12),transparent 42%),
+ radial-gradient(ellipse at 65% 70%,rgba(101,84,220,.06),transparent 48%)!important;
+}
+#dashboard .dashboard-top{
+ background:linear-gradient(115deg,#ffffff 0%,#edf7f0 62%,#e5f5f3 100%)!important;
+ border:1px solid #dcebe1!important;box-shadow:0 8px 24px rgba(42,104,73,.08)!important;
+}
+#dashboard .dashboard-top:after{
+ width:6px!important;background:linear-gradient(180deg,#31966f 0%,#20a5b8 52%,#6554dc 100%)!important;
+}
+#dashboard .dashboard-greeting{
+ background:linear-gradient(105deg,#e0f2e6,#d8f1ec)!important;
+ border-color:#c9e7d5!important;color:#111!important;
+}
+#dashboard .dashboard-running{
+ background:#f1f7ef!important;border-color:#dbe9d9!important;
+}
+#dashboard .dashboard-brand{
+ background:linear-gradient(115deg,#e0f5ed 0%,#d9f0f4 58%,#e8e4fb 100%)!important;
+ border:1px solid #d4e8df!important;box-shadow:0 6px 18px rgba(39,108,81,.08)!important;
+}
+#dashboard .dashboard-brand-title,#dashboard .dashboard-brand-slogan,
+#dashboard .dashboard-welcome,#dashboard .dashboard-live-datetime{color:#111!important}
+#dashboard .dashboard-filter-panel,
+#dashboard .dashboard-stat-cards .stat-card,
+#dashboard .panel,#dashboard .card,
+#dashboard .dashboard-chart-panel{
+ border-color:#e0e8e1!important;box-shadow:0 4px 15px rgba(36,82,58,.055)!important;
+}
+#dashboard .dashboard-stat-cards .stat-card{
+ position:relative;overflow:hidden;border-radius:14px!important;
+ background:#fff!important;color:#111!important;
+}
+#dashboard .dashboard-stat-cards .stat-card:nth-child(4n+1){
+ background:linear-gradient(140deg,#d8f2f0 0%,#bde8e6 100%)!important;border-color:#b6e2df!important;
+}
+#dashboard .dashboard-stat-cards .stat-card:nth-child(4n+2){
+ background:linear-gradient(140deg,#e7e2ff 0%,#d5ccff 100%)!important;border-color:#d0c7ff!important;
+}
+#dashboard .dashboard-stat-cards .stat-card:nth-child(4n+3){
+ background:linear-gradient(140deg,#d9f2e5 0%,#bfe8d4 100%)!important;border-color:#b8e3cd!important;
+}
+#dashboard .dashboard-stat-cards .stat-card:nth-child(4n+4){
+ background:linear-gradient(140deg,#fff0d4 0%,#ffdda0 100%)!important;border-color:#f6d79b!important;
+}
+#dashboard .dashboard-stat-cards .stat-card *,
+#dashboard .dashboard-stat-cards .stat-card .label,
+#dashboard .dashboard-stat-cards .stat-card .value{color:#111!important}
+#dashboard .dashboard-stat-cards .stat-card:before{
+ opacity:.8!important;filter:saturate(1.2);
+}
+#dashboard .dashboard-stat-cards .stat-belum:before{background:#20a5b8!important}
+#dashboard .dashboard-stat-cards .stat-paket:before{background:#6554dc!important}
+#dashboard .dashboard-stat-cards .stat-sisa:before{background:#31966f!important}
+#dashboard .panel-head h2,#dashboard .panel h2,#dashboard .panel h3,
+#dashboard .dashboard-filter-heading strong{color:#111!important}
+#dashboard .panel-head p,#dashboard .panel .muted,
+#dashboard .dashboard-filter-heading small{color:#454545!important}
+#dashboard table th,#dashboard table td{color:#111!important}
+#dashboard .dashboard-calendar-card{background:linear-gradient(150deg,#fff 0%,#eef7f0 100%)!important}
+#dashboard .dashboard-calendar-open-btn,
+#dashboard .dashboard-month-settings-wrap .btn{border-color:#cfe3d4!important}
+@media(max-width:650px){
+ #dashboard .dashboard-stat-cards .stat-card{border-radius:12px!important}
+ #dashboard .dashboard-top{background:linear-gradient(135deg,#fff 0%,#edf7f0 100%)!important}
+}
+</style>
+
 </head>
 <body>
 <button type="button" class="mobile-menu-btn" id="mobileMenuBtn" onclick="toggleMobileNav()" aria-label="Buka menu" title="Buka menu"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"></path></svg></button>
