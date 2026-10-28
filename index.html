@@ -1416,6 +1416,29 @@ html,body,.app,.main{background:#f1f3f1!important;color:#2d3b35!important}
 :where(input,select,textarea){accent-color:#2f8272}
 </style>
 
+
+<!-- RAIHAN_UANGMASUK_TITLE_CLEANUP_V1 -->
+<style id="raihanUangMasukTitleCleanup">
+/* Uang Masuk: use a clean page heading instead of a boxed card */
+#uangmasuk > .top{
+  display:flex!important;align-items:center!important;
+  min-height:0!important;padding:2px 0 16px!important;margin:0 0 18px!important;
+  background:transparent!important;border:0!important;border-radius:0!important;
+  box-shadow:none!important;overflow:visible!important;
+}
+#uangmasuk > .top:before,#uangmasuk > .top:after{display:none!important;content:none!important}
+#uangmasuk > .top h1{
+  margin:0!important;padding:0!important;border:0!important;background:transparent!important;
+  color:#286e60!important;font-size:clamp(23px,2vw,28px)!important;
+  font-weight:750!important;line-height:1.25!important;letter-spacing:-.65px!important;
+  box-shadow:none!important;
+}
+@media(max-width:650px){
+  #uangmasuk > .top{padding:0 0 13px!important;margin-bottom:14px!important}
+  #uangmasuk > .top h1{font-size:23px!important}
+}
+</style>
+
 </head>
 <body>
 <button type="button" class="mobile-menu-btn" id="mobileMenuBtn" onclick="toggleMobileNav()" aria-label="Buka menu" title="Buka menu"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"></path></svg></button>
