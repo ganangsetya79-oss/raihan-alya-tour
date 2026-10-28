@@ -1463,6 +1463,41 @@ section:not(#dashboard) > .top h1{
 }
 </style>
 
+
+<!-- RAIHAN_GREEN_SIDEBAR_V1 -->
+<style id="raihanGreenSidebar">
+/* Soft, muted green sidebar across desktop and mobile */
+.app .side,.side{
+ background:linear-gradient(180deg,#286e60 0%,#245f52 100%)!important;
+ color:#f7fbf8!important;
+ border-right:1px solid rgba(255,255,255,.10)!important;
+ box-shadow:3px 0 16px rgba(36,95,82,.10)!important;
+}
+.side .logo,.side .logo strong,.side .logo span{color:#fff!important}
+.side .logo small{color:#d9e9e1!important}
+.side .sidebar-toggle{
+ background:rgba(255,255,255,.10)!important;
+ border-color:rgba(255,255,255,.16)!important;color:#f7fbf8!important;
+}
+.side .nav button{
+ color:#e1eee7!important;background:transparent!important;
+ border-color:transparent!important;box-shadow:none!important;
+}
+.side .nav button:hover{
+ background:rgba(255,255,255,.11)!important;color:#fff!important;
+}
+.side .nav button.active,.side .nav button[aria-current="page"]{
+ background:#3b8b78!important;color:#fff!important;
+ border-color:rgba(255,255,255,.10)!important;
+ box-shadow:inset 3px 0 0 #c6d9a6!important;
+}
+.side .nav-icon,.side .nav button.active .nav-icon,.side .nav button:hover .nav-icon{color:inherit!important}
+.side .nav-label{color:inherit!important}
+@media(max-width:900px){
+ .app .side,.side{box-shadow:5px 0 22px rgba(25,69,55,.20)!important}
+}
+</style>
+
 </head>
 <body>
 <button type="button" class="mobile-menu-btn" id="mobileMenuBtn" onclick="toggleMobileNav()" aria-label="Buka menu" title="Buka menu"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"></path></svg></button>
