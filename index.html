@@ -1251,6 +1251,39 @@ img,svg,video,canvas{max-width:100%}
 }
 </style>
 
+
+<!-- RAIHAN_MOBILE_BOTTOM_NAV_COLORS_V2 -->
+<style id="raihanMobileBottomNavColors">
+@media screen and (max-width:768px){
+  body #mainApp .side,
+  body #mainApp.sidebar-collapsed .side,
+  body #mainApp.mobile-nav-open .side{
+    background:#173f35!important;
+    color:#fff!important;
+    border-top:1px solid #24594b!important;
+    box-shadow:0 -5px 22px rgba(23,63,53,.14)!important;
+  }
+  body #mainApp .side .nav button,
+  body #mainApp.sidebar-collapsed .side .nav button{
+    background:transparent!important;
+    color:rgba(255,255,255,.82)!important;
+  }
+  body #mainApp .side .nav button.active,
+  body #mainApp.sidebar-collapsed .side .nav button.active{
+    background:#286b59!important;
+    color:#fff!important;
+  }
+  body #mainApp .side .nav .nav-icon,
+  body #mainApp .side .nav .nav-icon svg,
+  body #mainApp .side .nav .nav-label{
+    color:inherit!important;
+  }
+  body #mainApp .side .nav button:active{
+    background:#205444!important;
+  }
+}
+</style>
+
 </head>
 <body>
 <button type="button" class="mobile-menu-btn" id="mobileMenuBtn" onclick="toggleMobileNav()" aria-label="Buka menu" title="Buka menu"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"></path></svg></button>
