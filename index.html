@@ -2512,13 +2512,23 @@ function defaultPermissions(role){
   if(role==='operator')return ['dashboard','jamaah','dokumen','perlengkapan','keberangkatan'];
   return ['dashboard'];
 }
+
+/* RAIHAN_ADMIN_ONLY_USER_MANAGEMENT_V1: user-management actions are administrator-only */
+function requireAdminAccessManagement(){
+  if(currentAccess?.role==='admin')return true;
+  notice('Hanya akun Administrator yang dapat mengelola pengguna.','error');
+  return false;
+}
+
 async function openAccessPage(){
+  if(!requireAdminAccessManagement())return;
   closeAdminMenu();
   document.querySelectorAll('main section').forEach(x=>x.classList.add('hidden'));
   document.getElementById('akses').classList.remove('hidden');
   await renderAccessUsers();
 }
 async function renderAccessUsers(){
+  if(!requireAdminAccessManagement())return;
   const body=document.getElementById('accessUsersBody'); if(!body)return;
   body.innerHTML='<tr><td colspan="5">Memuat data akses...</td></tr>';
   const {data:rows,error}=await sb.from('app_users').select('*').order('created_at',{ascending:false});
@@ -2542,6 +2552,7 @@ function syncAccessPermissions(){
   document.querySelectorAll('#permissionGrid select[data-module]').forEach(x=>x.value=role==='viewer'?'view':'delete');
 }
 function openAccessForm(user=null){
+  if(!requireAdminAccessManagement())return;
   document.getElementById('accessModal').classList.add('show');
   document.getElementById('accessModalTitle').textContent=user?'Edit Akses Pengguna':'Tambah Akses Pengguna';
   document.getElementById('accessId').value=user?.id||'';
@@ -2555,11 +2566,13 @@ function openAccessForm(user=null){
 }
 function closeAccessForm(){document.getElementById('accessModal').classList.remove('show')}
 async function editAccessUser(id){
+  if(!requireAdminAccessManagement())return;
   const {data,error}=await sb.from('app_users').select('*').eq('id',id).single();
   if(error){notice('Gagal mengambil data akses: '+error.message,'error');return}
   openAccessForm(data);
 }
 async function toggleAccessUser(id,active){
+  if(!requireAdminAccessManagement())return;
   const {data:me}=await sb.auth.getUser();
   const rowId=me?.user?.id||'';
   const {data:row}=await sb.from('app_users').select('user_id').eq('id',id).maybeSingle();
@@ -2573,6 +2586,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   if(!form)return;
   form.addEventListener('submit',async e=>{
     e.preventDefault();
+    if(!requireAdminAccessManagement())return;
     const id=document.getElementById('accessId').value;
     const email=document.getElementById('accessEmail').value.trim().toLowerCase();
     const userId=document.getElementById('accessUserId').value.trim();
