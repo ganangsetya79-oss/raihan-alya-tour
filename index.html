@@ -1006,6 +1006,44 @@ img,svg,video,canvas{max-width:100%}
 }
 </style>
 
+
+<!-- RAIHAN_MOBILE_DASHBOARD_FINORA_NAV_FIX_V3 -->
+<style id="raihanMobileDashboardNavFix">
+@media screen and (max-width:768px){
+  body #mainApp .side,
+  body #mainApp.sidebar-collapsed .side{
+    width:250px!important;min-width:250px!important;max-width:250px!important;
+    padding:22px 14px!important;transform:translateX(-105%)!important;
+    z-index:1200!important;visibility:hidden!important;pointer-events:none!important;
+  }
+  body #mainApp.mobile-nav-open .side,
+  body #mainApp.mobile-nav-open.sidebar-collapsed .side{
+    width:250px!important;min-width:250px!important;max-width:250px!important;
+    padding:22px 14px!important;transform:translateX(0)!important;
+    visibility:visible!important;pointer-events:auto!important;
+  }
+  body #mainApp .side .logo,
+  body #mainApp.sidebar-collapsed .side .logo{
+    display:block!important;font-size:15px!important;padding:0 44px 25px 12px!important;
+  }
+  body #mainApp .side .logo small,
+  body #mainApp.sidebar-collapsed .side .logo small{display:block!important}
+  body #mainApp .side .nav button,
+  body #mainApp.sidebar-collapsed .side .nav button{
+    justify-content:flex-start!important;padding:11px 12px!important;gap:11px!important;
+  }
+  body #mainApp .side .nav-label,
+  body #mainApp.sidebar-collapsed .side .nav-label{display:inline!important;white-space:nowrap!important}
+  body #mainApp .side .nav-icon,
+  body #mainApp.sidebar-collapsed .side .nav-icon{width:24px!important;height:24px!important;flex:0 0 24px!important}
+  body #mainApp .side .sidebar-toggle,
+  body #mainApp.sidebar-collapsed .side .sidebar-toggle{right:10px!important}
+  body .mobile-nav-backdrop{z-index:1150!important}
+  body .mobile-menu-btn{z-index:1100!important}
+  body #mainApp.mobile-nav-open .side{box-shadow:8px 0 24px rgba(0,0,0,.2)!important}
+}
+</style>
+
 </head>
 <body>
 <button type="button" class="mobile-menu-btn" id="mobileMenuBtn" onclick="toggleMobileNav()" aria-label="Buka menu" title="Buka menu"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"></path></svg></button>
