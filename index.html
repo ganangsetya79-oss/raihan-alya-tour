@@ -1331,6 +1331,46 @@ table td{border-color:#e6eeec!important}
 }
 </style>
 
+<!-- RAIHAN_SOFT_CONTRAST_READABILITY_V1 -->
+<style id="raihanSoftContrastReadability">
+/* Softer contrast to reduce visual glare while keeping text readable */
+:root{
+ --raihan-bg:#f5f7f5;--raihan-text:#304744;--raihan-muted:#71817d;
+}
+html,body,.app,.main{background-color:#f5f7f5!important;color:#304744!important}
+#dashboard .dashboard-top{
+ background:linear-gradient(115deg,#fcfdfb 0%,#f5f9f7 70%,#faf7ef 100%)!important;
+ box-shadow:0 5px 18px rgba(6,63,64,.035)!important;border-color:#e5ece7!important
+}
+#dashboard .dashboard-top h1,.top h1,.main h1{color:#174b48!important}
+#dashboard .dashboard-live-datetime,#dashboard .dashboard-welcome,
+#dashboard .dashboard-filter-heading small,#dashboard .dashboard-brand-subtitle,
+#dashboard .panel-head p,#dashboard .muted{color:#74827e!important}
+#dashboard .dashboard-greeting{background:#edf4f0!important;border-color:#e0e9e3!important;color:#365d55!important}
+#dashboard .dashboard-running{background:#f2f7f4!important;border-color:#e2ebe5!important}
+#dashboard .dashboard-running-item{color:#647771!important}
+#dashboard .dashboard-brand{background:linear-gradient(110deg,#fdfdfb 0%,#f2f7f4 100%)!important;border-color:#e3ebe5!important}
+#dashboard .dashboard-brand-title{color:#17534a!important}
+#dashboard .dashboard-brand-slogan{color:#61746d!important}
+#dashboard .dashboard-filter-panel,#dashboard .dashboard-stat-cards .stat-card,
+#dashboard .panel,#dashboard .card{box-shadow:0 3px 12px rgba(6,63,64,.03)!important}
+#dashboard .dashboard-filter-heading strong,#dashboard .panel-head h2,
+#dashboard .panel h2,#dashboard .panel h3{color:#294f49!important}
+#dashboard .dashboard-stat-cards .label{color:#788782!important;font-weight:650!important}
+#dashboard .dashboard-stat-cards .num{color:#20554b!important;font-weight:750!important}
+#dashboard .dashboard-stat-cards .stat-link{background:#fafcf9!important;color:#3d786b!important}
+#dashboard .dashboard-stat-cards .stat-icon{background:#edf5f0!important;color:#438775!important}
+#dashboard .dashboard-stat-cards .stat-belum .stat-icon{background:#f8f1e2!important;color:#a38343!important}
+#dashboard .dashboard-stat-cards .stat-paket .stat-icon{background:#edf2f8!important;color:#6580a5!important}
+#dashboard .dashboard-stat-cards .stat-sisa .stat-icon{background:#f8eee8!important;color:#a9785d!important}
+#dashboard table th{background:#f0f5f2!important;color:#607570!important}
+#dashboard table td{color:#405b55!important}
+#dashboard .dashboard-stat-cards .stat-card:before{opacity:.5!important}
+@media(prefers-contrast:more){
+ #dashboard .dashboard-stat-cards .num{color:#17453d!important}
+}
+</style>
+
 </head>
 <body>
 <button type="button" class="mobile-menu-btn" id="mobileMenuBtn" onclick="toggleMobileNav()" aria-label="Buka menu" title="Buka menu"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"></path></svg></button>
