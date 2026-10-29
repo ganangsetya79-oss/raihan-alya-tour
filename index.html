@@ -1707,7 +1707,7 @@ img,svg,video,canvas{max-width:100%}
 <section id="dokumen" class="hidden">
   <div class="top"><h1>Dokumen Jamaah</h1></div>
   <div class="panel">
-    <div class="panel-head"><h2>Upload Kelengkapan Dokumen</h2></div>
+    <div class="panel-head"><h2>Ceklis Kelengkapan Dokumen</h2></div>
     <div id="docNotice"></div>
     <div style="margin-bottom:15px">
       <label style="font-size:12px;color:#687078">Pilih Jamaah</label>
@@ -1718,17 +1718,17 @@ img,svg,video,canvas{max-width:100%}
       <select id="docJamaah" style="display:none;width:100%;padding:10px;border:1px solid #d8dde0;border-radius:7px;margin-top:5px" onchange="loadDocumentForm()"></select>
       <div id="docJamaahSelected" style="font-size:11px;color:#687078;margin-top:4px">Belum ada jamaah dipilih. Ketik nama lalu KLIK salah satu hasil pencarian untuk membuka form upload.</div>
     </div>
-    <div id="docSelectionHint" style="padding:12px;border:1px dashed #cbd5d1;border-radius:8px;background:#f8faf9;font-size:12px;color:#53615c;margin-bottom:12px">⬆️ <b>Mulai lengkapi dokumen:</b> cari nama jamaah pada kolom di atas, lalu klik nama yang muncul. Form KTP, KK, paspor, BPJS, vaksin, visa, dan tiket akan ditampilkan setelah jamaah dipilih.</div>
+    <div id="docSelectionHint" style="padding:12px;border:1px dashed #cbd5d1;border-radius:8px;background:#f8faf9;font-size:12px;color:#53615c;margin-bottom:12px"><b>Cara pakai:</b> cari dan pilih nama jamaah, lalu centang dokumen yang sudah tersedia. Tidak perlu upload file.</div>
     <div id="docFormArea" class="hidden">
       <div id="docGrid" class="doc-grid"></div>
       <div style="margin-top:18px">
         <div id="docSummary" style="font-size:13px;margin-bottom:12px"></div>
-        <div style="font-size:12px;color:#687078">Format yang didukung: PDF, JPG, JPEG, PNG. Maksimal 10 MB per file.</div>
+        <div style="font-size:12px;color:#687078">Centang jika dokumen jamaah sudah diterima atau sudah tersedia.</div>
       </div>
     </div>
   </div>
   <div class="panel">
-    <div class="panel-head"><div><h2>Rekap Kelengkapan Dokumen</h2></div><div class="bulk-tools"><button class="btn danger small-btn" type="button" onclick="deleteSelectedDocuments()">🗑️ Hapus Dokumen Terpilih</button></div></div>
+    <div class="panel-head"><div><h2>Rekap Kelengkapan Dokumen</h2></div><div class="bulk-tools"><button class="btn danger small-btn" type="button" onclick="deleteSelectedDocuments()">🗑️ Hapus Data Terpilih</button></div></div>
     <div class="form" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin:12px 0 16px">
       <div><label for="docRecapSearch">Cari Jamaah</label><input id="docRecapSearch" type="search" placeholder="Nama atau nomor HP..." oninput="renderDocuments()"></div>
       <div><label for="docRecapPackage">Paket</label><select id="docRecapPackage" onchange="renderDocuments()"><option value="">Semua Paket</option></select></div>
@@ -4658,29 +4658,15 @@ function getDoc(id){return documents.find(d=>d.jamaah_id===id)}
 function renderDocGrid(){
   const grid=document.getElementById('docGrid');
   const id=document.getElementById('docJamaah').value;
+  if(!grid)return;
   if(!id){grid.innerHTML='';return}
   const d=getDoc(id)||{};
   grid.innerHTML=DOC_TYPES.map(([key,label])=>{
-    const fileName=d[key+'_name'];
-    const first=`<div class="doc-card">
-      <div class="doc-card-title">${label}${key==='passport'?' — File 1':''}</div>
-      <input type="file" id="file_${key}" accept=".pdf,.jpg,.jpeg,.png" aria-label="Pilih hasil scan ${label}">
-      <div class="doc-card-actions">
-        <button class="btn" type="button" onclick="uploadDocument('${key}')">⬆️ Upload Hasil Scan</button>
-        ${d[key+'_path']?`<button class="btn secondary" type="button" onclick="openStoredFile('${encodeURIComponent(d[key+'_path'])}')">👁 Lihat</button>`:''}
-      </div>
-      <div class="file-name">${fileName?`✓ ${esc(fileName)}`:'Belum ada file'}</div>
-    </div>`;
-    if(key!=='passport')return first;
-    return first+`<div class="doc-card">
-      <div class="doc-card-title">Paspor — File 2 (opsional)</div>
-      <input type="file" id="file_passport2" accept=".pdf,.jpg,.jpeg,.png" aria-label="Pilih file paspor kedua">
-      <div class="doc-card-actions">
-        <button class="btn" type="button" onclick="uploadDocument('passport2')">⬆️ Upload File 2</button>
-        ${d.passport2_path?`<button class="btn secondary" type="button" onclick="openStoredFile('${encodeURIComponent(d.passport2_path)}')">👁 Lihat</button>`:''}
-      </div>
-      <div class="file-name">${d.passport2_name?`✓ ${esc(d.passport2_name)}`:'Belum ada file kedua'}</div>
-    </div>`;
+    const checked=key==='passport'?!!(d.passport_path||d.passport2_path):!!d[key+'_path'];
+    return `<label class="doc-card" style="display:flex;align-items:center;gap:12px;cursor:pointer;padding:14px">
+      <input type="checkbox" style="width:20px;height:20px;flex:0 0 20px" ${checked?'checked':''} onchange="saveDocumentChecklist('${key}',this.checked)">
+      <span><b>${label}</b><small style="display:block;color:#687078;margin-top:4px">${checked?'Sudah lengkap':'Belum dicek'}</small></span>
+    </label>`;
   }).join('');
 }
 
@@ -4702,7 +4688,30 @@ function updateDocSummary(){
   const el=document.getElementById('docSummary');
   if(el)el.innerHTML=n===DOC_TYPES.length
     ? '<span class="complete">✓ 8/8 dokumen lengkap</span>'
-    : `<span class="incomplete">${n}/8 dokumen sudah diupload</span>`;
+    : `<span class="incomplete">${n}/8 dokumen sudah dicek</span>`;
+}
+
+async function saveDocumentChecklist(type,checked){
+  const jamaah_id=document.getElementById('docJamaah').value;
+  if(!jamaah_id)return;
+  try{
+    const row=await ensureDocRow(jamaah_id);
+    const payload={};
+    if(type==='passport'){
+      payload.passport_path=checked?(row.passport_path||'CHECKED'):null;
+      if(!checked)payload.passport2_path=null;
+    }else{
+      payload[type+'_path']=checked?(row[type+'_path']||'CHECKED'):null;
+    }
+    const {data:updated,error}=await sb.from('documents').update(payload).eq('id',row.id).select().single();
+    if(error)throw error;
+    documents=documents.map(x=>x.id===row.id?updated:x);
+    renderDocGrid();updateDocSummary();renderDocuments();
+    notice(labelForDoc(type)+(checked?' ditandai lengkap.':' ditandai belum lengkap.'));
+  }catch(err){
+    renderDocGrid();
+    notice('Gagal menyimpan ceklis: '+err.message,'error');
+  }
 }
 
 async function ensureDocRow(jamaah_id){
@@ -4712,43 +4721,6 @@ async function ensureDocRow(jamaah_id){
   if(error)throw error;
   documents.push(row);
   return row;
-}
-
-async function uploadDocument(type){
-  const jamaah_id=document.getElementById('docJamaah').value;
-  const input=document.getElementById('file_'+type);
-  const file=input?.files?.[0];
-  if(!jamaah_id){notice('Pilih jamaah terlebih dahulu.','error');return}
-  if(!file){notice('Pilih file terlebih dahulu.','error');return}
-  if(!['application/pdf','image/jpeg','image/png'].includes(file.type)){
-    notice('Format harus PDF, JPG, JPEG, atau PNG.','error');return
-  }
-  if(file.size>10*1024*1024){
-    notice('Ukuran file maksimal 10 MB.','error');return
-  }
-
-  try{
-    const row=await ensureDocRow(jamaah_id);
-    const safe=file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
-    const path=`${jamaah_id}/${type}_${Date.now()}_${safe}`;
-    const upload=await sb.storage.from('document').upload(path,file,{upsert:true,contentType:file.type});
-    if(upload.error)throw upload.error;
-
-    const payload={};
-    payload[type+'_url']='';
-    payload[type+'_name']=file.name;
-    payload[type+'_path']=path;
-
-    const updated=await sb.from('documents').update(payload).eq('id',row.id).select().single();
-    if(updated.error)throw updated.error;
-
-    documents=documents.map(x=>x.id===row.id?updated.data:x);
-    await syncToSpreadsheet('dokumen',updated.data);
-    renderDocGrid();updateDocSummary();renderDocuments();
-    notice(labelForDoc(type)+' berhasil diupload.');
-  }catch(err){
-    notice('Upload gagal: '+err.message,'error');
-  }
 }
 
 function labelForDoc(type){
@@ -4888,7 +4860,7 @@ function renderDocuments(){
     if(deps.some(([id])=>id===oldDeparture))departureSelect.value=oldDeparture;
   }
   const selectedPackage=packageSelect?.value||'', selectedDeparture=departureSelect?.value||'', selectedStatus=document.getElementById('docRecapStatus')?.value||'', missingType=document.getElementById('docRecapMissingType')?.value||'';
-  const rows=data.map(j=>{const doc=getDoc(j.id)||{},n=DOC_TYPES.filter(([k])=>doc[k+'_path']).length,dep=departureFor(j),phone=j.hp||j.telepon||j.no_hp||'';return {j,n,dep,phone,doc};}).filter(({j,n,dep,phone,doc})=>{
+  const rows=data.map(j=>{const doc=getDoc(j.id)||{},n=DOC_TYPES.filter(([k])=>k==='passport'?(doc.passport_path||doc.passport2_path):doc[k+'_path']).length,dep=departureFor(j),phone=j.hp||j.telepon||j.no_hp||'';return {j,n,dep,phone,doc};}).filter(({j,n,dep,phone,doc})=>{
     const statusMatch=!selectedStatus||(selectedStatus==='complete'?n===DOC_TYPES.length:n<DOC_TYPES.length);
     const missingMatch=!missingType||(missingType==='passport'?!(doc.passport_path||doc.passport2_path):!doc[missingType+'_path']);
     return (!search||[j.nama,phone,j.paket,dep?.name,j.berangkat].some(v=>String(v||'').toLocaleLowerCase('id-ID').includes(search)))&&(!selectedPackage||j.paket===selectedPackage)&&(!selectedDeparture||dep?.id===selectedDeparture)&&statusMatch&&missingMatch;
@@ -4896,8 +4868,11 @@ function renderDocuments(){
   const count=document.getElementById('docRecapCount');
   if(count)count.textContent='Menampilkan '+rows.length+' dari '+data.length+' jamaah';
   body.innerHTML=rows.map(({j,n,dep,phone,doc})=>{
-    const details=DOC_TYPES.map(([key,label])=>doc[key+'_path'?key+'_path':key+'_path']?'<span style="display:inline-block;margin:2px 4px 2px 0;padding:3px 6px;border-radius:5px;background:#e8f6ee;color:#176344;font-size:10px">'+esc(label)+' ✓ <button type="button" style="border:0;background:transparent;color:inherit;cursor:pointer;text-decoration:underline;padding:0" onclick="openStoredFile(\''+encodeURIComponent(doc[key+'_path'])+'\')">Lihat</button></span>':'<span style="display:inline-block;margin:2px 4px 2px 0;padding:3px 6px;border-radius:5px;background:#fff1e8;color:#8a4b18;font-size:10px">'+esc(label)+' —</span>').join('');
-    return `<tr><td style="text-align:center"><input class="bulk-check doc-check" type="checkbox" value="${esc(j.id)}" onchange="syncBulkState('doc')"></td><td><b>${esc(j.nama||'-')}</b><div class="muted" style="font-size:11px;margin-top:3px">No. HP: ${esc(phone||'-')}</div><div style="margin-top:7px"><button type="button" class="btn small-btn" onclick="openDocumentsForJamaah('${esc(j.id)}')">Kelola Dokumen</button></div></td><td>${esc(j.paket||'-')}</td><td>${esc(dep?.name||j.berangkat||'-')}</td><td>${n}/${DOC_TYPES.length}</td><td>${n===DOC_TYPES.length?'<span class="badge paid">Lengkap</span>':'<span class="badge unpaid">Belum Lengkap</span>'}</td><td style="min-width:260px">${details}</td></tr>`;
+    const details=DOC_TYPES.map(([key,label])=>{
+      const checked=key==='passport'?!!(doc.passport_path||doc.passport2_path):!!doc[key+'_path'];
+      return '<span style="display:inline-block;margin:2px 4px 2px 0;padding:4px 7px;border-radius:5px;background:'+(checked?'#e8f6ee;color:#176344':'#fff1e8;color:#8a4b18')+';font-size:10px">'+esc(label)+' '+(checked?'✓':'—')+'</span>';
+    }).join('');
+    return `<tr><td style="text-align:center"><input class="bulk-check doc-check" type="checkbox" value="${esc(j.id)}" onchange="syncBulkState('doc')"></td><td><b>${esc(j.nama||'-')}</b><div class="muted" style="font-size:11px;margin-top:3px">No. HP: ${esc(phone||'-')}</div><div style="margin-top:7px"><button type="button" class="btn small-btn" onclick="openDocumentsForJamaah('${esc(j.id)}')">Kelola Ceklis</button></div></td><td>${esc(j.paket||'-')}</td><td>${esc(dep?.name||j.berangkat||'-')}</td><td>${n}/${DOC_TYPES.length}</td><td>${n===DOC_TYPES.length?'<span class="badge paid">Lengkap</span>':'<span class="badge unpaid">Belum Lengkap</span>'}</td><td style="min-width:260px">${details}</td></tr>`;
   }).join('')||'<tr><td colspan="7">Tidak ada jamaah yang sesuai dengan filter.</td></tr>';
   const selectAll=document.getElementById('docSelectAll');if(selectAll)selectAll.checked=false;
 }
