@@ -1738,6 +1738,23 @@ img,svg,video,canvas{max-width:100%}
       <div style="display:flex;align-items:end"><button class="btn secondary" type="button" onclick="resetDocumentRecapFilters()">Reset Filter</button></div>
     </div>
     <div id="docRecapCount" class="muted" style="font-size:12px;margin-bottom:10px"></div>
+    <div id="docExportControls" style="border:1px solid #dce5e0;border-radius:10px;padding:12px;margin-bottom:12px">
+      <div style="font-size:12px;font-weight:700;margin-bottom:8px">Pilih kolom dokumen untuk diekspor</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;font-size:12px;margin-bottom:10px">
+        <label><input type="checkbox" class="doc-export-col" value="ktp" checked> KTP</label>
+        <label><input type="checkbox" class="doc-export-col" value="kk" checked> KK</label>
+        <label><input type="checkbox" class="doc-export-col" value="passport" checked> Paspor</label>
+        <label><input type="checkbox" class="doc-export-col" value="bpjs" checked> BPJS</label>
+        <label><input type="checkbox" class="doc-export-col" value="vaccine" checked> Vaksin</label>
+        <label><input type="checkbox" class="doc-export-col" value="visa" checked> Visa</label>
+        <label><input type="checkbox" class="doc-export-col" value="ticket" checked> Tiket</label>
+        <label><input type="checkbox" class="doc-export-col" value="other" checked> Dokumen Lainnya</label>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <button class="btn secondary" type="button" onclick="exportDocumentsCSV()">Export Jamaah Terpilih</button>
+        <span class="muted" style="font-size:11px">Centang nama jamaah pada tabel, atau gunakan pilih semua setelah filter.</span>
+      </div>
+    </div>
     <div class="table-wrap"><table><thead><tr><th style="width:38px;text-align:center"><input class="bulk-select-all" id="docSelectAll" type="checkbox" onchange="toggleAllDocuments(this.checked)" title="Pilih semua"></th><th>Info Jamaah</th><th>Paket</th><th>Jadwal Keberangkatan</th><th>Lengkap</th><th>Status</th><th>Rincian Dokumen</th></tr></thead><tbody id="docBody"></tbody></table></div>
   </div>
 </section>
@@ -4839,6 +4856,30 @@ function openDocumentsForJamaah(id){
   loadDocumentForm();
   document.getElementById('dokumen')?.scrollIntoView({behavior:'smooth',block:'start'});
 }
+function exportDocumentsCSV(){
+  const ids=[...document.querySelectorAll('.doc-check:checked')].map(x=>String(x.value)).filter(Boolean);
+  if(!ids.length){notice('Centang minimal satu jamaah pada tabel Dokumen Jamaah sebelum export.','error');return}
+  const selectedKeys=[...document.querySelectorAll('.doc-export-col:checked')].map(x=>x.value);
+  if(!selectedKeys.length){notice('Pilih minimal satu kolom dokumen untuk diekspor.','error');return}
+  const labels={ktp:'KTP',kk:'KK',passport:'Paspor',bpjs:'BPJS',vaccine:'Vaksin',visa:'Visa',ticket:'Tiket',other:'Dokumen Lainnya'};
+  const csvCell=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
+  const rows=(data||[]).filter(j=>ids.includes(String(j.id)));
+  const headers=['Nama Jamaah','No. HP','Paket','Jadwal Keberangkatan',...selectedKeys.map(k=>labels[k]),'Jumlah Dokumen Lengkap','Total Jenis Dokumen','Status Kelengkapan'];
+  const out=rows.map(j=>{
+    const d=getDoc(j.id)||{};
+    const dep=departureFor(j);
+    const ok=k=>k==='passport'?!!(d.passport_path||d.passport2_path):!!d[k+'_path'];
+    const completeCount=DOC_TYPES.filter(([k])=>ok(k)).length;
+    return [j.nama||'',j.hp||j.telepon||j.no_hp||'',j.paket||'',dep?.name||j.berangkat||'',...selectedKeys.map(k=>ok(k)?'Lengkap':'Belum ada'),completeCount,DOC_TYPES.length,completeCount===DOC_TYPES.length?'Lengkap':'Belum Lengkap'];
+  });
+  const csv='\\uFEFF'+[headers,...out].map(row=>row.map(csvCell).join(';')).join('\\r\\n');
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download='rekap-dokumen-jamaah-'+new Date().toISOString().slice(0,10)+'.csv';
+  document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
+  notice(out.length+' data dokumen jamaah berhasil diekspor.'); 
+}
+
 function resetDocumentRecapFilters(){
   ['docRecapSearch','docRecapPackage','docRecapDeparture','docRecapStatus','docRecapMissingType'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   renderDocuments();
