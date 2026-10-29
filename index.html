@@ -4863,21 +4863,23 @@ function exportDocumentsCSV(){
   if(!selectedKeys.length){notice('Pilih minimal satu kolom dokumen untuk diekspor.','error');return}
   const labels={ktp:'KTP',kk:'KK',passport:'Paspor',bpjs:'BPJS',vaccine:'Vaksin',visa:'Visa',ticket:'Tiket',other:'Dokumen Lainnya'};
   const csvCell=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
-  const rows=(data||[]).filter(j=>ids.includes(String(j.id)));
+  const selectedIds=new Set(ids);
+  const rows=(data||[]).filter(j=>selectedIds.has(String(j.id)));
+  if(!rows.length){notice('Nama jamaah yang dicentang tidak ditemukan pada data. Coba refresh halaman lalu pilih kembali.','error');return}
   const headers=['Nama Jamaah','No. HP','Paket','Jadwal Keberangkatan',...selectedKeys.map(k=>labels[k]),'Jumlah Dokumen Lengkap','Total Jenis Dokumen','Status Kelengkapan'];
   const out=rows.map(j=>{
     const d=getDoc(j.id)||{};
     const dep=departureFor(j);
     const ok=k=>k==='passport'?!!(d.passport_path||d.passport2_path):!!d[k+'_path'];
     const completeCount=DOC_TYPES.filter(([k])=>ok(k)).length;
-    return [j.nama||'',j.hp||j.telepon||j.no_hp||'',j.paket||'',dep?.name||j.berangkat||'',...selectedKeys.map(k=>ok(k)?'Lengkap':'Belum ada'),completeCount,DOC_TYPES.length,completeCount===DOC_TYPES.length?'Lengkap':'Belum Lengkap'];
+    return [j.nama||j.nama_jamaah||j.name||'',j.hp||j.telepon||j.no_hp||'',j.paket||'',dep?.name||j.berangkat||'',...selectedKeys.map(k=>ok(k)?'Lengkap':'Belum ada'),completeCount,DOC_TYPES.length,completeCount===DOC_TYPES.length?'Lengkap':'Belum Lengkap'];
   });
-  const csv='\\uFEFF'+[headers,...out].map(row=>row.map(csvCell).join(';')).join('\\r\\n');
+  const csv='\uFEFF'+[headers,...out].map(row=>row.map(csvCell).join(';')).join('\r\n');
   const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
   const url=URL.createObjectURL(blob),a=document.createElement('a');
   a.href=url;a.download='rekap-dokumen-jamaah-'+new Date().toISOString().slice(0,10)+'.csv';
   document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
-  notice(out.length+' data dokumen jamaah berhasil diekspor.'); 
+  notice(out.length+' nama jamaah beserta status dokumennya berhasil diekspor.');
 }
 
 function resetDocumentRecapFilters(){
