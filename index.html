@@ -2299,6 +2299,7 @@ async function startApp(){
   renderAll();
   enforceDataPermissions();
   startSharedExpenseSync();
+  startSharedDataSync();
   await loadMyProfile();
 }
 
@@ -2386,6 +2387,49 @@ async function loadData(){
 
   return true;
 }
+
+let sharedDataSyncTimer=null,sharedDataSyncBusy=false;
+function renderSyncedVisibleSection(){
+  const section=[...document.querySelectorAll('main section')].find(el=>!el.classList.contains('hidden'));
+  if(!section)return;
+  switch(section.id){
+    case 'dashboard':renderDash();break;
+    case 'jamaah':renderJamaah();break;
+    case 'complimentary':renderComplimentary();break;
+    case 'paket':renderPackages();break;
+    case 'pembayaran':renderPaymentSummary();renderPaymentHistory();break;
+    case 'uangmasuk':renderUangMasuk();break;
+    case 'pengeluaran':renderExpenses();break;
+    case 'dokumen':renderDocuments();renderDocGrid();updateDocSummary();break;
+    case 'perlengkapan':renderEquipment();break;
+    case 'roomlist':renderRoomList();break;
+    case 'keberangkatan':renderDepartures();break;
+    case 'laporan':renderReport();break;
+  }
+}
+async function syncSharedData({silent=true}={}){
+  if(!currentUser||sharedDataSyncBusy||document.visibilityState!=='visible')return false;
+  sharedDataSyncBusy=true;
+  try{
+    const ok=await loadData();
+    if(!ok)return false;
+    renderSyncedVisibleSection();
+    if(!silent)notice('Data berhasil disinkronkan dari akun lain.');
+    return true;
+  }catch(err){
+    console.warn('Sinkronisasi data lintas akun gagal:',err);
+    if(!silent)notice('Sinkronisasi gagal: '+(err?.message||err),'error');
+    return false;
+  }finally{sharedDataSyncBusy=false}
+}
+function startSharedDataSync(){
+  if(sharedDataSyncTimer)clearInterval(sharedDataSyncTimer);
+  // Refresh data bersama dari Supabase supaya perubahan akun lain tampil otomatis.
+  sharedDataSyncTimer=setInterval(()=>syncSharedData({silent:true}),25000);
+}
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='visible'&&currentUser)syncSharedData({silent:true});
+});
 
 function toggleSidebar(){
   const app=document.getElementById('mainApp');
