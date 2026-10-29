@@ -1284,6 +1284,10 @@ img,svg,video,canvas{max-width:100%}
 }
 </style>
 
+
+<!-- RAIHAN_JAMAAH_GROUP_AND_CREATED_SORT_V1 -->
+<style id="raihanJamaahGroupSortFilters">@media(max-width:700px){.jamaah-list-filters .search,.jamaah-list-filters .jamaah-departure-filter{flex:1 1 100%;min-width:0!important;width:100%!important;max-width:100%!important}}</style>
+
 </head>
 <body>
 <button type="button" class="mobile-menu-btn" id="mobileMenuBtn" onclick="toggleMobileNav()" aria-label="Buka menu" title="Buka menu"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"></path></svg></button>
@@ -1499,9 +1503,16 @@ img,svg,video,canvas{max-width:100%}
       <option value="complimentary">Complimentary</option>
       <option value="departure-missing">Belum Ada Keberangkatan</option>
     </select>
+    <select id="jamaahGroupFilter" class="jamaah-departure-filter" onchange="jamaahCurrentPage=1;renderJamaah()" aria-label="Filter group jamaah">
+      <option value="">Semua Group & Individu</option>
+      <option value="group">Hanya Group</option>
+      <option value="individual">Hanya Individu</option>
+    </select>
     <select id="jamaahSortFilter" class="jamaah-departure-filter" onchange="jamaahCurrentPage=1;renderJamaah()" aria-label="Urutkan data jamaah">
       <option value="az">Nama A–Z</option>
       <option value="za">Nama Z–A</option>
+      <option value="created-desc">Input Terbaru</option>
+      <option value="created-asc">Input Terlama</option>
     </select>
   </div>
 </div>
@@ -3329,10 +3340,13 @@ function jamaahFilteredRows(){
   const q=(document.getElementById('search')?.value||'').trim().toLowerCase();
   const departureFilter=document.getElementById('jamaahDepartureFilter')?.value||'';
   const statusFilter=document.getElementById('jamaahStatusFilter')?.value||'';
+  const groupFilter=document.getElementById('jamaahGroupFilter')?.value||'';
   const sortFilter=document.getElementById('jamaahSortFilter')?.value||'az';
   const rows=data.filter(x=>{
     const hay=(x.nama+' '+(x.nik||'')+' '+(x.hp||'')+' '+(x.paket||'')+' '+(x.jenis_kelamin||'')+' '+(x.nama_rombongan||'')+' '+(x.keterangan_rombongan||'')+' '+(x.kategori||'')+' '+(x.keterangan||'')+' '+(x.catatan||'')).toLowerCase();
     const matchesSearch=hay.includes(q);
+    const isGroupRow=x.kategori==='grup'||!!String(x.nama_rombongan||'').trim();
+    const matchesGroup=!groupFilter||(groupFilter==='group'&&isGroupRow)||(groupFilter==='individual'&&!isGroupRow);
     const matchesDeparture=!departureFilter||String(x.departure_id||'')===String(departureFilter);
     const paid=paidFor(x.id);
     const hasDP=jamaahHasDPTransaction(x);
@@ -3343,9 +3357,16 @@ function jamaahFilteredRows(){
       ||(statusFilter==='no-dp'&&!hasDP&&!isComplimentary(x)&&!isPaid(x))
       ||(statusFilter==='complimentary'&&isComplimentary(x))
       ||(statusFilter==='departure-missing'&&!String(x.departure_id||'').trim());
-    return matchesSearch&&matchesDeparture&&matchesStatus;
+    return matchesSearch&&matchesDeparture&&matchesStatus&&matchesGroup;
   });
   return rows.sort((a,b)=>{
+    if(sortFilter==='created-desc'||sortFilter==='created-asc'){
+      const da=Date.parse(a.created_at||a.createdAt||a.created_date||'')||0;
+      const db=Date.parse(b.created_at||b.createdAt||b.created_date||'')||0;
+      const diff=da-db;
+      if(diff!==0)return sortFilter==='created-desc'?-diff:diff;
+      return String(a.nama||'').localeCompare(String(b.nama||''),'id',{sensitivity:'base',numeric:true});
+    }
     const cmp=String(a.nama||'').localeCompare(String(b.nama||''),'id',{sensitivity:'base',numeric:true});
     return sortFilter==='za'?-cmp:cmp;
   });
@@ -3394,7 +3415,9 @@ function renderJamaah(){
   const q=(document.getElementById('search')?.value||'').trim();
   const departureFilter=document.getElementById('jamaahDepartureFilter')?.value||'';
   const statusFilter=document.getElementById('jamaahStatusFilter')?.value||'';
-  const hasFilter=!!q||!!departureFilter||!!statusFilter;
+  const groupFilter=document.getElementById('jamaahGroupFilter')?.value||'';
+  const sortFilter=document.getElementById('jamaahSortFilter')?.value||'az';
+  const hasFilter=!!q||!!departureFilter||!!statusFilter||!!groupFilter||sortFilter!=='az';
   if(countEl)countEl.textContent=hasFilter ? (total+' dari '+data.length+' data') : (data.length+' data');
   document.getElementById('jamaahBody').innerHTML=visibleRows.map((x,idx)=>{
     const paid=paidFor(x.id), discount=discountFor(x.id), remain=remainFor(x);
