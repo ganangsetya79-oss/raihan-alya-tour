@@ -35,6 +35,7 @@ table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;border
 .jamaah-category-switch input{accent-color:#18745f}
 .jamaah-group-tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.bulk-tools{display:flex;gap:7px;align-items:center;flex-wrap:wrap}.bulk-select-all,.bulk-check{width:16px;height:16px;accent-color:#18745f;cursor:pointer}
 .jamaah-data-count{display:inline-flex;align-items:center;padding:4px 9px;border-radius:999px;background:#eef7f3;color:#18745f;font-size:11px;font-weight:800;border:1px solid #d7e9e2}
+.jamaah-missing-schedule-count{display:inline-flex;align-items:center;padding:4px 9px;border-radius:999px;background:#fff3e5;color:#9a5700;font-size:11px;font-weight:800;border:1px solid #f1d7b7}
 .jamaah-pagination{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:12px;padding-top:12px;border-top:1px solid #e8eeeb}.jamaah-page-size{display:flex;align-items:center;gap:7px;font-size:11px;color:#687078}.jamaah-page-size select{padding:6px 8px;border:1px solid #d8e0dd;border-radius:7px;background:#fff;font-size:11px;color:#37443f}.jamaah-page-info{font-size:11px;color:#687078}.jamaah-page-buttons{display:flex;align-items:center;gap:4px;flex-wrap:wrap}.jamaah-page-btn{min-width:30px;height:30px;padding:0 8px;border:1px solid #d9e2df;border-radius:7px;background:#fff;color:#40514b;font-size:11px;cursor:pointer}.jamaah-page-btn:hover:not(:disabled){background:#eef7f3;border-color:#b9d7cd;color:#176b58}.jamaah-page-btn.active{background:#1f705d;border-color:#1f705d;color:#fff;font-weight:700}.jamaah-page-btn:disabled{opacity:.45;cursor:not-allowed}.jamaah-page-ellipsis{padding:0 3px;color:#8a9490;font-size:12px}@media(max-width:650px){.jamaah-pagination{align-items:flex-start}.jamaah-page-buttons{width:100%;overflow-x:auto;padding-bottom:2px}.jamaah-page-info{order:3;width:100%}}
 .jamaah-select-all{width:16px;height:16px;accent-color:#18745f}
 .jamaah-check{width:16px;height:16px;accent-color:#18745f}
@@ -1490,10 +1491,11 @@ img,svg,video,canvas{max-width:100%}
 
 <section id="jamaah" class="hidden">
   <div class="top">
-  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><h1 style="margin:0">Data Jamaah</h1><span id="jamaahDataCount" class="jamaah-data-count">0 data</span></div>
+  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><h1 style="margin:0">Data Jamaah</h1><span id="jamaahDataCount" class="jamaah-data-count">0 data</span><span id="jamaahNoDepartureCount" class="jamaah-missing-schedule-count">0 belum ada jadwal</span></div>
   <div class="jamaah-list-filters">
     <input id="search" class="search" placeholder="Cari nama / NIK / HP / paket / group / catatan..." oninput="jamaahCurrentPage=1;renderJamaah()">
     <select id="jamaahDepartureFilter" class="jamaah-departure-filter" onchange="jamaahCurrentPage=1;renderJamaah()"><option value="">Semua Jadwal</option></select>
+    <select id="jamaahScheduleStatusFilter" class="jamaah-departure-filter" onchange="jamaahCurrentPage=1;renderJamaah()" aria-label="Filter status jadwal keberangkatan"><option value="">Semua Status Jadwal</option><option value="assigned">Sudah Ada Jadwal</option><option value="missing">Belum Ada Jadwal</option></select>
     <select id="jamaahStatusFilter" class="jamaah-departure-filter" onchange="jamaahCurrentPage=1;renderJamaah()" aria-label="Filter status pembayaran">
       <option value="">Semua Status Pembayaran</option>
       <option value="lunas">Sudah Lunas</option>
@@ -1501,7 +1503,6 @@ img,svg,video,canvas{max-width:100%}
       <option value="no-payment">Belum Bayar Sama Sekali</option>
       <option value="no-dp">Belum Bayar DP</option>
       <option value="complimentary">Complimentary</option>
-      <option value="departure-missing">Belum Ada Keberangkatan</option>
     </select>
     <select id="jamaahGroupFilter" class="jamaah-departure-filter" onchange="jamaahCurrentPage=1;renderJamaah()" aria-label="Filter group jamaah">
       <option value="">Semua Group & Individu</option>
@@ -3401,6 +3402,7 @@ function jamaahFilteredRows(){
   const q=(document.getElementById('search')?.value||'').trim().toLowerCase();
   const departureFilter=document.getElementById('jamaahDepartureFilter')?.value||'';
   const statusFilter=document.getElementById('jamaahStatusFilter')?.value||'';
+  const scheduleStatusFilter=document.getElementById('jamaahScheduleStatusFilter')?.value||'';
   const groupFilter=document.getElementById('jamaahGroupFilter')?.value||'';
   const sortFilter=document.getElementById('jamaahSortFilter')?.value||'az';
   const rows=data.filter(x=>{
@@ -3409,6 +3411,8 @@ function jamaahFilteredRows(){
     const isGroupRow=x.kategori==='grup'||!!String(x.nama_rombongan||'').trim();
     const matchesGroup=!groupFilter||(groupFilter==='group'&&isGroupRow)||(groupFilter==='individual'&&!isGroupRow);
     const matchesDeparture=!departureFilter||String(x.departure_id||'')===String(departureFilter);
+    const hasDeparture=!!(String(x.departure_id||'').trim()||String(x.berangkat||'').trim());
+    const matchesScheduleStatus=!scheduleStatusFilter||(scheduleStatusFilter==='assigned'&&hasDeparture)||(scheduleStatusFilter==='missing'&&!hasDeparture);
     const paid=paidFor(x.id);
     const hasDP=jamaahHasDPTransaction(x);
     const matchesStatus=!statusFilter
@@ -3416,9 +3420,8 @@ function jamaahFilteredRows(){
       ||(statusFilter==='belum'&&!isPaid(x))
       ||(statusFilter==='no-payment'&&paid<=0&&!isComplimentary(x))
       ||(statusFilter==='no-dp'&&!hasDP&&!isComplimentary(x)&&!isPaid(x))
-      ||(statusFilter==='complimentary'&&isComplimentary(x))
-      ||(statusFilter==='departure-missing'&&!String(x.departure_id||'').trim());
-    return matchesSearch&&matchesDeparture&&matchesStatus&&matchesGroup;
+      ||(statusFilter==='complimentary'&&isComplimentary(x));
+    return matchesSearch&&matchesDeparture&&matchesScheduleStatus&&matchesStatus&&matchesGroup;
   });
   return rows.sort((a,b)=>{
     if(sortFilter==='created-desc'||sortFilter==='created-asc'){
@@ -3476,9 +3479,13 @@ function renderJamaah(){
   const q=(document.getElementById('search')?.value||'').trim();
   const departureFilter=document.getElementById('jamaahDepartureFilter')?.value||'';
   const statusFilter=document.getElementById('jamaahStatusFilter')?.value||'';
+  const scheduleStatusFilter=document.getElementById('jamaahScheduleStatusFilter')?.value||'';
   const groupFilter=document.getElementById('jamaahGroupFilter')?.value||'';
   const sortFilter=document.getElementById('jamaahSortFilter')?.value||'az';
-  const hasFilter=!!q||!!departureFilter||!!statusFilter||!!groupFilter||sortFilter!=='az';
+  const hasFilter=!!q||!!departureFilter||!!scheduleStatusFilter||!!statusFilter||!!groupFilter||sortFilter!=='az';
+  const missingScheduleCount=(data||[]).filter(x=>!String(x.departure_id||'').trim()&&!String(x.berangkat||'').trim()).length;
+  const missingCountEl=document.getElementById('jamaahNoDepartureCount');
+  if(missingCountEl)missingCountEl.textContent=missingScheduleCount+' belum ada jadwal';
   if(countEl)countEl.textContent=hasFilter ? (total+' dari '+data.length+' data') : (data.length+' data');
   document.getElementById('jamaahBody').innerHTML=visibleRows.map((x,idx)=>{
     const paid=paidFor(x.id), discount=discountFor(x.id), remain=remainFor(x);
