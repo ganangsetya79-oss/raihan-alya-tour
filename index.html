@@ -1558,7 +1558,7 @@ img,svg,video,canvas{max-width:100%}
   <div id="paymentJamaahChecklist" class="payment-jamaah-checklist"></div>
   <select id="paymentJamaah" style="display:none" aria-hidden="true"><option value=""></option></select>
   <div class="payment-selected-info" id="paymentSelectedInfo">Belum ada jamaah yang dipilih.</div>
-  <div class="payment-search-hint"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"></circle><path d="m16 16 4 4"></path></svg><span>Centang satu jamaah untuk pembayaran pribadi, atau centang Group untuk pembayaran seluruh group.</span></div>
+  <div class="payment-search-hint"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"></circle><path d="m16 16 4 4"></path></svg><span>Centang satu jamaah untuk pembayaran pribadi. Pada Pembayaran Group, pilih Group untuk semua anggota atau centang beberapa anggota tertentu.</span></div>
 </div>
       <div><label>Nominal Pembayaran</label><input id="paymentAmount" type="number" min="1" required placeholder="Contoh: 5000000"></div>
       <div><label>Diskon / Potongan Tagihan</label><input id="paymentDiscount" type="number" min="0" value="0" placeholder="Contoh: 500000"></div>
@@ -2160,6 +2160,16 @@ const groupMembersFor=x=>{
   });
 };
 const groupTotalFor=x=>groupMembersFor(x).reduce((a,j)=>a+Number(j.harga||0)+Math.max(0,Number(j.upgrade_amount||0)),0);
+const groupAllocationsFor=p=>{
+  const match=String(p?.note||'').match(/\[allocations:([^\]]+)\]/i);
+  if(!match)return [];
+  try{
+    const rows=JSON.parse(decodeURIComponent(match[1]));
+    return Array.isArray(rows)?rows.filter(x=>x&&x.id):[];
+  }catch(_){return []}
+};
+const groupAllocationFor=(p,id)=>groupAllocationsFor(p).find(x=>String(x.id)===String(id))||null;
+const displayPaymentNote=p=>String(p?.note||'').replace(/\s*\[allocations:[^\]]+\]/ig,'').replace(/\s*\[member-id:[^\]]+\]/ig,'').trim();
 const isRombonganPayment=p=>{const note=String(p?.note||'').trim().toLowerCase();return note.includes('pembayaran group')||note.includes('pembayaran rombongan');};
 const groupMembersForPayment=x=>groupMembersFor(x);
 const groupPaymentsFor=x=>{
@@ -2168,36 +2178,28 @@ const groupPaymentsFor=x=>{
 };
 const groupPaidFor=x=>groupPaymentsFor(x).reduce((a,p)=>a+Number(p.amount||0),0);
 const groupDiscountFor=x=>groupPaymentsFor(x).reduce((a,p)=>a+Number(p.discount||0),0);
-
-// Pembayaran:
-// - Pembayaran pribadi anggota dihitung penuh untuk anggota tersebut.
-// - Pembayaran rombongan dibagi ke SEMUA anggota yang tercatat pada Data Jamaah
-//   dengan nama group yang sama.
-// - Jika harga paket tersedia, pembagian mengikuti harga paket.
-// - Jika harga paket Rp0/belum diketahui, pembagian rata berdasarkan jumlah anggota.
-// Contoh: Rp60 jt / 6 anggota = Rp10 jt per anggota.
-// NETI + pembayaran pribadi Rp30 jt = Rp40 jt.
 const paymentContributionFor=id=>{
-  const x=data.find(j=>j.id===id);
+  const x=data.find(j=>String(j.id)===String(id));
   if(!x)return{paid:0,discount:0};
-
-  const ownPayments=payments.filter(p=>p.jamaah_id===id&&!isRombonganPayment(p));
+  const ownPayments=payments.filter(p=>String(p.jamaah_id)===String(id)&&!isRombonganPayment(p));
   let paid=ownPayments.reduce((a,p)=>a+Number(p.amount||0),0);
   let discount=ownPayments.reduce((a,p)=>a+Number(p.discount||0),0);
-
+  const allocated=payments.filter(p=>isRombonganPayment(p)&&groupAllocationFor(p,id));
+  for(const p of allocated){
+    const part=groupAllocationFor(p,id);
+    paid+=Number(part?.amount||0);
+    discount+=Number(part?.discount||0);
+  }
   if(isGroupJamaah(x)){
-    const members=groupMembersFor(x);
-    const memberCount=members.length;
+    const members=groupMembersFor(x),memberCount=members.length;
     if(memberCount>0){
       const totalHarga=members.reduce((a,m)=>a+Math.max(0,Number(m.harga||0)),0);
       const memberHarga=Math.max(0,Number(x.harga||0));
-      const shared=payments.filter(p=>isRombonganPayment(p)&&members.some(m=>m.id===p.jamaah_id));
+      const shared=payments.filter(p=>isRombonganPayment(p)&&!groupAllocationsFor(p).length&&members.some(m=>String(m.id)===String(p.jamaah_id)));
       for(const p of shared){
-        const amount=Number(p.amount||0);
-        const disc=Number(p.discount||0);
-        const ratio=totalHarga>0 ? (memberHarga/totalHarga) : (1/memberCount);
-        paid+=amount*ratio;
-        discount+=disc*ratio;
+        const ratio=totalHarga>0?(memberHarga/totalHarga):(1/memberCount);
+        paid+=Number(p.amount||0)*ratio;
+        discount+=Number(p.discount||0)*ratio;
       }
     }
   }
@@ -2724,7 +2726,7 @@ function renderUangMasuk(){
         <td>${money(p.amount)}</td>
         <td>${esc(p.method||'-')}</td>
         <td>${esc(p.bank||'-')}</td>
-        <td>${esc(p.note||'-')}</td>
+        <td>${esc(displayPaymentNote(p)||'-')}</td>
       </tr>`;
     }).join('') || '<tr><td colspan="9" style="text-align:center">Tidak ada transaksi pada periode ini.</td></tr>';
   }
@@ -2783,7 +2785,7 @@ function printUangMasuk(){
   const body=rows.map((p,i)=>{
     const j=(data||[]).find(x=>x.id===p.jamaah_id);
     const label=isGroupJamaah(j)?('👥 '+groupNameFor(j)+' ('+groupMembersFor(j).length+' anggota)'):(j?.nama||'-');
-    return `<tr><td>${i+1}</td><td>${formatDate(p.payment_date)}</td><td>${esc(p.invoice_no||'-')}</td><td>${esc(label)}</td><td>${money(p.amount)}</td><td>${esc(p.method||'-')}</td><td>${esc(p.bank||'-')}</td><td>${esc(p.note||'-')}</td></tr>`;
+    return `<tr><td>${i+1}</td><td>${formatDate(p.payment_date)}</td><td>${esc(p.invoice_no||'-')}</td><td>${esc(label)}</td><td>${money(p.amount)}</td><td>${esc(p.method||'-')}</td><td>${esc(p.bank||'-')}</td><td>${esc(displayPaymentNote(p)||'-')}</td></tr>`;
   }).join('');
   w.document.write(`<!doctype html><html><head><title>Rekap Uang Masuk - Raihan Alya Tour</title><style>
   body{font-family:Arial,sans-serif;margin:30px;color:#222}h1{margin:0 0 4px;font-size:22px}h2{margin:0 0 14px;font-size:15px}p{margin:4px 0 16px;color:#555}.summary{padding:12px;border:1px solid #ddd;margin:15px 0;font-weight:bold}table{width:100%;border-collapse:collapse;font-size:11px}th,td{border:1px solid #bbb;padding:7px;text-align:left}th{background:#f3f3f3}@media print{button{display:none}}
@@ -3270,7 +3272,7 @@ function renderReport(){
     const total=rows.reduce((a,j)=>a+Number(j.harga||0),0), paid=rows.reduce((a,j)=>a+paidFor(j.id),0); sum.innerHTML=reportCards([['Jumlah Jamaah',rows.length],['Total Paket',rupiah(total)],['Terbayar',rupiah(paid)],['Sisa',rupiah(Math.max(0,total-paid))]]);
   } else if(type==='payment'){
     rows=reportPaymentRows(); title='Laporan Pembayaran'; headers=['No','Invoice','Tanggal','Jamaah','Jumlah','Diskon','Metode','Bank','Keterangan'];
-    html=rows.map((p,i)=>{const j=data.find(x=>x.id===p.jamaah_id);return `<tr><td>${i+1}</td><td>${esc(p.invoice_no||'-')}</td><td>${esc(p.payment_date||'-')}</td><td>${esc(j?.nama||'-')}</td><td>${rupiah(p.amount)}</td><td>${rupiah(p.discount||0)}</td><td>${esc(p.method||'-')}</td><td>${esc(p.bank||'-')}</td><td>${esc(p.note||'-')}</td></tr>`}).join('');
+    html=rows.map((p,i)=>{const j=data.find(x=>x.id===p.jamaah_id);return `<tr><td>${i+1}</td><td>${esc(p.invoice_no||'-')}</td><td>${esc(p.payment_date||'-')}</td><td>${esc(j?.nama||'-')}</td><td>${rupiah(p.amount)}</td><td>${rupiah(p.discount||0)}</td><td>${esc(p.method||'-')}</td><td>${esc(p.bank||'-')}</td><td>${esc(displayPaymentNote(p)||'-')}</td></tr>`}).join('');
     const total=rows.reduce((a,p)=>a+Number(p.amount||0),0), cash=rows.filter(p=>p.method==='Cash').reduce((a,p)=>a+Number(p.amount||0),0), transfer=rows.filter(p=>p.method==='Transfer').reduce((a,p)=>a+Number(p.amount||0),0); sum.innerHTML=reportCards([['Transaksi',rows.length],['Total Pembayaran',rupiah(total)],['Cash',rupiah(cash)],['Transfer',rupiah(transfer)]]);
   } else if(type==='departure'){
     rows=reportDepartureRows(); title='Laporan Keberangkatan'; headers=['No','Grup','Tanggal','Maskapai','PNR','Jamaah','Lunas','Belum Lunas','Total Paket','Terbayar','Sisa'];
@@ -3372,7 +3374,7 @@ function printPayment(paymentId){
   const group=isGroupJamaah(j);
   const members=group?groupMembersFor(j):[j];
   const label=group?groupNameFor(j):(j.nama||'-');
-  const total=group?groupTotalFor(j):Number(j.harga||0);
+  const total=group?(selectedMembers.length?selectedMembers.reduce((a,m)=>a+totalBillFor(m),0):groupTotalFor(j)):totalBillFor(j);
   const rows=members.map((m,i)=>'<tr><td>'+(i+1)+'</td><td>'+esc(m.nama||'-')+'</td><td>'+esc(m.paket||'-')+'</td><td class="right">'+rupiah(m.harga)+'</td></tr>').join('');
   const inv=invoiceNumber(p);
   const head='<div class="head"><div class="logo-mark">RA</div><div><div class="company">PT RAIHAN ALYA TOUR</div><div class="sub">Palangka Raya, Kalimantan Tengah</div></div></div>';
@@ -3380,7 +3382,7 @@ function printPayment(paymentId){
     '<div class="title">BUKTI PEMBAYARAN</div>'+
     '<div class="meta"><b>No. Nota:</b> '+esc(inv)+'<br><b>Tanggal:</b> '+esc(formatDateID(p.payment_date))+'<br><b>'+(group?'Group':'Jamaah')+':</b> '+esc(label)+'</div>'+
     (group?'<div class="box"><table><thead><tr><th>No</th><th>Nama</th><th>Paket</th><th class="right">Harga</th></tr></thead><tbody>'+rows+'</tbody></table></div>':'')+
-    '<div class="box sum"><div><span>Total Tagihan</span><b>'+rupiah(total)+'</b></div><div><span>Pembayaran Ini</span><b>'+rupiah(p.amount)+'</b></div><div><span>Metode</span><b>'+esc(p.method||'-')+'</b></div><div><span>Bank</span><b>'+esc(p.bank||'-')+'</b></div><div><span>Keterangan</span><b>'+esc(p.note||'-')+'</b></div><div class="grand"><span>Terima Pembayaran</span><b>'+rupiah(p.amount)+'</b></div></div>'+
+    '<div class="box sum"><div><span>Total Tagihan</span><b>'+rupiah(total)+'</b></div><div><span>Pembayaran Ini</span><b>'+rupiah(p.amount)+'</b></div><div><span>Metode</span><b>'+esc(p.method||'-')+'</b></div><div><span>Bank</span><b>'+esc(p.bank||'-')+'</b></div><div><span>Keterangan</span><b>'+esc(displayPaymentNote(p)||'-')+'</b></div><div class="grand"><span>Terima Pembayaran</span><b>'+rupiah(p.amount)+'</b></div></div>'+
     '<div class="sign"><div>Admin / Petugas<div class="space"></div>(________________)</div><div>Jamaah<div class="space"></div>(________________)</div></div>';
   openPrintWindow(inv,body);
 }
@@ -3562,18 +3564,20 @@ function renderPaymentHistory(){
     const j=data.find(x=>x.id===p.jamaah_id);
     const group=isGroupJamaah(j), groupName=group?groupNameFor(j):'';
     const rombonganPayment=group&&isRombonganPayment(p);
-    const jamaahLabel=group?(rombonganPayment?'👥 '+groupName+' — Pembayaran Group':'👤 '+(j?.nama||'Jamaah')+' — Anggota Group'):(j?.nama||'Jamaah tidak ditemukan');
+    const allocations=groupAllocationsFor(p);
+    const allocatedNames=allocations.map(a=>(data||[]).find(m=>String(m.id)===String(a.id))?.nama).filter(Boolean);
+    const jamaahLabel=group?(allocations.length?'👥 '+groupName+' — '+allocatedNames.join(', '):(rombonganPayment?'👥 '+groupName+' — Pembayaran Group':'👤 '+(j?.nama||'Jamaah')+' — Anggota Group')):(j?.nama||'Jamaah tidak ditemukan');
     const bank=p.method==='Transfer'?(p.bank||'-'):'-';
     return `<tr>
       <td style="text-align:center"><input class="bulk-check payment-check" type="checkbox" value="${esc(p.id)}" onchange="syncBulkState('payment')"></td>
       <td><b>${esc(p.invoice_no||'-')}</b></td>
       <td>${formatDate(p.payment_date)}</td>
-      <td><div class="payment-name">${esc(jamaahLabel)}</div><div class="payment-sub">${esc(rombonganPayment?'Dibayar untuk seluruh group':(group?'Dibayar oleh anggota tersebut':'Pembayaran individu'))}</div></td>
+      <td><div class="payment-name">${esc(jamaahLabel)}</div><div class="payment-sub">${esc(allocations.length?'Pembayaran Group untuk '+allocatedNames.length+' anggota':(rombonganPayment?'Dibayar untuk seluruh group':(group?'Dibayar oleh anggota tersebut':'Pembayaran individu')))}</div></td>
       <td class="payment-amount">${rupiah(p.amount)}</td>
       <td>${rupiah(p.discount||0)}</td>
       <td><span class="badge ${p.method==='Transfer'?'paid':'unpaid'}">${esc(p.method||'-')}</span></td>
       <td>${esc(bank)}</td>
-      <td>${esc(p.note||'-')}</td>
+      <td>${esc(displayPaymentNote(p)||'-')}</td>
       <td><div class="payment-action-group"><button class="btn small-btn" type="button" onclick="editPayment('${p.id}')">✏️ Edit</button><button class="btn secondary small-btn" type="button" onclick="printInvoice('${p.jamaah_id}')">🧾 Invoice</button><button class="btn secondary small-btn" type="button" onclick="printPayment('${p.id}')">🖨️ Nota</button><button class="btn danger small-btn" type="button" onclick="deletePayment('${p.id}')">Hapus</button></div></td>
     </tr>`;
   }).join('')||'<tr><td colspan="10">Tidak ada transaksi yang sesuai pencarian.</td></tr>';
@@ -3638,16 +3642,18 @@ function printPayment(paymentId){
   if(!p){notice('Transaksi tidak ditemukan.','error');return}
   const j=data.find(x=>x.id===p.jamaah_id);
   if(!j){notice('Data jamaah untuk transaksi ini tidak ditemukan.','error');return}
+  const allocations=groupAllocationsFor(p);
   const group=isGroupJamaah(j);
-  const members=group?groupMembersFor(j):[j];
-  const label=group?groupNameFor(j):(j.nama||'-');
+  const selectedMembers=allocations.map(a=>(data||[]).find(m=>String(m.id)===String(a.id))).filter(Boolean);
+  const members=group?(selectedMembers.length?selectedMembers:groupMembersFor(j)):[j];
+  const label=group?(selectedMembers.length?groupNameFor(j)+' — '+selectedMembers.map(m=>m.nama).join(', '):groupNameFor(j)):(j.nama||'-');
   const w=window.open('','_blank','width=700,height=800');
   if(!w){notice('Pop-up diblokir browser. Izinkan pop-up untuk mencetak nota.','error');return}
   const rows=members.map((m,i)=>'<tr><td>'+(i+1)+'</td><td>'+esc(m.nama||'-')+'</td><td>'+esc(m.paket||'-')+'</td><td style="text-align:right">'+rupiah(m.harga)+'</td></tr>').join('');
-  const total=group?groupTotalFor(j):Number(j.harga||0);
+  const total=group?(selectedMembers.length?selectedMembers.reduce((a,m)=>a+totalBillFor(m),0):groupTotalFor(j)):totalBillFor(j);
   const paid=Number(p.amount||0);
   const inv=invoiceNumber(p);
-  w.document.write('<!doctype html><html><head><meta charset="utf-8"><title>'+esc(inv)+'</title><style>*{box-sizing:border-box}body{font-family:Arial,sans-serif;margin:0;color:#222}.page{width:180mm;margin:auto;padding:12mm}.head{border-bottom:2px solid #173f35;padding-bottom:8px;margin-bottom:12px}.company{font-size:18px;font-weight:800;color:#173f35}.sub{font-size:11px;color:#666;margin-top:3px}.title{text-align:center;font-weight:800;font-size:16px;margin:14px 0}.meta{font-size:11px;line-height:1.7;margin-bottom:10px}table{width:100%;border-collapse:collapse;font-size:10px}th,td{border:1px solid #ccc;padding:5px}th{background:#f3f6f4;text-align:left}.right{text-align:right}.summary{margin-top:12px;border:1px solid #ddd;padding:9px;font-size:11px}.summary div{display:flex;justify-content:space-between;padding:3px 0}.grand{font-weight:800;border-top:1px solid #173f35;margin-top:4px;padding-top:5px}.sign{margin-top:30px;display:grid;grid-template-columns:1fr 1fr;text-align:center;font-size:10px}.space{height:42px}@media print{@page{size:A5;margin:0}.page{width:auto;padding:9mm}}</style></head><body><div class="page"><div class="head"><div class="company">PT RAIHAN ALYA TOUR</div><div class="sub">Palangka Raya, Kalimantan Tengah</div></div><div class="title">BUKTI PEMBAYARAN</div><div class="meta"><b>No. Nota:</b> '+esc(inv)+'<br><b>Tanggal:</b> '+esc(formatDateID(p.payment_date))+'<br><b>'+ (group?'Group':'Jamaah') +':</b> '+esc(label)+'</div>'+ (group?'<table><thead><tr><th>No</th><th>Nama Jamaah</th><th>Paket</th><th class="right">Harga</th></tr></thead><tbody>'+rows+'</tbody></table>':'') +'<div class="summary"><div><span>Total Tagihan</span><b>'+rupiah(total)+'</b></div><div><span>Pembayaran Ini</span><b>'+rupiah(paid)+'</b></div><div><span>Metode</span><b>'+esc(p.method||'-')+'</b></div><div><span>Bank</span><b>'+esc(p.bank||'-')+'</b></div><div><span>Keterangan</span><b>'+esc(p.note||'-')+'</b></div><div class="grand"><span>Terima Pembayaran</span><b>'+rupiah(paid)+'</b></div></div><div class="sign"><div>Admin / Petugas<div class="space"></div>(________________)</div><div>Jamaah<div class="space"></div>(________________)</div></div></div></body></html>');
+  w.document.write('<!doctype html><html><head><meta charset="utf-8"><title>'+esc(inv)+'</title><style>*{box-sizing:border-box}body{font-family:Arial,sans-serif;margin:0;color:#222}.page{width:180mm;margin:auto;padding:12mm}.head{border-bottom:2px solid #173f35;padding-bottom:8px;margin-bottom:12px}.company{font-size:18px;font-weight:800;color:#173f35}.sub{font-size:11px;color:#666;margin-top:3px}.title{text-align:center;font-weight:800;font-size:16px;margin:14px 0}.meta{font-size:11px;line-height:1.7;margin-bottom:10px}table{width:100%;border-collapse:collapse;font-size:10px}th,td{border:1px solid #ccc;padding:5px}th{background:#f3f6f4;text-align:left}.right{text-align:right}.summary{margin-top:12px;border:1px solid #ddd;padding:9px;font-size:11px}.summary div{display:flex;justify-content:space-between;padding:3px 0}.grand{font-weight:800;border-top:1px solid #173f35;margin-top:4px;padding-top:5px}.sign{margin-top:30px;display:grid;grid-template-columns:1fr 1fr;text-align:center;font-size:10px}.space{height:42px}@media print{@page{size:A5;margin:0}.page{width:auto;padding:9mm}}</style></head><body><div class="page"><div class="head"><div class="company">PT RAIHAN ALYA TOUR</div><div class="sub">Palangka Raya, Kalimantan Tengah</div></div><div class="title">BUKTI PEMBAYARAN</div><div class="meta"><b>No. Nota:</b> '+esc(inv)+'<br><b>Tanggal:</b> '+esc(formatDateID(p.payment_date))+'<br><b>'+ (group?'Group':'Jamaah') +':</b> '+esc(label)+'</div>'+ (group?'<table><thead><tr><th>No</th><th>Nama Jamaah</th><th>Paket</th><th class="right">Harga</th></tr></thead><tbody>'+rows+'</tbody></table>':'') +'<div class="summary"><div><span>Total Tagihan</span><b>'+rupiah(total)+'</b></div><div><span>Pembayaran Ini</span><b>'+rupiah(paid)+'</b></div><div><span>Metode</span><b>'+esc(p.method||'-')+'</b></div><div><span>Bank</span><b>'+esc(p.bank||'-')+'</b></div><div><span>Keterangan</span><b>'+esc(displayPaymentNote(p)||'-')+'</b></div><div class="grand"><span>Terima Pembayaran</span><b>'+rupiah(paid)+'</b></div></div><div class="sign"><div>Admin / Petugas<div class="space"></div>(________________)</div><div>Jamaah<div class="space"></div>(________________)</div></div></div></body></html>');
   w.document.close();
   w.focus();
   setTimeout(()=>w.print(),250);
@@ -3993,26 +3999,24 @@ function setPaymentEntryMode(mode, preserveSelection=false){
   document.getElementById('paymentTabGroup')?.classList.toggle('active',paymentEntryMode==='group');
   const desc=document.getElementById('paymentEntryDesc');
   if(desc)desc.textContent=paymentEntryMode==='group'
-    ?'Pilih satu group untuk mencatat pembayaran yang dibayar untuk seluruh anggota group.'
+    ?'Pilih satu group untuk semua anggota, atau centang beberapa anggota tertentu yang akan menerima pembayaran.'
     :'Pilih satu jamaah, termasuk anggota group yang membayar secara terpisah. Setiap anggota dicatat sebagai transaksi sendiri.';
   fillPaymentJamaah(preserveSelection);
 }
-function paymentSelectionValue(){
-  const checked=document.querySelector('#paymentJamaahChecklist input[name="paymentJamaahChoice"]:checked');
-  return checked?.value||'';
-}
-function setPaymentSelection(value){
-  const sel=document.getElementById('paymentJamaah');
-  const box=document.getElementById('paymentJamaahChecklist');
-  const info=document.getElementById('paymentSelectedInfo');
+function paymentSelectionValues(){return [...document.querySelectorAll('#paymentJamaahChecklist input[name="paymentJamaahChoice"]:checked')].map(x=>x.value);}
+function paymentSelectionValue(){return paymentSelectionValues()[0]||'';}
+function setPaymentSelections(values){
+  const sel=document.getElementById('paymentJamaah'),box=document.getElementById('paymentJamaahChecklist'),info=document.getElementById('paymentSelectedInfo');
   if(!sel||!box)return;
-  sel.value=value||'';
-  box.querySelectorAll('input[name="paymentJamaahChoice"]').forEach(x=>x.checked=x.value===value);
-  const checked=box.querySelector('input[name="paymentJamaahChoice"]:checked');
-  if(info)info.textContent=checked?.dataset.label||'Belum ada '+(paymentEntryMode==='group'?'group':'jamaah')+' yang dipilih.';
+  const wanted=new Set((Array.isArray(values)?values:[values]).map(String));
+  box.querySelectorAll('input[name="paymentJamaahChoice"]').forEach(x=>x.checked=wanted.has(String(x.value)));
+  const checked=[...box.querySelectorAll('input[name="paymentJamaahChoice"]:checked')];
+  sel.value=checked[0]?.value||'';
+  if(info)info.textContent=checked.length?(paymentEntryMode==='group'&&checked.every(x=>!x.value.startsWith('group::'))?checked.length+' anggota dipilih untuk pembayaran group.':(checked[0].dataset.label||'Dipilih')):'Belum ada '+(paymentEntryMode==='group'?'group/anggota':'jamaah')+' yang dipilih.';
   const input=document.getElementById('paymentJamaahSearch');
-  if(input&&checked)input.value=checked.dataset.searchLabel||checked.dataset.label||'';
+  if(input&&checked.length===1)input.value=checked[0].dataset.searchLabel||checked[0].dataset.label||'';
 }
+function setPaymentSelection(value){setPaymentSelections(value?[value]:[]);}
 async function fillPaymentJamaah(preserveSelection=false){
   const searchInput=document.getElementById('paymentJamaahSearch');
   const sel=document.getElementById('paymentJamaah');
@@ -4025,12 +4029,13 @@ async function fillPaymentJamaah(preserveSelection=false){
 
   if(paymentEntryMode==='group'){
     rows.filter(isGroupJamaah).forEach(x=>{
-      const groupName=groupNameFor(x), key=normalizeGroupName(groupName);
+      const groupName=groupNameFor(x),key=normalizeGroupName(groupName);
       if(!groupName||seenGroups.has(key))return;
       seenGroups.add(key);
-      const members=groupMembersFor(x);
-      const rep=members[0]||x;
-      options.push({type:'group',value:'group::'+rep.id,label:'👥 '+groupName,sub:members.length+' anggota • Dibayar untuk seluruh group',search:groupName});
+      const members=groupMembersFor(x),rep=members[0]||x;
+      options.push({type:'group',value:'group::'+rep.id,label:'👥 '+groupName,sub:members.length+' anggota • pilih untuk pembayaran seluruh group',search:groupName,groupKey:key});
+      options.push({type:'groupHeader',value:'',label:'Pilih anggota tertentu — '+groupName,sub:'Centang satu atau beberapa anggota yang dibayarkan',search:groupName+' '+members.map(m=>m.nama||'').join(' ')});
+      members.forEach(m=>options.push({type:'member',value:m.id,label:m.nama||'-',sub:(m.paket||'Paket belum ditentukan')+' • Sisa '+rupiah(remainFor(m)),search:(m.nama||'')+' '+groupName,groupKey:key}));
     });
   }else{
     const individualRows=rows.filter(x=>!isGroupJamaah(x));
@@ -4056,7 +4061,7 @@ async function fillPaymentJamaah(preserveSelection=false){
       return '<div class="payment-check-group-header" data-search="'+esc(o.search.toLowerCase())+'"><span>'+esc(o.label)+'</span><small>'+esc(o.sub)+'</small></div>';
     }
     const cls='payment-check-item '+(o.type==='group'?'payment-check-group':'payment-check-member');
-    return '<label class="'+cls+'" data-search="'+esc(o.search.toLowerCase())+'"><input type="checkbox" name="paymentJamaahChoice" value="'+esc(o.value)+'" data-label="'+esc(o.label)+'" data-search-label="'+esc(o.label.replace(/^👥\\s*/,''))+'" onchange="choosePaymentJamaah(this)"><span class="payment-check-label"><b>'+esc(o.label)+'</b><small>'+esc(o.sub)+'</small></span></label>';
+    return '<label class="'+cls+'" data-search="'+esc(o.search.toLowerCase())+'"><input type="checkbox" name="paymentJamaahChoice" value="'+esc(o.value)+'" data-group-key="'+esc(o.groupKey||'')+'" data-label="'+esc(o.label)+'" data-search-label="'+esc(o.label.replace(/^👥\\s*/,''))+'" onchange="choosePaymentJamaah(this)"><span class="payment-check-label"><b>'+esc(o.label)+'</b><small>'+esc(o.sub)+'</small></span></label>';
   }).join('');
 
   if(old&&options.some(o=>o.value===old))setPaymentSelection(old);else setPaymentSelection('');
@@ -4065,10 +4070,17 @@ async function fillPaymentJamaah(preserveSelection=false){
   if(date&&!date.value)date.value=new Date().toISOString().slice(0,10);
 }
 function choosePaymentJamaah(input){
-  const box=document.getElementById('paymentJamaahChecklist');
-  if(!input.checked){setPaymentSelection('');return}
-  box?.querySelectorAll('input[name="paymentJamaahChoice"]').forEach(x=>{if(x!==input)x.checked=false});
-  setPaymentSelection(input.value);
+  const box=document.getElementById('paymentJamaahChecklist');if(!box)return;
+  if(paymentEntryMode!=='group'){
+    if(!input.checked){setPaymentSelection('');return}
+    box.querySelectorAll('input[name="paymentJamaahChoice"]').forEach(x=>{if(x!==input)x.checked=false});
+  }else if(input.checked){
+    if(input.value.startsWith('group::'))box.querySelectorAll('input[name="paymentJamaahChoice"]').forEach(x=>{if(x!==input)x.checked=false});
+    else box.querySelectorAll('input[name="paymentJamaahChoice"]').forEach(x=>{if(x!==input&&(x.value.startsWith('group::')||x.dataset.groupKey!==input.dataset.groupKey))x.checked=false});
+  }
+  const values=paymentSelectionValues(),sel=document.getElementById('paymentJamaah'),info=document.getElementById('paymentSelectedInfo');
+  if(sel)sel.value=values[0]||'';
+  if(info)info.textContent=!values.length?'Belum ada group/anggota yang dipilih.':(paymentEntryMode==='group'&&values.every(v=>!v.startsWith('group::'))?values.length+' anggota dipilih untuk pembayaran group.':(box.querySelector('input[name="paymentJamaahChoice"]:checked')?.dataset.label||'Group dipilih untuk seluruh anggota.'));
 }
 function filterPaymentJamaahOptions(){
   const box=document.getElementById('paymentJamaahChecklist');
@@ -4553,32 +4565,34 @@ async function editPayment(id){
     document.getElementById('paymentTabGroup')?.classList.toggle('active',editMode==='group');
     const desc=document.getElementById('paymentEntryDesc');
     if(desc)desc.textContent=editMode==='group'
-      ?'Pilih satu group untuk mencatat pembayaran yang dibayar untuk seluruh anggota group.'
+      ?'Pilih satu group untuk semua anggota, atau centang beberapa anggota tertentu yang akan menerima pembayaran.'
       :'Pilih satu jamaah, termasuk anggota group yang membayar secara terpisah. Setiap anggota dicatat sebagai transaksi sendiri.';
     await fillPaymentJamaah(false);
     const sel=document.getElementById('paymentJamaah');
     if(sel){
-      let target=groupPayment?'':'';
+      let targetValues=[];
       if(groupPayment){
-        const groupName=owner?groupNameFor(owner):'';
-        const option=[...sel.options].find(o=>o.value.startsWith('group::')&&normalizeGroupName(o.textContent.replace(/^👥\s*/,''))===normalizeGroupName(groupName));
-        target=option?.value||'';
-      }else{
-        target=String(p.jamaah_id||'');
-      }
-      setPaymentSelection(target);
+        const allocations=groupAllocationsFor(p);
+        if(allocations.length)targetValues=allocations.map(x=>String(x.id));
+        else{
+          const groupName=owner?groupNameFor(owner):'';
+          const option=[...sel.options].find(o=>o.value.startsWith('group::')&&normalizeGroupName(o.textContent.replace(/^👥\s*/,''))===normalizeGroupName(groupName));
+          targetValues=option?.value?[option.value]:[];
+        }
+      }else targetValues=[String(p.jamaah_id||'')];
+      setPaymentSelections(targetValues);
       const search=document.getElementById('paymentJamaahSearch');
       const checked=document.querySelector('#paymentJamaahChecklist input[name="paymentJamaahChoice"]:checked');
       if(search)search.value=checked?.dataset.searchLabel||checked?.dataset.label||'';
       filterPaymentJamaahOptions();
-      if(!target)notice('Nama jamaah/group untuk transaksi ini tidak ditemukan. Periksa data jamaah dan rombongan.','error');
+      if(!targetValues.length)notice('Nama jamaah/group untuk transaksi ini tidak ditemukan. Periksa data jamaah dan rombongan.','error');
     }
     document.getElementById('paymentAmount').value=p.amount??'';
     document.getElementById('paymentDiscount').value=p.discount??0;
     document.getElementById('paymentDate').value=p.payment_date||'';
     document.getElementById('paymentMethod').value=p.method||'';
     document.getElementById('paymentBank').value=p.bank||'';
-    document.getElementById('paymentNote').value=p.note||'';
+    document.getElementById('paymentNote').value=displayPaymentNote(p)||'';
     togglePaymentBank();
     editingPaymentId=p.id;
     document.getElementById('paymentSubmitBtn').textContent='Update Pembayaran';
@@ -4609,15 +4623,13 @@ document.getElementById('paymentForm').addEventListener('submit',async e=>{
   if(form.dataset.processing==="1")return;
   form.dataset.processing="1";
   setFormLoading(form,true,editingPaymentId?"Memperbarui...":"Menyimpan...");
-
   try{
-    const selectedValue=paymentSelectionValue();
-    const isGroupPayment=paymentEntryMode==='group' && selectedValue.startsWith('group::');
-    const selectedId=isGroupPayment?selectedValue.replace(/^group::/,''):selectedValue;
-    let jamaah_id=selectedId;
-    const selectedJamaah=(data||[]).find(x=>x.id===selectedId);
-    if(!jamaah_id||!selectedJamaah){notice('Pilih nama jamaah atau group terlebih dahulu.','error');return}
-
+    const selectedValues=paymentSelectionValues();
+    const isWholeGroup=paymentEntryMode==='group'&&selectedValues.length===1&&selectedValues[0].startsWith('group::');
+    const isGroupMemberAllocation=paymentEntryMode==='group'&&selectedValues.length>0&&selectedValues.every(v=>!v.startsWith('group::'));
+    const selectedId=isWholeGroup?selectedValues[0].replace(/^group::/,''):selectedValues[0];
+    const selectedJamaah=(data||[]).find(x=>String(x.id)===String(selectedId));
+    if(!selectedId||!selectedJamaah){notice('Pilih nama jamaah atau anggota group terlebih dahulu.','error');return}
     const amount=Number(document.getElementById('paymentAmount').value);
     const discount=Math.max(0,Number(document.getElementById('paymentDiscount').value)||0);
     const payment_date=document.getElementById('paymentDate').value;
@@ -4627,13 +4639,41 @@ document.getElementById('paymentForm').addEventListener('submit',async e=>{
     if(amount<=0||!payment_date||!method){notice('Lengkapi nama, nominal, tanggal, dan metode pembayaran.','error');return}
     if(discount<0){notice('Diskon tidak boleh negatif.','error');return}
     if(method==='Transfer'&&!bank){notice('Pilih bank transfer: Bank Muamalat atau BSI.','error');return}
-    const paymentNote=isGroupPayment?('Pembayaran Group: '+groupNameFor(selectedJamaah)+(note?' — '+note:'')):note;
-    const payload={jamaah_id,amount,discount,payment_date,method,bank:method==='Transfer'?bank:null,note:paymentNote};
-
     const wasEdit=!!editingPaymentId;
-    const query=wasEdit
-      ? sb.from('payments').update(payload).eq('id',editingPaymentId).select('id')
-      : sb.from('payments').insert(payload);
+    let payloads=[];
+    if(isGroupMemberAllocation){
+      const members=selectedValues.map(id=>(data||[]).find(x=>String(x.id)===String(id))).filter(Boolean);
+      if(members.length!==selectedValues.length||!members.length||members.some(m=>!isGroupJamaah(m))){notice('Pilih anggota yang berasal dari group yang sama.','error');return}
+      const groupKeys=new Set(members.map(m=>normalizeGroupName(groupNameFor(m))+'|'+String(m.group_id||m.departure_id||'')));
+      if(groupKeys.size!==1){notice('Anggota yang dipilih harus berasal dari satu group yang sama.','error');return}
+      const balances=members.map(m=>Math.max(0,remainFor(m)));
+      const totalRemaining=balances.reduce((sum,v)=>sum+v,0);
+      if(totalRemaining<=0){notice('Anggota yang dipilih sudah tidak memiliki sisa tagihan.','error');return}
+      if(amount+discount>totalRemaining+1){notice('Total pembayaran dan diskon melebihi sisa tagihan anggota yang dipilih ('+rupiah(totalRemaining)+').','error');return}
+      const weights=balances.map((v,i)=>v>0?v:0);
+      const weightTotal=weights.reduce((sum,v)=>sum+v,0);
+      const allocate=total=>{
+        const out=weights.map(w=>Math.floor(total*w/weightTotal));
+        const lastPositive=weights.reduce((last,w,i)=>w>0?i:last,-1);
+        if(lastPositive>=0)out[lastPositive]+=total-out.reduce((sum,v)=>sum+v,0);
+        return out;
+      };
+      const amountParts=allocate(amount),discountParts=allocate(discount);
+      const groupName=groupNameFor(members[0]);
+      const allocations=members.map((m,i)=>({id:String(m.id),amount:amountParts[i],discount:discountParts[i]})).filter(x=>x.amount>0||x.discount>0);
+      payloads=[{
+        jamaah_id:members[0].id,amount,discount,payment_date,method,
+        bank:method==='Transfer'?bank:null,
+        note:'Pembayaran Group: '+groupName+' [allocations:'+encodeURIComponent(JSON.stringify(allocations))+']'+(note?' — '+note:'')
+      }];
+    }else{
+      const jamaah_id=selectedId;
+      const paymentNote=isWholeGroup?('Pembayaran Group: '+groupNameFor(selectedJamaah)+(note?' — '+note:'')):note;
+      payloads=[{jamaah_id,amount,discount,payment_date,method,bank:method==='Transfer'?bank:null,note:paymentNote}];
+    }
+    let query;
+    if(wasEdit)query=sb.from('payments').update(payloads[0]).eq('id',editingPaymentId).select('id');
+    else query=sb.from('payments').insert(payloads);
     const timeoutPromise=new Promise(resolve=>setTimeout(()=>resolve({error:{message:'Waktu penyimpanan habis (timeout). Periksa koneksi Supabase/RLS.'}}),15000));
     const result=await Promise.race([query,timeoutPromise]);
     if(result?.error){
@@ -4642,21 +4682,15 @@ document.getElementById('paymentForm').addEventListener('submit',async e=>{
       return;
     }
     if(wasEdit&&(!Array.isArray(result.data)||result.data.length===0)){
-      console.error('Update pembayaran tidak mengubah baris. Periksa ID transaksi dan izin UPDATE pada tabel payments.');
-      notice('Pembayaran belum tersimpan: data tidak berhasil diperbarui. Periksa izin UPDATE (RLS) tabel payments di Supabase.','error');
-      return;
+      notice('Pembayaran belum tersimpan: data tidak berhasil diperbarui. Periksa izin UPDATE (RLS) tabel payments di Supabase.','error');return;
     }
-
-    
     const changedId=editingPaymentId;
     cancelPaymentEdit();
-    await loadData();
-    renderAll();
-    addActivityLog((wasEdit?'Memperbarui':'Mencatat')+' pembayaran '+rupiah(amount)+'.');
-    notice(wasEdit?'Pembayaran berhasil diperbarui.':'Pembayaran berhasil disimpan.');
-
-    const sheetPayload={...payload,id:changedId||undefined};
-    Promise.race([syncToSpreadsheet('pembayaran',sheetPayload),new Promise(resolve=>setTimeout(()=>resolve(false),5000))]).catch(err=>console.warn('Sinkronisasi spreadsheet pembayaran gagal:',err));
+    await loadData();renderAll();
+    addActivityLog((wasEdit?'Memperbarui':'Mencatat')+' pembayaran '+rupiah(amount)+' untuk '+(isGroupMemberAllocation?selectedValues.length+' anggota':'jamaah/group')+'.');
+    notice(wasEdit?'Pembayaran berhasil diperbarui.':(isGroupMemberAllocation?'Pembayaran berhasil disimpan untuk '+selectedValues.length+' anggota.':'Pembayaran berhasil disimpan.'));
+    const sheetPayloads=payloads.map(p=>({...p,id:changedId||undefined}));
+    Promise.race([Promise.all(sheetPayloads.map(p=>syncToSpreadsheet('pembayaran',p))),new Promise(resolve=>setTimeout(()=>resolve(false),5000))]).catch(err=>console.warn('Sinkronisasi spreadsheet pembayaran gagal:',err));
   }catch(err){
     console.error('Proses pembayaran error:',err);
     notice('Pembayaran gagal diproses: '+(err?.message||'Kesalahan tidak diketahui'),'error');
