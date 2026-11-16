@@ -4141,7 +4141,7 @@ function clearPaymentJamaahSearch(){
 function syncPaymentJamaahName(){setPaymentSelection(paymentSelectionValue())}
 
 function jamaahMemberTemplate(index,data={}){
-  const removeButton=index>1 ? `<button type="button" class="btn small-btn jamaah-remove" onclick="removeJamaahMember(this)">${data.id ? 'Keluarkan jadi Individu' : 'Hapus'}</button>` : '';
+  const removeButton=`<button type="button" class="btn small-btn jamaah-remove" onclick="removeJamaahMember(this)">${data.id ? 'Keluarkan jadi Individu' : 'Hapus'}</button>`;
   return `<div class="jamaah-member-card" data-jamaah-id="${esc(data.id||'')}">
     <div class="jamaah-member-title"><span>Anggota ${index}</span>${removeButton}</div>
     <div class="jamaah-member-grid">
@@ -4231,7 +4231,9 @@ function renumberJamaahMembers(){
   document.querySelectorAll('#jamaahMembers .jamaah-member-card').forEach((card,i)=>{
     card.dataset.memberIndex=i+1;
     const title=card.querySelector('.jamaah-member-title');
-    if(title)title.innerHTML='<span>Anggota '+(i+1)+'</span>'+(i>0?'<button type="button" class="btn small-btn jamaah-remove" onclick="removeJamaahMember(this)">Hapus</button>':'');
+    const isSaved=!!String(card.dataset.jamaahId||'').trim();
+    const actionLabel=isSaved?'Keluarkan jadi Individu':'Hapus';
+    if(title)title.innerHTML='<span>Anggota '+(i+1)+'</span><button type="button" class="btn small-btn jamaah-remove" onclick="removeJamaahMember(this)">'+actionLabel+'</button>';
   });
 }
 function removeJamaahMember(btn){btn.closest('.jamaah-member-card')?.remove();renumberJamaahMembers()}
