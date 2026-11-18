@@ -1976,7 +1976,9 @@ img,svg,video,canvas{max-width:100%}
       
       <div><label>Keterangan</label><input id="keterangan" placeholder="Keterangan jamaah"></div>
       <div class="full"><label>Catatan</label><input id="catatan" placeholder="Catatan jamaah"></div>
-    </div></details></div>
+    </div></details>
+    <div class="full" id="convertIndividualGroupWrap" style="margin-top:12px;display:none"><button type="button" class="btn secondary" onclick="convertIndividualToGroup()">Ubah Jamaah Ini Menjadi Anggota Group / Keluarga</button><div class="muted" style="margin-top:5px">Data jamaah yang sedang diedit akan dipindahkan menjadi anggota pertama group. Riwayat pembayaran tetap terhubung.</div></div>
+    </div>
     <div id="individualMultiForm" class="jamaah-group-form hidden">
       <div class="jamaah-group-head">
         <div><label>Jumlah Seat</label><input id="multiSeatCount" type="number" min="1" max="100" value="5" onchange="renderMultiIndividualCards()"></div>
@@ -4380,6 +4382,7 @@ function openForm(id=null){
   if(id){
     const x=data.find(a=>a.id===id);
     if(x&&x.kategori==='grup'){
+      const convertWrap=document.getElementById('convertIndividualGroupWrap');if(convertWrap)convertWrap.style.display='none';
       setJamaahEntryMode('grup');
       document.getElementById('nama_rombongan').value=x.nama_rombongan||'';
       document.getElementById('keterangan_rombongan').value=x.keterangan_rombongan||'';
@@ -4402,13 +4405,54 @@ function openForm(id=null){
       document.getElementById('editingGroupId').value=editGroupId;
     }else if(x){
       setJamaahEntryMode('individu');
+      const convertWrap=document.getElementById('convertIndividualGroupWrap');if(convertWrap)convertWrap.style.display=isGroupJamaah(x)?'none':'block';
       for(const k of ['nama','jenis_kelamin','hp','nik','alamat','family_group','family_relation','mahram_name','paket','harga','keterangan','catatan','upgradeDescription','upgradeAmount']){
         const el=document.getElementById(k);if(el)el.value=x[k]??''
       }
       fillJamaahDepartureSelects(x.departure_id||'');
       if(document.getElementById('jPaketSelect')?.value)syncPackagePrice('jPaketSelect','harga')
     }
-  }else{editingGroupMemberIds=[];document.getElementById('editingGroupId').value='';setJamaahEntryMode('individu');}
+  }else{editingGroupMemberIds=[];document.getElementById('editingGroupId').value='';const convertWrap=document.getElementById('convertIndividualGroupWrap');if(convertWrap)convertWrap.style.display='none';setJamaahEntryMode('individu');}
+}
+function convertIndividualToGroup(){
+  const id=String(document.getElementById('editId')?.value||'').trim();
+  const existing=(data||[]).find(x=>String(x.id)===id);
+  if(!id||!existing){notice('Fitur ubah ke group hanya tersedia saat mengedit jamaah individu yang sudah tersimpan.','error');return}
+  const get=id=>document.getElementById(id)?.value??'';
+  const member={
+    ...existing,
+    id,
+    nama:get('nama').trim(),
+    jenis_kelamin:get('jenis_kelamin'),
+    hp:get('hp').trim(),
+    nik:get('nik').trim(),
+    alamat:get('alamat').trim(),
+    family_group:get('family_group').trim(),
+    family_relation:get('family_relation'),
+    mahram_name:get('mahram_name').trim(),
+    paket:get('jPaketSelect'),
+    harga:Number(get('harga'))||0,
+    upgrade_description:get('upgradeDescription').trim(),
+    upgrade_amount:Math.max(0,Number(get('upgradeAmount'))||0),
+    keterangan:get('keterangan').trim(),
+    catatan:get('catatan').trim()
+  };
+  const groupId=String(existing.group_id||'').trim()||newGroupId();
+  setJamaahEntryMode('grup');
+  const box=document.getElementById('jamaahMembers');
+  if(box)box.innerHTML='';
+  editingGroupMemberIds=[id];
+  document.getElementById('editingGroupId').value=groupId;
+  document.getElementById('nama_rombongan').value=member.family_group||('Keluarga '+member.nama);
+  document.getElementById('keterangan_rombongan').value=existing.keterangan_rombongan||'';
+  fillJamaahDepartureSelects(existing.departure_id||'');
+  addJamaahMember({...member,group_id:groupId});
+  const card=box?.lastElementChild;
+  if(card)card.dataset.jamaahId=id;
+  const wrap=document.getElementById('convertIndividualGroupWrap');
+  if(wrap)wrap.style.display='none';
+  document.getElementById('formTitle').textContent='Ubah Jamaah Menjadi Group';
+  notice('Jamaah ini menjadi anggota pertama group. Tambahkan anggota lain, lalu klik Simpan Jamaah.');
 }
 function closeForm(){document.getElementById('modal').classList.remove('show')}
 function edit(id){openForm(id)}
