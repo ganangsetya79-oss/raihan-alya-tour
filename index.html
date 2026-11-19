@@ -1732,7 +1732,7 @@ img,svg,video,canvas{max-width:100%}
     <div class="panel-head"><div><h2>Rekap Kelengkapan Dokumen</h2></div><div class="bulk-tools"><button class="btn danger small-btn" type="button" onclick="deleteSelectedDocuments()">🗑️ Hapus Data Terpilih</button></div></div>
     <div class="form" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin:12px 0 16px">
       <div><label for="docRecapSearch">Cari Jamaah</label><input id="docRecapSearch" type="search" placeholder="Nama atau nomor HP..." oninput="renderDocuments()"></div>
-      <div><label for="docRecapLetter">Filter Abjad Nama</label><select id="docRecapLetter" onchange="renderDocuments()"><option value="">Semua Huruf</option><option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option><option value="E">E</option><option value="F">F</option><option value="G">G</option><option value="H">H</option><option value="I">I</option><option value="J">J</option><option value="K">K</option><option value="L">L</option><option value="M">M</option><option value="N">N</option><option value="O">O</option><option value="P">P</option><option value="Q">Q</option><option value="R">R</option><option value="S">S</option><option value="T">T</option><option value="U">U</option><option value="V">V</option><option value="W">W</option><option value="X">X</option><option value="Y">Y</option><option value="Z">Z</option><option value="#">Angka / Lainnya</option></select></div>
+      <div><label for="docRecapSort">Urutkan Nama Jamaah</label><select id="docRecapSort" onchange="renderDocuments()"><option value="az">Nama A–Z</option><option value="za">Nama Z–A</option></select></div>
       <div><label for="docRecapPackage">Paket</label><select id="docRecapPackage" onchange="renderDocuments()"><option value="">Semua Paket</option></select></div>
       <div><label for="docRecapDeparture">Jadwal Keberangkatan</label><select id="docRecapDeparture" onchange="renderDocuments()"><option value="">Semua Jadwal</option></select></div>
       <div><label for="docRecapStatus">Status Dokumen</label><select id="docRecapStatus" onchange="renderDocuments()"><option value="">Semua Status</option><option value="complete">Lengkap</option><option value="incomplete">Belum Lengkap</option></select></div>
@@ -5100,14 +5100,14 @@ function exportDocumentsCSV(){
 }
 
 function resetDocumentRecapFilters(){
-  ['docRecapSearch','docRecapLetter','docRecapPackage','docRecapDeparture','docRecapStatus','docRecapMissingType'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  ['docRecapSearch','docRecapPackage','docRecapDeparture','docRecapStatus','docRecapMissingType'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   renderDocuments();
 }
 function renderDocuments(){
   const body=document.getElementById('docBody');
   if(!body)return;
   const search=String(document.getElementById('docRecapSearch')?.value||'').trim().toLocaleLowerCase('id-ID');
-  const selectedLetter=String(document.getElementById('docRecapLetter')?.value||'').toLocaleUpperCase('id-ID');
+  const sortOrder=document.getElementById('docRecapSort')?.value||'az';
   const packageSelect=document.getElementById('docRecapPackage'), departureSelect=document.getElementById('docRecapDeparture');
   const oldPackage=packageSelect?.value||'', oldDeparture=departureSelect?.value||'';
   if(packageSelect){
@@ -5124,10 +5124,8 @@ function renderDocuments(){
   const rows=data.map(j=>{const doc=getDoc(j.id)||{},n=DOC_TYPES.filter(([k])=>k==='passport'?(doc.passport_path||doc.passport2_path):doc[k+'_path']).length,dep=departureFor(j),phone=j.hp||j.telepon||j.no_hp||'';return {j,n,dep,phone,doc};}).filter(({j,n,dep,phone,doc})=>{
     const statusMatch=!selectedStatus||(selectedStatus==='complete'?n===DOC_TYPES.length:n<DOC_TYPES.length);
     const missingMatch=!missingType||(missingType==='passport'?!(doc.passport_path||doc.passport2_path):!doc[missingType+'_path']);
-    const firstChar=String(j.nama||'').trim().charAt(0).toLocaleUpperCase('id-ID');
-    const letterMatch=!selectedLetter||(selectedLetter==='#'?!/^[A-Z]$/.test(firstChar):firstChar===selectedLetter);
-    return letterMatch&&(!search||[j.nama,phone,j.paket,dep?.name,j.berangkat].some(v=>String(v||'').toLocaleLowerCase('id-ID').includes(search)))&&(!selectedPackage||j.paket===selectedPackage)&&(!selectedDeparture||dep?.id===selectedDeparture)&&statusMatch&&missingMatch;
-  });
+    return (!search||[j.nama,phone,j.paket,dep?.name,j.berangkat].some(v=>String(v||'').toLocaleLowerCase('id-ID').includes(search)))&&(!selectedPackage||j.paket===selectedPackage)&&(!selectedDeparture||dep?.id===selectedDeparture)&&statusMatch&&missingMatch;
+  }).sort((a,b)=>{const cmp=String(a.j.nama||'').localeCompare(String(b.j.nama||''),'id',{sensitivity:'base'});return sortOrder==='za'?-cmp:cmp});
   const count=document.getElementById('docRecapCount');
   if(count)count.textContent='Menampilkan '+rows.length+' dari '+data.length+' jamaah';
   body.innerHTML=rows.map(({j,n,dep,phone,doc})=>{
