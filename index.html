@@ -1919,7 +1919,7 @@ img,svg,video,canvas{max-width:100%}
     </form>
   </div>
   <div class="panel">
-    <div class="panel-head"><h2>Daftar Paket</h2><span class="muted" id="packageCount">0 paket</span></div>
+    <div class="panel-head"><h2>Daftar Paket</h2><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span class="muted" id="packageCount">0 paket</span><button class="btn secondary" type="button" onclick="publishMissingLocalPackages()">Sinkronkan Paket ke Semua Akun</button></div></div>
     <div class="table-wrap"><table><thead><tr><th>Nama Paket</th><th>Harga</th><th>Hotel</th><th>Durasi</th><th>Keberangkatan</th><th>Kepulangan</th><th>Aksi</th></tr></thead><tbody id="packageBody"></tbody></table></div>
   </div>
 </section>
@@ -3428,6 +3428,29 @@ function syncPackageMemberPrice(s){const item=packageByName(s.value),card=s.clos
 function renderPackages(){const b=document.getElementById('packageBody');if(!b)return;const a=getPackages();document.getElementById('packageCount').textContent=a.length+' paket';b.innerHTML=a.map(p=>'<tr><td><b>'+esc(p.name)+'</b><div class="muted">'+esc(p.notes||'')+'</div></td><td>'+rupiah(p.price||0)+'</td><td>'+esc(p.hotel||'-')+'</td><td>'+esc(p.duration||'-')+'</td><td>'+esc(p.departure||'-')+'</td><td>'+esc(p.returnDate||'-')+'</td><td><div class="package-actions"><button type="button" class="btn" onclick="editPackage(\''+esc(p.id)+'\')">Edit</button><button type="button" class="btn danger" onclick="deletePackage(\''+esc(p.id)+'\')">Hapus</button></div></td></tr>').join('')}
 function resetPackageForm(){document.getElementById('packageForm')?.reset();document.getElementById('packageEditId').value='';document.getElementById('packageFormTitle').textContent='Tambah Paket'}
 async function savePackage(e){e.preventDefault();const name=document.getElementById('packageName').value.trim();if(!name){notice('Nama paket wajib diisi.','error');return}const a=getPackages(),id=document.getElementById('packageEditId').value||'pkg-'+Date.now();const item={id,name,price:document.getElementById('packagePrice').value,hotel:document.getElementById('packageHotel').value.trim(),duration:document.getElementById('packageDuration').value.trim(),departure:document.getElementById('packageDeparture').value.trim(),returnDate:document.getElementById('packageReturn').value.trim(),notes:document.getElementById('packageNotes').value.trim()};if(a.some(p=>p.name.toLowerCase()===name.toLowerCase()&&p.id!==id)){notice('Nama paket sudah ada.','error');return}const payload={id,name,price:item.price,hotel:item.hotel,duration:item.duration,departure:item.departure,return_date:item.returnDate,notes:item.notes};const {error}=await sb.from('packages').upsert(payload,{onConflict:'id'});if(error){notice('Gagal menyimpan paket ke database bersama: '+error.message,'error');return}const i=a.findIndex(p=>p.id===id);if(i>=0)a[i]=item;else a.push(item);savePackages(a);renderPackages();refreshPackageSelects();resetPackageForm();notice('Paket berhasil disimpan dan dibagikan ke semua akun.')}
+async function publishMissingLocalPackages(){
+  if(currentAccess?.role!=='admin'){notice('Hanya Administrator yang dapat menerbitkan paket ke semua akun.','error');return}
+  const local=getPackages();
+  let added=0,failed=[];
+  const btn=[...document.querySelectorAll('#paket button')].find(b=>b.textContent.includes('Sinkronkan Paket ke Semua Akun'));
+  if(btn){btn.disabled=true;btn.textContent='Menyinkronkan...'}
+  try{
+    for(const p of local){
+      const name=String(p.name||'').trim();
+      if(!name)continue;
+      const {data:existing,error:checkError}=await sb.from('packages').select('id').eq('name',name).maybeSingle();
+      if(checkError){failed.push(name+': '+checkError.message);continue}
+      if(existing)continue;
+      const payload={id:String(p.id||('pkg-'+Date.now()+'-'+added)),name,price:Number(p.price)||0,hotel:p.hotel||'',duration:p.duration||'',departure:p.departure||'',return_date:p.returnDate||p.return_date||'',notes:p.notes||''};
+      const {error:insertError}=await sb.from('packages').insert(payload);
+      if(insertError)failed.push(name+': '+insertError.message);else added++;
+    }
+    await refreshSharedPackages({silent:true});
+    if(failed.length)notice('Berhasil menerbitkan '+added+' paket. Belum berhasil: '+failed.join(' | '),'error');
+    else notice(added?added+' paket baru berhasil disinkronkan ke semua akun.':'Semua paket lokal sudah ada di katalog bersama.','success');
+  }catch(err){notice('Sinkronisasi paket gagal: '+(err?.message||err),'error')}
+  finally{if(btn){btn.disabled=false;btn.textContent='Sinkronkan Paket ke Semua Akun'}}
+}
 function editPackage(id){const p=getPackages().find(x=>x.id===id);if(!p)return;document.getElementById('packageEditId').value=p.id;document.getElementById('packageName').value=p.name||'';document.getElementById('packagePrice').value=p.price||'';document.getElementById('packageHotel').value=p.hotel||'';document.getElementById('packageDuration').value=p.duration||'';document.getElementById('packageDeparture').value=p.departure||'';document.getElementById('packageReturn').value=p.returnDate||'';document.getElementById('packageNotes').value=p.notes||'';document.getElementById('packageFormTitle').textContent='Edit Paket';document.getElementById('packageName').focus()}
 async function deletePackage(id){const p=getPackages().find(x=>x.id===id);if(!p)return;if(!confirm('Hapus paket '+p.name+'? Data jamaah yang sudah memakai paket ini tidak ikut terhapus.'))return;const {error}=await sb.from('packages').delete().eq('id',id);if(error){notice('Gagal menghapus paket dari database bersama: '+error.message,'error');return}const a=getPackages().filter(x=>x.id!==id);savePackages(a);renderPackages();refreshPackageSelects();notice('Paket berhasil dihapus dari semua akun.')}
 function printPayment(paymentId){
