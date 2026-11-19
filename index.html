@@ -3370,12 +3370,16 @@ async function refreshSharedPackages({silent=false,bootstrap=false}={}){
 }
 function startSharedPackageSync(){
   if(sharedPackageSyncTimer)clearInterval(sharedPackageSyncTimer);
+  // Sinkronkan katalog paket untuk semua akun, termasuk saat admin/user sedang berada di form input jamaah.
   sharedPackageSyncTimer=setInterval(()=>{
-    if(currentUser&&document.visibilityState==='visible'&&!document.getElementById('paket')?.classList.contains('hidden'))refreshSharedPackages({silent:true});
-  },20000);
+    if(currentUser&&document.visibilityState==='visible')refreshSharedPackages({silent:true});
+  },10000);
 }
 document.addEventListener('visibilitychange',()=>{
-  if(document.visibilityState==='visible'&&currentUser&&!document.getElementById('paket')?.classList.contains('hidden'))refreshSharedPackages({silent:true});
+  if(document.visibilityState==='visible'&&currentUser)refreshSharedPackages({silent:true});
+});
+window.addEventListener('focus',()=>{
+  if(currentUser)refreshSharedPackages({silent:true});
 });
 const OTHER_PACKAGE={id:'pkg-other',name:'Other / Belum Diketahui',price:'',hotel:'',duration:'',departure:'',returnDate:'',notes:'Paket belum ditentukan / belum diketahui'};
 const defaultPackages=[
