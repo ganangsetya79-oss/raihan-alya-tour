@@ -3344,26 +3344,37 @@ async function refreshSharedPackages({silent=false,bootstrap=false}={}){
     }
     return false;
   }
-  if((rows||[]).length){
-    savePackages(rows.map(p=>({id:String(p.id),name:p.name,price:String(p.price??''),hotel:p.hotel||'',duration:p.duration||'',departure:p.departure||'',returnDate:p.return_date||'',notes:p.notes||''})));
+  const sharedRows=rows||[];
+  const migratedKey='raihan_alya_packages_shared_migration_v2';
+  // Pada login admin pertama setelah fitur katalog bersama dipasang, gabungkan paket lama
+  // yang masih tersimpan lokal tetapi belum pernah masuk ke Supabase.
+  if(bootstrap&&currentAccess?.role==='admin'&&!localStorage.getItem(migratedKey)){
+    const local=getPackages();
+    const remoteIds=new Set(sharedRows.map(p=>String(p.id)));
+    const remoteNames=new Set(sharedRows.map(p=>String(p.name||'').trim().toLocaleLowerCase('id')));
+    const missing=local.filter(p=>!remoteIds.has(String(p.id))&&!remoteNames.has(String(p.name||'').trim().toLocaleLowerCase('id')));
+    if(missing.length){
+      const seed=missing.map(p=>({id:String(p.id),name:p.name,price:Number(p.price)||0,hotel:p.hotel||'',duration:p.duration||'',departure:p.departure||'',return_date:p.returnDate||'',notes:p.notes||''}));
+      const {error:seedError}=await sb.from('packages').upsert(seed,{onConflict:'id'});
+      if(seedError){
+        console.error('Gagal mengimpor paket lokal admin ke katalog bersama:',seedError);
+        if(!silent)notice('Paket lokal admin belum berhasil dibagikan: '+seedError.message,'error');
+        return false;
+      }
+    }
+    localStorage.setItem(migratedKey,'1');
+    const {data:reloaded,error:reloadError}=await sb.from('packages').select('*').order('name',{ascending:true});
+    if(reloadError){if(!silent)notice('Paket tersimpan, tetapi belum bisa dimuat ulang: '+reloadError.message,'error');return false}
+    sharedRows.splice(0,sharedRows.length,...(reloaded||[]));
+  }
+  if(sharedRows.length){
+    savePackages(sharedRows.map(p=>({id:String(p.id),name:p.name,price:String(p.price??''),hotel:p.hotel||'',duration:p.duration||'',departure:p.departure||'',returnDate:p.return_date||'',notes:p.notes||''})));
     renderPackages();refreshPackageSelects();
     return true;
   }
-  // Impor satu kali dari daftar lokal admin lama hanya ketika tabel bersama masih kosong.
-  if(bootstrap&&currentAccess?.role==='admin'){
-    const local=getPackages();
-    const seed=local.map(p=>({id:String(p.id),name:p.name,price:String(p.price??''),hotel:p.hotel||'',duration:p.duration||'',departure:p.departure||'',return_date:p.returnDate||'',notes:p.notes||''}));
-    const {error:seedError}=await sb.from('packages').upsert(seed,{onConflict:'id'});
-    if(seedError){
-      console.error('Gagal mengimpor paket lokal ke tabel bersama:',seedError);
-      if(!silent)notice('Paket lokal belum berhasil dipindahkan ke database bersama: '+seedError.message,'error');
-      return false;
-    }
-    const {data:seeded,error:reloadError}=await sb.from('packages').select('*').order('name',{ascending:true});
-    if(reloadError){if(!silent)notice('Paket tersimpan, tetapi belum bisa dimuat ulang: '+reloadError.message,'error');return false}
-    savePackages((seeded||[]).map(p=>({id:String(p.id),name:p.name,price:String(p.price??''),hotel:p.hotel||'',duration:p.duration||'',departure:p.departure||'',returnDate:p.return_date||'',notes:p.notes||''})));
-    renderPackages();refreshPackageSelects();return true;
-  }
+  savePackages([]);
+  renderPackages();refreshPackageSelects();
+  return true;
   savePackages([]);
   renderPackages();refreshPackageSelects();
   return true;
