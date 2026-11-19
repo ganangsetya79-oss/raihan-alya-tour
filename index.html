@@ -2301,9 +2301,11 @@ async function startApp(){
   enforceDataPermissions();
   const ok=await loadData();
   if(!ok)return;
+  await refreshSharedPackages({bootstrap:true});
   renderAll();
   enforceDataPermissions();
   startSharedExpenseSync();
+  startSharedPackageSync();
   startSharedDataSync();
   await loadMyProfile();
 }
@@ -3330,6 +3332,51 @@ function printReport(){
     '<div class="title">'+esc(r.name)+'</div>'+table);
 }
 const PACKAGE_KEY='raihan_alya_packages_v1';
+let sharedPackageSyncTimer=null;
+async function refreshSharedPackages({silent=false,bootstrap=false}={}){
+  if(!currentUser)return false;
+  const {data:rows,error}=await sb.from('packages').select('*').order('name',{ascending:true});
+  if(error){
+    console.error('Gagal memuat paket bersama:',error);
+    if(!silent&&!window.__packageSchemaNoticeShown){
+      window.__packageSchemaNoticeShown=true;
+      notice('Daftar paket belum tersinkron. Jalankan migrasi Supabase untuk tabel packages terlebih dahulu. Detail: '+error.message,'error');
+    }
+    return false;
+  }
+  if((rows||[]).length){
+    savePackages(rows.map(p=>({id:String(p.id),name:p.name,price:String(p.price??''),hotel:p.hotel||'',duration:p.duration||'',departure:p.departure||'',returnDate:p.return_date||'',notes:p.notes||''})));
+    renderPackages();refreshPackageSelects();
+    return true;
+  }
+  // Impor satu kali dari daftar lokal admin lama hanya ketika tabel bersama masih kosong.
+  if(bootstrap&&currentAccess?.role==='admin'){
+    const local=getPackages();
+    const seed=local.map(p=>({id:String(p.id),name:p.name,price:String(p.price??''),hotel:p.hotel||'',duration:p.duration||'',departure:p.departure||'',return_date:p.returnDate||'',notes:p.notes||''}));
+    const {error:seedError}=await sb.from('packages').upsert(seed,{onConflict:'id'});
+    if(seedError){
+      console.error('Gagal mengimpor paket lokal ke tabel bersama:',seedError);
+      if(!silent)notice('Paket lokal belum berhasil dipindahkan ke database bersama: '+seedError.message,'error');
+      return false;
+    }
+    const {data:seeded,error:reloadError}=await sb.from('packages').select('*').order('name',{ascending:true});
+    if(reloadError){if(!silent)notice('Paket tersimpan, tetapi belum bisa dimuat ulang: '+reloadError.message,'error');return false}
+    savePackages((seeded||[]).map(p=>({id:String(p.id),name:p.name,price:String(p.price??''),hotel:p.hotel||'',duration:p.duration||'',departure:p.departure||'',returnDate:p.return_date||'',notes:p.notes||''})));
+    renderPackages();refreshPackageSelects();return true;
+  }
+  savePackages([]);
+  renderPackages();refreshPackageSelects();
+  return true;
+}
+function startSharedPackageSync(){
+  if(sharedPackageSyncTimer)clearInterval(sharedPackageSyncTimer);
+  sharedPackageSyncTimer=setInterval(()=>{
+    if(currentUser&&document.visibilityState==='visible'&&!document.getElementById('paket')?.classList.contains('hidden'))refreshSharedPackages({silent:true});
+  },20000);
+}
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='visible'&&currentUser&&!document.getElementById('paket')?.classList.contains('hidden'))refreshSharedPackages({silent:true});
+});
 const OTHER_PACKAGE={id:'pkg-other',name:'Other / Belum Diketahui',price:'',hotel:'',duration:'',departure:'',returnDate:'',notes:'Paket belum ditentukan / belum diketahui'};
 const defaultPackages=[
   {id:'pkg-executive-movenpick',name:'Executive/Movenpick',price:'42500000',hotel:'Movenpick',duration:'12 Hari',departure:'10 Desember 2026',returnDate:'22 Desember 2026',notes:''},
@@ -3365,9 +3412,9 @@ function syncPackagePrice(selectId,priceId){const s=document.getElementById(sele
 function syncPackageMemberPrice(s){const item=packageByName(s.value),card=s.closest('.jamaah-member-card'),p=card?.querySelector('[data-field="harga"]');if(!p)return;p.value=(item&&item.price!=='')?(Number(item.price)||0):''}
 function renderPackages(){const b=document.getElementById('packageBody');if(!b)return;const a=getPackages();document.getElementById('packageCount').textContent=a.length+' paket';b.innerHTML=a.map(p=>'<tr><td><b>'+esc(p.name)+'</b><div class="muted">'+esc(p.notes||'')+'</div></td><td>'+rupiah(p.price||0)+'</td><td>'+esc(p.hotel||'-')+'</td><td>'+esc(p.duration||'-')+'</td><td>'+esc(p.departure||'-')+'</td><td>'+esc(p.returnDate||'-')+'</td><td><div class="package-actions"><button type="button" class="btn" onclick="editPackage(\''+esc(p.id)+'\')">Edit</button><button type="button" class="btn danger" onclick="deletePackage(\''+esc(p.id)+'\')">Hapus</button></div></td></tr>').join('')}
 function resetPackageForm(){document.getElementById('packageForm')?.reset();document.getElementById('packageEditId').value='';document.getElementById('packageFormTitle').textContent='Tambah Paket'}
-function savePackage(e){e.preventDefault();const name=document.getElementById('packageName').value.trim();if(!name){notice('Nama paket wajib diisi.','error');return}const a=getPackages(),id=document.getElementById('packageEditId').value||'pkg-'+Date.now();const item={id,name,price:document.getElementById('packagePrice').value,hotel:document.getElementById('packageHotel').value.trim(),duration:document.getElementById('packageDuration').value.trim(),departure:document.getElementById('packageDeparture').value.trim(),returnDate:document.getElementById('packageReturn').value.trim(),notes:document.getElementById('packageNotes').value.trim()};if(a.some(p=>p.name.toLowerCase()===name.toLowerCase()&&p.id!==id)){notice('Nama paket sudah ada.','error');return}const i=a.findIndex(p=>p.id===id);if(i>=0)a[i]=item;else a.push(item);savePackages(a);syncToSpreadsheet('paket',item);renderPackages();refreshPackageSelects();resetPackageForm();notice('Paket berhasil disimpan.')}
+async function savePackage(e){e.preventDefault();const name=document.getElementById('packageName').value.trim();if(!name){notice('Nama paket wajib diisi.','error');return}const a=getPackages(),id=document.getElementById('packageEditId').value||'pkg-'+Date.now();const item={id,name,price:document.getElementById('packagePrice').value,hotel:document.getElementById('packageHotel').value.trim(),duration:document.getElementById('packageDuration').value.trim(),departure:document.getElementById('packageDeparture').value.trim(),returnDate:document.getElementById('packageReturn').value.trim(),notes:document.getElementById('packageNotes').value.trim()};if(a.some(p=>p.name.toLowerCase()===name.toLowerCase()&&p.id!==id)){notice('Nama paket sudah ada.','error');return}const payload={id,name,price:item.price,hotel:item.hotel,duration:item.duration,departure:item.departure,return_date:item.returnDate,notes:item.notes};const {error}=await sb.from('packages').upsert(payload,{onConflict:'id'});if(error){notice('Gagal menyimpan paket ke database bersama: '+error.message,'error');return}const i=a.findIndex(p=>p.id===id);if(i>=0)a[i]=item;else a.push(item);savePackages(a);renderPackages();refreshPackageSelects();resetPackageForm();notice('Paket berhasil disimpan dan dibagikan ke semua akun.')}
 function editPackage(id){const p=getPackages().find(x=>x.id===id);if(!p)return;document.getElementById('packageEditId').value=p.id;document.getElementById('packageName').value=p.name||'';document.getElementById('packagePrice').value=p.price||'';document.getElementById('packageHotel').value=p.hotel||'';document.getElementById('packageDuration').value=p.duration||'';document.getElementById('packageDeparture').value=p.departure||'';document.getElementById('packageReturn').value=p.returnDate||'';document.getElementById('packageNotes').value=p.notes||'';document.getElementById('packageFormTitle').textContent='Edit Paket';document.getElementById('packageName').focus()}
-function deletePackage(id){const p=getPackages().find(x=>x.id===id);if(!p)return;if(!confirm('Hapus paket '+p.name+'? Data jamaah yang sudah memakai paket ini tidak ikut terhapus.'))return;const a=getPackages().filter(x=>x.id!==id);savePackages(a.length?a:[{id:'pkg-default',name:'Paket Baru',price:'',hotel:'',duration:'',departure:'',returnDate:'',notes:''}]);renderPackages();refreshPackageSelects();notice('Paket berhasil dihapus.')}
+async function deletePackage(id){const p=getPackages().find(x=>x.id===id);if(!p)return;if(!confirm('Hapus paket '+p.name+'? Data jamaah yang sudah memakai paket ini tidak ikut terhapus.'))return;const {error}=await sb.from('packages').delete().eq('id',id);if(error){notice('Gagal menghapus paket dari database bersama: '+error.message,'error');return}const a=getPackages().filter(x=>x.id!==id);savePackages(a);renderPackages();refreshPackageSelects();notice('Paket berhasil dihapus dari semua akun.')}
 function printPayment(paymentId){
   const p=payments.find(x=>x.id===paymentId);
   if(!p){notice('Transaksi tidak ditemukan.','error');return}
