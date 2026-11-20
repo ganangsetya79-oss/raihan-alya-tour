@@ -34,6 +34,11 @@ table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;border
 .jamaah-category-switch label{display:flex;align-items:center;gap:7px;padding:9px 14px;border:1px solid #d8e2df;border-radius:9px;background:#fff;cursor:pointer;font-size:12px;font-weight:700}
 .jamaah-category-switch input{accent-color:#18745f}
 .jamaah-group-tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.bulk-tools{display:flex;gap:7px;align-items:center;flex-wrap:wrap}.bulk-select-all,.bulk-check{width:16px;height:16px;accent-color:#18745f;cursor:pointer}
+.doc-floating-select{position:fixed;right:22px;bottom:82px;z-index:1200;display:flex;flex-direction:column;gap:6px;padding:11px 14px;background:#fff;border:1px solid #d7e4de;border-radius:12px;box-shadow:0 5px 22px rgba(15,45,35,.18);font-size:12px;color:#173f35;min-width:132px}
+.doc-floating-select label{display:flex;align-items:center;gap:7px;cursor:pointer;margin:0}
+.doc-floating-select input{width:17px;height:17px;accent-color:#18745f;cursor:pointer}
+.doc-floating-select span{font-size:11px;color:#687078;padding-left:24px}
+@media(max-width:600px){.doc-floating-select{right:12px;bottom:76px;padding:9px 11px;min-width:118px}}
 .jamaah-data-count{display:inline-flex;align-items:center;padding:4px 9px;border-radius:999px;background:#eef7f3;color:#18745f;font-size:11px;font-weight:800;border:1px solid #d7e9e2}
 .jamaah-missing-schedule-count{display:inline-flex;align-items:center;padding:4px 9px;border-radius:999px;background:#fff3e5;color:#9a5700;font-size:11px;font-weight:800;border:1px solid #f1d7b7}
 .jamaah-pagination{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:12px;padding-top:12px;border-top:1px solid #e8eeeb}.jamaah-page-size{display:flex;align-items:center;gap:7px;font-size:11px;color:#687078}.jamaah-page-size select{padding:6px 8px;border:1px solid #d8e0dd;border-radius:7px;background:#fff;font-size:11px;color:#37443f}.jamaah-page-info{font-size:11px;color:#687078}.jamaah-page-buttons{display:flex;align-items:center;gap:4px;flex-wrap:wrap}.jamaah-page-btn{min-width:30px;height:30px;padding:0 8px;border:1px solid #d9e2df;border-radius:7px;background:#fff;color:#40514b;font-size:11px;cursor:pointer}.jamaah-page-btn:hover:not(:disabled){background:#eef7f3;border-color:#b9d7cd;color:#176b58}.jamaah-page-btn.active{background:#1f705d;border-color:#1f705d;color:#fff;font-weight:700}.jamaah-page-btn:disabled{opacity:.45;cursor:not-allowed}.jamaah-page-ellipsis{padding:0 3px;color:#8a9490;font-size:12px}@media(max-width:650px){.jamaah-pagination{align-items:flex-start}.jamaah-page-buttons{width:100%;overflow-x:auto;padding-bottom:2px}.jamaah-page-info{order:3;width:100%}}
@@ -1706,6 +1711,10 @@ img,svg,video,canvas{max-width:100%}
 </section>
 
 <section id="dokumen" class="hidden">
+  <div class="doc-floating-select" id="docFloatingSelect">
+    <label><input type="checkbox" id="docFloatingSelectAll" onchange="toggleAllDocuments(this.checked)"> <b>Pilih Semua</b></label>
+    <span id="docFloatingSelectedCount">0 dipilih</span>
+  </div>
   <div class="top"><h1>Dokumen Jamaah</h1></div>
   <div class="panel">
     <div class="panel-head"><h2>Ceklis Kelengkapan Dokumen</h2></div>
@@ -3767,6 +3776,11 @@ function syncBulkState(type){
   const checks=[...document.querySelectorAll(cfg[0])], all=document.getElementById(cfg[1]);
   const checked=checks.filter(x=>x.checked);
   if(all){all.checked=checks.length>0&&checked.length===checks.length;all.indeterminate=checked.length>0&&checked.length<checks.length}
+  if(type==='doc'){
+    const floating=document.getElementById('docFloatingSelectAll'),count=document.getElementById('docFloatingSelectedCount');
+    if(floating){floating.checked=checks.length>0&&checked.length===checks.length;floating.indeterminate=checked.length>0&&checked.length<checks.length}
+    if(count)count.textContent=checked.length+' dari '+checks.length+' dipilih';
+  }
 }
 function toggleAllUangMasuk(v){document.querySelectorAll('.uang-masuk-check').forEach(x=>x.checked=v);syncBulkState('uangmasuk')}
 async function deleteSelectedPaymentsFromUangMasuk(){
@@ -5135,7 +5149,8 @@ function renderDocuments(){
     }).join('');
     return `<tr><td style="text-align:center"><input class="bulk-check doc-check" type="checkbox" value="${esc(j.id)}" onchange="syncBulkState('doc')"></td><td><b>${esc(j.nama||'-')}</b><div class="muted" style="font-size:11px;margin-top:3px">No. HP: ${esc(phone||'-')}</div><div style="margin-top:7px"><button type="button" class="btn small-btn" onclick="openDocumentsForJamaah('${esc(j.id)}')">Kelola Ceklis</button></div></td><td>${esc(j.paket||'-')}</td><td>${esc(dep?.name||j.berangkat||'-')}</td><td>${n}/${DOC_TYPES.length}</td><td>${n===DOC_TYPES.length?'<span class="badge paid">Lengkap</span>':'<span class="badge unpaid">Belum Lengkap</span>'}</td><td style="min-width:260px">${details}</td></tr>`;
   }).join('')||'<tr><td colspan="7">Tidak ada jamaah yang sesuai dengan filter.</td></tr>';
-  const selectAll=document.getElementById('docSelectAll');if(selectAll)selectAll.checked=false;
+  const selectAll=document.getElementById('docSelectAll');if(selectAll){selectAll.checked=false;selectAll.indeterminate=false}
+  syncBulkState('doc');
 }
 
 
