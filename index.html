@@ -4914,11 +4914,12 @@ function renderDocGrid(){
   const d=getDoc(id)||{};
   grid.innerHTML=DOC_TYPES.map(([key,label])=>{
     const checked=key==='passport'?!!(d.passport_path||d.passport2_path):!!d[key+'_path'];
-    return `<label class="doc-card ${checked?'is-checked':''}">
-      <input type="checkbox" ${checked?'checked':''} aria-label="Tandai ${label} lengkap" onchange="saveDocumentChecklist('${key}',this.checked,this)">
-      <span class="doc-card-copy"><b>${label}</b><small>${checked?'Dokumen sudah lengkap':'Belum dicek'}</small></span>
+    const inputId='doc-check-'+key;
+    return `<div class="doc-card ${checked?'is-checked':''}">
+      <input id="${inputId}" type="checkbox" ${checked?'checked':''} aria-label="Tandai ${label} lengkap" onchange="saveDocumentChecklist('${key}',this.checked,this)">
+      <label class="doc-card-copy" for="${inputId}"><b>${label}</b><small>${checked?'Dokumen sudah lengkap':'Belum dicek'}</small></label>
       <span class="doc-card-status">${checked?'✓ Lengkap':'Perlu cek'}</span>
-    </label>`;
+    </div>`;
   }).join('');
 }
 
@@ -4960,9 +4961,17 @@ async function saveDocumentChecklist(type,checked,checkbox){
     }
     const {data:updated,error}=await sb.from('documents').update(payload).eq('id',row.id).select('*').maybeSingle();
     if(error)throw error;
-    if(!updated)throw new Error('Perubahan tidak diterapkan oleh database. Periksa izin update tabel documents (RLS).');
+    let savedRow=updated;
+    if(!savedRow){
+      const {data:check,error:checkError}=await sb.from('documents').select('*').eq('id',row.id).maybeSingle();
+      if(checkError)throw checkError;
+      savedRow=check;
+    }
+    if(!savedRow)throw new Error('Data dokumen tidak ditemukan setelah disimpan. Periksa izin database (RLS).');
+    const stillChecked=type==='passport'?!!(savedRow.passport_path||savedRow.passport2_path):!!savedRow[type+'_path'];
+    if(stillChecked!==checked)throw new Error('Status ceklis tidak berubah di database. Periksa izin UPDATE pada tabel documents.');
     const idx=documents.findIndex(x=>String(x.id)===String(row.id));
-    if(idx>=0)documents[idx]=updated;else documents.push(updated);
+    if(idx>=0)documents[idx]=savedRow;else documents.push(savedRow);
     renderDocGrid();updateDocSummary();renderDocuments();
     notice(labelForDoc(type)+(checked?' ditandai lengkap.':' tanda lengkap dibatalkan.'));
   }catch(err){
