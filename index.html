@@ -1714,27 +1714,6 @@ img,svg,video,canvas{max-width:100%}
 <section id="dokumen" class="hidden">
   <div class="top"><h1>Dokumen Jamaah</h1></div>
   <div class="panel">
-    <div class="panel-head"><h2>Ceklis Kelengkapan Dokumen</h2></div>
-    <div id="docNotice"></div>
-    <div style="margin-bottom:15px">
-      <label style="font-size:12px;color:#687078">Pilih Jamaah</label>
-      <div style="position:relative;margin-top:5px">
-        <input id="docJamaahSearch" type="text" placeholder="Cari nama jamaah..." autocomplete="off" oninput="filterDocumentJamaah()" onclick="filterDocumentJamaah()" style="width:100%;padding:8px 10px;border:1px solid #d8dde0;border-radius:7px;font-size:12px">
-        <div id="docJamaahResults" style="display:none;position:absolute;z-index:30;left:0;right:0;top:36px;background:#fff;border:1px solid #d8dde0;border-radius:7px;box-shadow:0 5px 14px rgba(0,0,0,.10);max-height:220px;overflow-y:auto"></div>
-      </div>
-      <select id="docJamaah" style="display:none;width:100%;padding:10px;border:1px solid #d8dde0;border-radius:7px;margin-top:5px" onchange="loadDocumentForm()"></select>
-      <div id="docJamaahSelected" class="doc-selected-pill" style="margin-top:9px">Belum ada jamaah dipilih. Cari lalu pilih nama jamaah.</div>
-    </div>
-    <div id="docSelectionHint" style="padding:18px;border:1px dashed #cbd5d1;border-radius:13px;background:linear-gradient(135deg,#f8fbf9,#fff);font-size:12px;color:#53615c;margin-bottom:12px;text-align:center"><div style="font-size:24px;margin-bottom:7px">📄</div><b style="color:#23483c">Pilih jamaah untuk mulai memeriksa dokumen</b><div style="margin-top:5px">Centang dokumen yang sudah diterima atau tersedia. Status tersimpan otomatis.</div></div>
-    <div id="docFormArea" class="hidden">
-      <div id="docGrid" class="doc-grid"></div>
-      <div style="margin-top:18px">
-        <div id="docSummary" style="font-size:13px;margin-bottom:12px"></div>
-        <div style="font-size:12px;color:#687078">Centang jika dokumen jamaah sudah diterima atau sudah tersedia.</div>
-      </div>
-    </div>
-  </div>
-  <div class="panel">
     <div class="panel-head"><div><h2>Rekap Kelengkapan Dokumen</h2></div><div class="bulk-tools"><button class="btn danger small-btn" type="button" onclick="deleteSelectedDocuments()">🗑️ Hapus Data Terpilih</button></div></div>
     <div class="form" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin:12px 0 16px">
       <div><label for="docRecapSearch">Cari Jamaah</label><input id="docRecapSearch" type="search" placeholder="Nama atau nomor HP..." oninput="renderDocuments()"></div>
@@ -4897,8 +4876,9 @@ function getDoc(id){return documents.find(d=>d.jamaah_id===id)}
 
 function renderDocGrid(){
   const grid=document.getElementById('docGrid');
-  const id=document.getElementById('docJamaah').value;
-  if(!grid)return;
+  const sel=document.getElementById('docJamaah');
+  if(!grid||!sel)return;
+  const id=sel.value;
   if(!id){grid.innerHTML='';return}
   const d=getDoc(id)||{};
   grid.innerHTML=DOC_TYPES.map(([key,label])=>{
@@ -4922,7 +4902,9 @@ function loadDocumentForm(){
 }
 
 function updateDocSummary(){
-  const id=document.getElementById('docJamaah').value;
+  const sel=document.getElementById('docJamaah');
+  if(!sel)return;
+  const id=sel.value;
   const d=getDoc(id)||{};
   const n=DOC_TYPES.filter(([k])=>k==='passport'?(d.passport_path||d.passport2_path):d[k+'_path']).length;
   const el=document.getElementById('docSummary');
