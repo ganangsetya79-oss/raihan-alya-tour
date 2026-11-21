@@ -318,6 +318,12 @@ table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;border
 @media(max-width:520px){.jamaah-member-grid{grid-template-columns:1fr}.jamaah-member-card .jamaah-extra-details .jamaah-member-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:360px){.jamaah-member-card .jamaah-extra-details .jamaah-member-grid{grid-template-columns:1fr}}
 
+
+#docBody .doc-inline-checklist{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;min-width:260px}
+#docBody .doc-inline-check{display:inline-flex;align-items:center;gap:5px;margin:0;padding:4px 7px;border:1px solid #dce7e1;border-radius:7px;background:#fff;font-size:11px;white-space:nowrap;cursor:pointer;color:#34483e}
+#docBody .doc-inline-check input[type=checkbox]{width:15px;height:15px;min-width:15px;margin:0;accent-color:#23845a;cursor:pointer}
+#docBody .doc-inline-check:has(input:checked){background:#edf8f1;border-color:#b8ddc7;color:#176344}
+@media(max-width:700px){#docBody .doc-inline-checklist{min-width:230px;gap:5px}#docBody .doc-inline-check{padding:5px 6px}}
 </style><style id="room-bulk-delete-style">
 .room-bulk-actions{display:flex;align-items:center;justify-content:flex-end;gap:10px;flex-wrap:wrap}
 .room-select-all-label{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:#52645d;white-space:nowrap;cursor:pointer}
@@ -4925,8 +4931,8 @@ function updateDocSummary(){
     : `<span class="incomplete">${n}/8 dokumen sudah dicek</span>`;
 }
 
-async function saveDocumentChecklist(type,checked,checkbox){
-  const jamaah_id=String(document.getElementById('docJamaah')?.value||'');
+async function saveDocumentChecklist(type,checked,checkbox,jamaahIdOverride){
+  const jamaah_id=String(jamaahIdOverride||document.getElementById('docJamaah')?.value||'');
   if(!jamaah_id)return;
   const previous=!checked;
   if(checkbox)checkbox.disabled=true;
@@ -4952,7 +4958,8 @@ async function saveDocumentChecklist(type,checked,checkbox){
     if(stillChecked!==checked)throw new Error('Status ceklis tidak berubah di database. Periksa izin UPDATE pada tabel documents.');
     const idx=documents.findIndex(x=>String(x.id)===String(row.id));
     if(idx>=0)documents[idx]=savedRow;else documents.push(savedRow);
-    renderDocGrid();updateDocSummary();renderDocuments();
+    if(String(document.getElementById('docJamaah')?.value||'')===jamaah_id){renderDocGrid();updateDocSummary();}
+    renderDocuments();
     notice(labelForDoc(type)+(checked?' ditandai lengkap.':' tanda lengkap dibatalkan.'));
   }catch(err){
     if(checkbox)checkbox.checked=previous;
@@ -5145,9 +5152,9 @@ function renderDocuments(){
   body.innerHTML=rows.map(({j,n,dep,phone,doc})=>{
     const details=DOC_TYPES.map(([key,label])=>{
       const checked=key==='passport'?!!(doc.passport_path||doc.passport2_path):!!doc[key+'_path'];
-      return '<span style="display:inline-block;margin:2px 4px 2px 0;padding:4px 7px;border-radius:5px;background:'+(checked?'#e8f6ee;color:#176344':'#fff1e8;color:#8a4b18')+';font-size:10px">'+esc(label)+' '+(checked?'✓':'—')+'</span>';
+      return `<label class="doc-inline-check"><input type="checkbox" ${checked?'checked':''} aria-label="${esc(label)} ${esc(j.nama||'')}" onchange="saveDocumentChecklist('${key}',this.checked,this,'${esc(j.id)}')"><span>${esc(label)}</span></label>`;
     }).join('');
-    return `<tr><td style="text-align:center"><input class="bulk-check doc-check" type="checkbox" value="${esc(j.id)}" onchange="syncBulkState('doc')"></td><td><b>${esc(j.nama||'-')}</b><div class="muted" style="font-size:11px;margin-top:3px">No. HP: ${esc(phone||'-')}</div><div style="margin-top:7px"><button type="button" class="btn small-btn" onclick="openDocumentsForJamaah('${esc(j.id)}')">Kelola Ceklis</button></div></td><td>${esc(j.paket||'-')}</td><td>${esc(dep?.name||j.berangkat||'-')}</td><td>${n}/${DOC_TYPES.length}</td><td>${n===DOC_TYPES.length?'<span class="badge paid">Lengkap</span>':'<span class="badge unpaid">Belum Lengkap</span>'}</td><td style="min-width:260px">${details}</td></tr>`;
+    return `<tr><td style="text-align:center"><input class="bulk-check doc-check" type="checkbox" value="${esc(j.id)}" onchange="syncBulkState('doc')"></td><td><b>${esc(j.nama||'-')}</b><div class="muted" style="font-size:11px;margin-top:3px">No. HP: ${esc(phone||'-')}</div></td><td>${esc(j.paket||'-')}</td><td>${esc(dep?.name||j.berangkat||'-')}</td><td>${n}/${DOC_TYPES.length}</td><td>${n===DOC_TYPES.length?'<span class="badge paid">Lengkap</span>':'<span class="badge unpaid">Belum Lengkap</span>'}</td><td style="min-width:260px"><div class="doc-inline-checklist">${details}</div></td></tr>`;
   }).join('')||'<tr><td colspan="7">Tidak ada jamaah yang sesuai dengan filter.</td></tr>';
   const selectAll=document.getElementById('docSelectAll');if(selectAll){selectAll.checked=false;selectAll.indeterminate=false}
   syncBulkState('doc');
