@@ -4915,7 +4915,7 @@ function renderDocGrid(){
   grid.innerHTML=DOC_TYPES.map(([key,label])=>{
     const checked=key==='passport'?!!(d.passport_path||d.passport2_path):!!d[key+'_path'];
     return `<label class="doc-card ${checked?'is-checked':''}">
-      <input type="checkbox" ${checked?'checked':''} aria-label="Tandai ${label} lengkap" onchange="saveDocumentChecklist('${key}',this.checked)">
+      <input type="checkbox" ${checked?'checked':''} aria-label="Tandai ${label} lengkap" onchange="saveDocumentChecklist('${key}',this.checked,this)">
       <span class="doc-card-copy"><b>${label}</b><small>${checked?'Dokumen sudah lengkap':'Belum dicek'}</small></span>
       <span class="doc-card-status">${checked?'✓ Lengkap':'Perlu cek'}</span>
     </label>`;
@@ -4944,26 +4944,32 @@ function updateDocSummary(){
   </div>`;
 }
 
-async function saveDocumentChecklist(type,checked){
-  const jamaah_id=document.getElementById('docJamaah').value;
+async function saveDocumentChecklist(type,checked,checkbox){
+  const jamaah_id=String(document.getElementById('docJamaah')?.value||'');
   if(!jamaah_id)return;
+  const previous=!checked;
+  if(checkbox)checkbox.disabled=true;
   try{
     const row=await ensureDocRow(jamaah_id);
     const payload={};
     if(type==='passport'){
-      payload.passport_path=checked?(row.passport_path||'CHECKED'):null;
+      payload.passport_path=checked?(row.passport_path||row.passport2_path||'CHECKED'):null;
       if(!checked)payload.passport2_path=null;
     }else{
       payload[type+'_path']=checked?(row[type+'_path']||'CHECKED'):null;
     }
-    const {data:updated,error}=await sb.from('documents').update(payload).eq('id',row.id).select().single();
+    const {data:updated,error}=await sb.from('documents').update(payload).eq('id',row.id).select('*').maybeSingle();
     if(error)throw error;
-    documents=documents.map(x=>x.id===row.id?updated:x);
+    if(!updated)throw new Error('Perubahan tidak diterapkan oleh database. Periksa izin update tabel documents (RLS).');
+    const idx=documents.findIndex(x=>String(x.id)===String(row.id));
+    if(idx>=0)documents[idx]=updated;else documents.push(updated);
     renderDocGrid();updateDocSummary();renderDocuments();
-    notice(labelForDoc(type)+(checked?' ditandai lengkap.':' ditandai belum lengkap.'));
+    notice(labelForDoc(type)+(checked?' ditandai lengkap.':' tanda lengkap dibatalkan.'));
   }catch(err){
-    renderDocGrid();
-    notice('Gagal menyimpan ceklis: '+err.message,'error');
+    if(checkbox)checkbox.checked=previous;
+    notice('Gagal memperbarui ceklis '+labelForDoc(type)+': '+(err?.message||err),'error');
+  }finally{
+    if(checkbox&&checkbox.isConnected)checkbox.disabled=false;
   }
 }
 
