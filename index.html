@@ -4945,7 +4945,7 @@ function updateDocSummary(){
   </div>`;
 }
 
-async async function saveDocumentChecklist(type,checked,checkbox){
+async function saveDocumentChecklist(type,checked,checkbox){
   const jamaah_id=String(document.getElementById('docJamaah')?.value||'');
   if(!jamaah_id)return;
   const previous=!checked;
