@@ -4983,9 +4983,10 @@ async function saveDocumentChecklist(type,checked,checkbox){
   }
 }
 
-async function clearDocumentChecklist(type,button){
+window.clearDocumentChecklist=async function(type,button){
   const jamaah_id=String(document.getElementById('docJamaah')?.value||'');
-  if(!jamaah_id)return;
+  if(!jamaah_id){notice('Pilih jamaah terlebih dahulu.','error');return}
+  notice('Sedang menghapus centang '+labelForDoc(type)+'...');
   if(button)button.disabled=true;
   try{
     const row=await ensureDocRow(jamaah_id);
@@ -5010,7 +5011,7 @@ async function clearDocumentChecklist(type,button){
   }finally{
     if(button&&button.isConnected)button.disabled=false;
   }
-}
+};
 
 async function ensureDocRow(jamaah_id){
   const existing=getDoc(jamaah_id);
